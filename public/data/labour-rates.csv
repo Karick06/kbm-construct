@@ -1,0 +1,14 @@
+id,trade,description,hourlyRate,dailyRate,productivityFactor,overtimeRate,costCode
+L01,Bricklayer,Skilled bricklayer - walls and piers,32,320,0.95,1.5,NL01
+L02,Carpenter,General carpentry - framing and joinery,32,320,0.92,1.5,NL02
+L03,Plasterer,Internal and external plastering,32,320,0.90,1.5,NL03
+L04,Plumber,Plumbing and heating installation,32,320,0.88,1.5,NL04
+L05,Electrician,Electrical installation and testing,32,320,0.90,1.5,NL05
+L06,Roofer,Roof tiling and lead work,30,300,0.85,1.5,NL06
+L07,Painter/Decorator,Interior and exterior painting,28.00,280.00,0.92,1.5,NL07
+L08,General Labourer,General site labouring,18.00,180.00,0.95,1.5,NL08
+L09,Skilled Labourer,Semi-skilled construction operative,22.00,220.00,0.93,1.5,NL09
+L10,Ganger / Foreman,Site supervision and coordination,35,350,1.00,1.5,NL10
+L11,Plant Operator,Excavator and machinery operator,30,300,0.90,1.5,NL11
+L12,Drainage Specialist,Drainage system installation,30,300,0.85,1.5,NL12
+L13,Groundworker,Groundworks and concreting,28,280,0.90,1.5,NL13

@@ -1,0 +1,902 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import PageHeader from '@/components/PageHeader';
+import { parseCSV } from '@/lib/csv-parser';
+
+interface SMM7Item {
+  description: string;
+  positionLevel: number;
+  quantity: number;
+  unit: string;
+}
+
+interface LabourRate {
+  id: string;
+  code: string;
+  trade: string;
+  description: string;
+  hourlyRate: number;
+  dailyRate: number;
+  productivityFactor: number;
+}
+
+interface PlantRate {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  rate: number;
+  unit: string;
+}
+
+interface MaterialRate {
+  id: string;
+  code: string;
+  description: string;
+  category: string;
+  unit: string;
+  rate: number;
+  wasteFactor: number;
+}
+
+interface RateComponent {
+  type: 'labour' | 'plant' | 'material';
+  id: string;
+  name: string;
+  quantity: number;
+  rate: number;
+  total: number;
+}
+
+interface BoQItem {
+  id: string;
+  description: string;
+  unit: string;
+  quantity: number;
+  rate: number;
+  total: number;
+  components: RateComponent[];
+  outputPerShift?: number;
+  outputPerHour?: number;
+}
+
+export default function BoQCreatorPage() {
+  const [smm7Data, setSmm7Data] = useState<SMM7Item[]>([]);
+  const [filteredData, setFilteredData] = useState<SMM7Item[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<number>(1);
+  const [maxLevel, setMaxLevel] = useState<number>(8);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [boqItems, setBoqItems] = useState<BoQItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [debugInfo, setDebugInfo] = useState<string>('');
+  
+  // Rate libraries
+  const [labourRates, setLabourRates] = useState<LabourRate[]>([]);
+  const [plantRates, setPlantRates] = useState<PlantRate[]>([]);
+  const [materialRates, setMaterialRates] = useState<MaterialRate[]>([]);
+  
+  // Rate builder modal
+  const [showRateBuilder, setShowRateBuilder] = useState(false);
+  const [currentBoQItemId, setCurrentBoQItemId] = useState<string | null>(null);
+
+  // Load all data
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setDebugInfo('Loading SMM7 data...');
+        // Load SMM7 data
+        console.log('Starting to load SMM7 data...');
+        const smm7 = await parseCSV('smm7-data.csv');
+        console.log('Raw SMM7 data loaded:', smm7.length, 'rows');
+        console.log('Raw SMM7 data sample:', smm7.slice(0, 10));
+        console.log('First row keys:', smm7[0] ? Object.keys(smm7[0]) : 'No data');
+        setDebugInfo(`Loaded ${smm7.length} rows from CSV. Keys: ${smm7[0] ? Object.keys(smm7[0]).join(', ') : 'none'}`);
+        
+        const items: SMM7Item[] = smm7
+          .map((row: any, index: number) => {
+            const mapped = {
+              description: row.Description || row.description || '',
+              positionLevel: parseInt(row['Position/ Level'] || row.positionLevel) || 0,
+              quantity: parseFloat(row.Quantity || row.quantity) || 1,
+              unit: row.Unit || row.unit || 'nr',
+            };
+            if (index < 5) {
+              console.log(`Row ${index}:`, row, '-> Mapped:', mapped);
+            }
+            return mapped;
+          })
+          .filter((item: SMM7Item) => 
+            item.description && 
+            item.description.trim() !== '' && 
+            item.positionLevel > 0
+          );
+        
+        console.log('Filtered SMM7 items:', items.length);
+        console.log('Sample filtered items:', items.slice(0, 5));
+        
+        setDebugInfo(`Filtered to ${items.length} valid items`);
+        setSmm7Data(items);
+        
+        // Calculate max level
+        const levels = items.map(item => item.positionLevel);
+        const max = Math.max(...levels, 1);
+        setMaxLevel(max);
+        
+        // Count items per level
+        const levelCounts: Record<number, number> = {};
+        items.forEach(item => {
+          levelCounts[item.positionLevel] = (levelCounts[item.positionLevel] || 0) + 1;
+        });
+        console.log('Items per level:', levelCounts);
+        
+        // Load Labour Rates
+        const labourData = await parseCSV('labour-rates.csv');
+        const labour: LabourRate[] = labourData.map((row: any) => ({
+          id: row.id || '',
+          code: row.code || '',
+          trade: row.trade || '',
+          description: row.description || '',
+          hourlyRate: parseFloat(row.hourlyRate) || 0,
+          dailyRate: parseFloat(row.dailyRate) || 0,
+          productivityFactor: parseFloat(row.productivityFactor) || 1,
+        }));
+        setLabourRates(labour);
+        
+        // Load Plant Rates
+        const plantData = await parseCSV('plant-rates.csv');
+        const plant: PlantRate[] = plantData.map((row: any) => ({
+          id: row.id || '',
+          code: row.code || '',
+          name: row.name || '',
+          category: row.category || '',
+          rate: parseFloat(row.rate) || 0,
+          unit: row.unit || '',
+        }));
+        setPlantRates(plant);
+        
+        // Load Material Rates
+        const materialData = await parseCSV('material-rates.csv');
+        const material: MaterialRate[] = materialData.map((row: any) => ({
+          id: row.id || '',
+          code: row.code || '',
+          description: row.description || '',
+          category: row.category || '',
+          unit: row.unit || '',
+          rate: parseFloat(row.rate) || 0,
+          wasteFactor: parseFloat(row.wasteFactor) || 0,
+        }));
+        setMaterialRates(material);
+        
+        console.log('All data loaded successfully');
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        console.error('Error details:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load data');
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  // Filter data by level and search term
+  useEffect(() => {
+    let filtered = smm7Data.filter(item => item.positionLevel === selectedLevel);
+    
+    if (searchTerm) {
+      filtered = filtered.filter(item =>
+        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    setFilteredData(filtered);
+  }, [smm7Data, selectedLevel, searchTerm]);
+
+  const addToBoQ = (item: SMM7Item) => {
+    const newItem: BoQItem = {
+      id: Date.now().toString(),
+      description: item.description,
+      unit: item.unit,
+      quantity: item.quantity,
+      rate: 0,
+      total: 0,
+      components: [],
+      outputPerShift: 0,
+      outputPerHour: 0,
+    };
+    setBoqItems([...boqItems, newItem]);
+  };
+
+  const updateBoQItem = (id: string, field: keyof BoQItem, value: number) => {
+    setBoqItems(items =>
+      items.map(item => {
+        if (item.id === id) {
+          const updated = { ...item, [field]: value };
+          if (field === 'quantity' || field === 'rate') {
+            updated.total = updated.quantity * updated.rate;
+          }
+          return updated;
+        }
+        return item;
+      })
+    );
+  };
+
+  const removeFromBoQ = (id: string) => {
+    setBoqItems(items => items.filter(item => item.id !== id));
+  };
+  
+  const openRateBuilder = (boqItemId: string) => {
+    setCurrentBoQItemId(boqItemId);
+    setShowRateBuilder(true);
+  };
+  
+  const closeRateBuilder = () => {
+    setCurrentBoQItemId(null);
+    setShowRateBuilder(false);
+  };
+  
+  const addComponentToBoQItem = (component: RateComponent) => {
+    if (!currentBoQItemId) return;
+    
+    setBoqItems(items =>
+      items.map(item => {
+        if (item.id === currentBoQItemId) {
+          const updatedComponents = [...item.components, component];
+          const totalRate = updatedComponents.reduce((sum, c) => sum + c.total, 0);
+          
+          return {
+            ...item,
+            components: updatedComponents,
+            rate: totalRate,
+            total: item.quantity * totalRate,
+          };
+        }
+        return item;
+      })
+    );
+  };
+  
+  const removeComponentFromBoQItem = (boqItemId: string, componentId: string) => {
+    setBoqItems(items =>
+      items.map(item => {
+        if (item.id === boqItemId) {
+          const updatedComponents = item.components.filter(c => c.id !== componentId);
+          const totalRate = updatedComponents.reduce((sum, c) => sum + c.total, 0);
+          
+          return {
+            ...item,
+            components: updatedComponents,
+            rate: totalRate,
+            total: item.quantity * totalRate,
+          };
+        }
+        return item;
+      })
+    );
+  };
+  
+  const updateOutputForBoQItem = (boqItemId: string, outputPerShift: number, outputPerHour: number) => {
+    setBoqItems(items =>
+      items.map(item => {
+        if (item.id === boqItemId) {
+          // Recalculate labour components based on output
+          const updatedComponents = item.components.map(comp => {
+            if (comp.type === 'labour') {
+              // Assuming 8 hour shift, calculate hours per unit
+              const hoursPerUnit = outputPerShift > 0 ? 8 / outputPerShift : 0;
+              const newTotal = comp.rate * hoursPerUnit * comp.quantity;
+              return { ...comp, total: newTotal };
+            }
+            return comp;
+          });
+          
+          const totalRate = updatedComponents.reduce((sum, c) => sum + c.total, 0);
+          
+          return {
+            ...item,
+            components: updatedComponents,
+            outputPerShift,
+            outputPerHour,
+            rate: totalRate,
+            total: item.quantity * totalRate,
+          };
+        }
+        return item;
+      })
+    );
+  };
+  
+  const getCurrentBoQItem = () => {
+    return boqItems.find(item => item.id === currentBoQItemId);
+  };
+
+  const totalBoQValue = boqItems.reduce((sum, item) => sum + item.total, 0);
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <PageHeader
+          title="BoQ Creator"
+          subtitle="Create Bills of Quantities using SMM7 library"
+        />
+        <div className="mt-8 text-center text-gray-400">
+          Loading SMM7 library...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <PageHeader
+          title="BoQ Creator"
+          subtitle="Create Bills of Quantities using SMM7 library"
+        />
+        <div className="mt-8 text-center">
+          <div className="text-red-400 mb-2">Error loading data</div>
+          <div className="text-gray-400 text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8">
+      <PageHeader
+        title="BoQ Creator"
+        subtitle="Create Bills of Quantities using SMM7 library"
+      />
+
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* SMM7 Library Browser */}
+        <div className="space-y-6">
+          <div className="bg-gray-800 rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">SMM7 Library</h2>
+            
+            {debugInfo && (
+              <div className="mb-4 p-3 bg-blue-900 bg-opacity-30 border border-blue-600 rounded">
+                <div className="text-blue-200 text-sm font-mono">{debugInfo}</div>
+              </div>
+            )}
+            {smm7Data.length === 0 && !loading && (
+              <div className="mb-4 p-4 bg-yellow-900 bg-opacity-30 border border-yellow-600 rounded">
+                <div className="text-yellow-400 font-medium mb-2">⚠ No SMM7 data loaded</div>
+                <div className="text-xs text-yellow-200 mb-2">
+                  Check browser console for loading errors. The CSV file should contain items with 
+                  Description, Position/Level, Quantity, and Unit fields.
+                </div>
+                {debugInfo && (
+                  <div className="text-xs text-yellow-100 font-mono mt-2 p-2 bg-black bg-opacity-30 rounded">
+                    {debugInfo}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Level Filter */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Position / Level
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {Array.from({ length: maxLevel }, (_, i) => i + 1).map(level => (
+                  <button
+                    key={level}
+                    onClick={() => setSelectedLevel(level)}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      selectedLevel === level
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Level {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Search */}
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Search descriptions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            {/* Results count */}
+            <div className="mb-4 space-y-1">
+              <div className="text-sm text-gray-400">
+                {filteredData.length} items at Level {selectedLevel}
+              </div>
+              <div className="text-xs text-gray-500">
+                Total loaded: {smm7Data.length} items
+              </div>
+            </div>
+
+            {/* SMM7 Items List */}
+            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              {filteredData.map((item, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors"
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <p className="text-white">{item.description}</p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Unit: {item.unit || 'N/A'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => addToBoQ(item)}
+                      className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded transition-colors text-sm whitespace-nowrap"
+                    >
+                      Add to BoQ
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {filteredData.length === 0 && (
+                <div className="text-center text-gray-400 py-8">
+                  No items found at this level
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* BoQ Items */}
+        <div className="space-y-6">
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Bill of Quantities</h2>
+              <div className="text-sm text-gray-400">
+                {boqItems.length} items
+              </div>
+            </div>
+
+            {boqItems.length === 0 ? (
+              <div className="text-center text-gray-400 py-8">
+                No items added yet. Select items from the SMM7 library to get started.
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4 max-h-[600px] overflow-y-auto mb-6">
+                  {boqItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-gray-700 rounded-lg p-4"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <p className="text-white font-medium flex-1 pr-4">
+                          {item.description}
+                        </p>
+                        <button
+                          onClick={() => removeFromBoQ(item.id)}
+                          className="text-red-400 hover:text-red-300 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      
+                      {/* Components display */}
+                      {item.components.length > 0 && (
+                        <div className="mb-3 space-y-1">
+                          {item.components.map((comp) => (
+                            <div key={comp.id} className="flex justify-between text-xs text-gray-300 bg-gray-800 rounded px-2 py-1">
+                              <span>
+                                {comp.type.toUpperCase()}: {comp.name} x {comp.quantity}
+                              </span>
+                              <span>£{comp.total.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={() => openRateBuilder(item.id)}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                        >
+                          Build Rate
+                        </button>
+                        {item.components.length > 0 && (
+                          <span className="px-2 py-1 bg-green-900 text-green-200 rounded text-xs self-center">
+                            {item.components.length} component{item.components.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">
+                            Quantity
+                          </label>
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateBoQItem(item.id, 'quantity', parseFloat(e.target.value) || 0)
+                            }
+                            className="w-full px-2 py-1 rounded bg-gray-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            step="0.01"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">
+                            Rate (£/{item.unit})
+                          </label>
+                          <div className="px-2 py-1 rounded bg-gray-900 text-white text-sm font-medium">
+                            £{item.rate.toFixed(2)}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">
+                            Total
+                          </label>
+                          <div className="px-2 py-1 rounded bg-gray-900 text-white text-sm font-medium">
+                            £{item.total.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total */}
+                <div className="border-t border-gray-700 pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-white">
+                      Total Value
+                    </span>
+                    <span className="text-2xl font-bold text-orange-500">
+                      £{totalBoQValue.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Rate Builder Modal */}
+      {showRateBuilder && currentBoQItemId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-700">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-semibold text-white">Build Rate</h2>
+                  <p className="text-gray-400 mt-1">
+                    {getCurrentBoQItem()?.description}
+                  </p>
+                </div>
+                <button
+                  onClick={closeRateBuilder}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <RateBuilderContent
+                boqItem={getCurrentBoQItem()!}
+                labourRates={labourRates}
+                plantRates={plantRates}
+                materialRates={materialRates}
+                onAddComponent={addComponentToBoQItem}
+                onRemoveComponent={(componentId) => removeComponentFromBoQItem(currentBoQItemId, componentId)}
+                onUpdateOutput={(outputPerShift, outputPerHour) => 
+                  updateOutputForBoQItem(currentBoQItemId, outputPerShift, outputPerHour)
+                }
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Rate Builder Content Component
+function RateBuilderContent({
+  boqItem,
+  labourRates,
+  plantRates,
+  materialRates,
+  onAddComponent,
+  onRemoveComponent,
+  onUpdateOutput,
+}: {
+  boqItem: BoQItem;
+  labourRates: LabourRate[];
+  plantRates: PlantRate[];
+  materialRates: MaterialRate[];
+  onAddComponent: (component: RateComponent) => void;
+  onRemoveComponent: (componentId: string) => void;
+  onUpdateOutput: (outputPerShift: number, outputPerHour: number) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<'labour' | 'plant' | 'material'>('labour');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [outputPerShift, setOutputPerShift] = useState(boqItem.outputPerShift || 0);
+  const [outputPerHour, setOutputPerHour] = useState(boqItem.outputPerHour || 0);
+
+  const handleAddLabour = (labour: LabourRate, quantity: number = 1) => {
+    const component: RateComponent = {
+      type: 'labour',
+      id: `labour-${Date.now()}`,
+      name: labour.trade,
+      quantity,
+      rate: labour.hourlyRate,
+      total: labour.hourlyRate * quantity,
+    };
+    onAddComponent(component);
+  };
+
+  const handleAddPlant = (plant: PlantRate, quantity: number = 1) => {
+    const component: RateComponent = {
+      type: 'plant',
+      id: `plant-${Date.now()}`,
+      name: plant.name,
+      quantity,
+      rate: plant.rate,
+      total: plant.rate * quantity,
+    };
+    onAddComponent(component);
+  };
+
+  const handleAddMaterial = (material: MaterialRate, quantity: number = 1) => {
+    const rateWithWaste = material.rate * (1 + material.wasteFactor / 100);
+    const component: RateComponent = {
+      type: 'material',
+      id: `material-${Date.now()}`,
+      name: material.description,
+      quantity,
+      rate: rateWithWaste,
+      total: rateWithWaste * quantity,
+    };
+    onAddComponent(component);
+  };
+
+  const handleUpdateOutput = () => {
+    onUpdateOutput(outputPerShift, outputPerHour);
+  };
+
+  const filteredLabour = labourRates.filter(item =>
+    item.trade.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredPlant = plantRates.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredMaterial = materialRates.filter(item =>
+    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Output Settings */}
+      <div className="bg-gray-700 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-white mb-3">Output Rates</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-gray-300 mb-1">
+              Output per Shift (8 hours)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={outputPerShift}
+                onChange={(e) => setOutputPerShift(parseFloat(e.target.value) || 0)}
+                className="flex-1 px-3 py-2 rounded bg-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                step="0.01"
+                placeholder="e.g., 10 m3 per shift"
+              />
+              <button
+                onClick={handleUpdateOutput}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-300 mb-1">
+              Output per Hour
+            </label>
+            <input
+              type="number"
+              value={outputPerHour}
+              onChange={(e) => setOutputPerHour(parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 rounded bg-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              step="0.01"
+              placeholder="e.g., 1.25 m3 per hour"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Current Components */}
+      {boqItem.components.length > 0 && (
+        <div className="bg-gray-700 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-white mb-3">
+            Rate Components ({boqItem.components.length})
+          </h3>
+          <div className="space-y-2">
+            {boqItem.components.map((comp) => (
+              <div
+                key={comp.id}
+                className="flex justify-between items-center bg-gray-600 rounded p-3"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      comp.type === 'labour' ? 'bg-blue-900 text-blue-200' :
+                      comp.type === 'plant' ? 'bg-yellow-900 text-yellow-200' :
+                      'bg-green-900 text-green-200'
+                    }`}>
+                      {comp.type.toUpperCase()}
+                    </span>
+                    <span className="text-white">{comp.name}</span>
+                  </div>
+                  <div className="text-sm text-gray-300 mt-1">
+                    Qty: {comp.quantity} × £{comp.rate.toFixed(2)} = £{comp.total.toFixed(2)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => onRemoveComponent(comp.id)}
+                  className="text-red-400 hover:text-red-300 ml-4"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div className="border-t border-gray-600 pt-2 mt-2">
+              <div className="flex justify-between text-lg font-semibold">
+                <span className="text-white">Total Rate:</span>
+                <span className="text-orange-500">
+                  £{boqItem.components.reduce((sum, c) => sum + c.total, 0).toFixed(2)} per {boqItem.unit}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-gray-700">
+        <button
+          onClick={() => setActiveTab('labour')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'labour'
+              ? 'text-blue-500 border-b-2 border-blue-500'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Labour ({labourRates.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('plant')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'plant'
+              ? 'text-yellow-500 border-b-2 border-yellow-500'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Plant ({plantRates.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('material')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'material'
+              ? 'text-green-500 border-b-2 border-green-500'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Material ({materialRates.length})
+        </button>
+      </div>
+
+      {/* Search */}
+      <input
+        type="text"
+        placeholder={`Search ${activeTab}...`}
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+
+      {/* Labour Tab */}
+      {activeTab === 'labour' && (
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {filteredLabour.map((labour) => (
+            <div
+              key={labour.id}
+              className="bg-gray-700 rounded-lg p-4 flex justify-between items-center hover:bg-gray-600 transition-colors"
+            >
+              <div className="flex-1">
+                <div className="text-white font-medium">{labour.trade}</div>
+                <div className="text-sm text-gray-400">{labour.description}</div>
+                <div className="text-sm text-gray-300 mt-1">
+                  Hourly: £{labour.hourlyRate.toFixed(2)} | Daily: £{labour.dailyRate.toFixed(2)}
+                </div>
+              </div>
+              <button
+                onClick={() => handleAddLabour(labour, 1)}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-sm"
+              >
+                Add
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Plant Tab */}
+      {activeTab === 'plant' && (
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {filteredPlant.map((plant) => (
+            <div
+              key={plant.id}
+              className="bg-gray-700 rounded-lg p-4 flex justify-between items-center hover:bg-gray-600 transition-colors"
+            >
+              <div className="flex-1">
+                <div className="text-white font-medium">{plant.name}</div>
+                <div className="text-sm text-gray-400">{plant.category}</div>
+                <div className="text-sm text-gray-300 mt-1">
+                  Rate: £{plant.rate.toFixed(2)} per {plant.unit}
+                </div>
+              </div>
+              <button
+                onClick={() => handleAddPlant(plant, 1)}
+                className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-colors text-sm"
+              >
+                Add
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Material Tab */}
+      {activeTab === 'material' && (
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {filteredMaterial.map((material) => (
+            <div
+              key={material.id}
+              className="bg-gray-700 rounded-lg p-4 flex justify-between items-center hover:bg-gray-600 transition-colors"
+            >
+              <div className="flex-1">
+                <div className="text-white font-medium">{material.description}</div>
+                <div className="text-sm text-gray-400">{material.category}</div>
+                <div className="text-sm text-gray-300 mt-1">
+                  Rate: £{material.rate.toFixed(2)} per {material.unit} | Waste: {material.wasteFactor}%
+                </div>
+              </div>
+              <button
+                onClick={() => handleAddMaterial(material, 1)}
+                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors text-sm"
+              >
+                Add
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Generator</title>
+</head>
+<body>
+  <canvas id="canvas" width="512" height="512"></canvas>
+  <script>
+    // Simple icon generator for KBM Construct
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Background
+    ctx.fillStyle = '#FF6B35';
+    ctx.fillRect(0, 0, 512, 512);
+    
+    // White letters "KBM"
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 180px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('KBM', 256, 256);
+    
+    // Download instructions:
+    // 1. Open this file in a browser
+    // 2. Right-click the canvas and "Save image as"
+    // 3. Save as icon-512.png
+    // 4. Resize to 192x192 for icon-192.png
+    
+    console.log('Right-click the image to save as icon-512.png');
+  </script>
+</body>
+</html>

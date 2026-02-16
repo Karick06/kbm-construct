@@ -1,0 +1,31 @@
+id,code,description,category,unit,rate,wasteFactor,costCode
+material-001,MC0010UKS,Ready mix concrete C20,Concrete,m3,115.00,1.03,NM01
+material-002,MC0020UKS,Ready mix concrete C25,Concrete,m3,125.00,1.03,NM01
+material-003,MC0030UKS,Ready mix concrete C30,Concrete,m3,135.00,1.03,NM01
+material-004,MC0040UKS,Ready mix concrete C35,Concrete,m3,145.00,1.03,NM01
+material-005,MB0010UKS,Common brick,Masonry,1000,325.00,1.05,NM02
+material-006,MB0020UKS,Facing brick standard,Masonry,1000,475.00,1.05,NM02
+material-007,MB0030UKS,Engineering brick Class B,Masonry,1000,425.00,1.05,NM02
+material-008,MB0040UKS,Concrete block 100mm,Masonry,m2,18.50,1.02,NM02
+material-009,MB0050UKS,Concrete block 140mm,Masonry,m2,24.50,1.02,NM02
+material-010,MM0010UKS,Mortar ready-mixed,Masonry,tonne,85.00,1.08,NM02
+material-011,MT0010UKS,Sawn softwood timber,Timber,m3,450.00,1.10,NM03
+material-012,MT0020UKS,Structural grade timber C16,Timber,m3,520.00,1.10,NM03
+material-013,MT0030UKS,Plywood 18mm,Timber,sheet,42.00,1.08,NM03
+material-014,MS0010UKS,Reinforcement steel bars,Steel,tonne,550.00,1.05,NM04
+material-015,MS0020UKS,Structural steel sections,Steel,tonne,800.00,1.02,NM04
+material-016,MS0030UKS,Mesh reinforcement A142,Steel,m2,4.50,1.05,NM04
+material-017,MF0010UKS,Plasterboard 12.5mm,Finishing,m2,6.50,1.10,NM05
+material-018,MF0020UKS,Gypsum plaster,Finishing,tonne,95.00,1.12,NM05
+material-019,MF0030UKS,Emulsion paint,Finishing,litre,12.50,1.05,NM05
+material-020,MF0040UKS,Ceramic tiles standard,Finishing,m2,32.00,1.10,NM05
+material-021,MR0010UKS,Concrete roof tiles,Roofing,m2,45.00,1.08,NM06
+material-022,MR0020UKS,Clay roof tiles,Roofing,m2,85.00,1.08,NM06
+material-023,MR0030UKS,Natural slate,Roofing,m2,180.00,1.08,NM06
+material-024,MI0010UKS,Mineral wool insulation 100mm,Insulation,m2,8.50,1.10,NM07
+material-025,MI0020UKS,PIR insulation board 100mm,Insulation,m2,14.50,1.10,NM07
+material-026,MA0010UKS,Asphalt wearing course,Asphalt,tonne,65.00,1.02,NM08
+material-027,MA0020UKS,Asphalt binder course,Asphalt,tonne,55.00,1.02,NM08
+material-028,MG0010UKS,MOT Type 1 sub-base,Aggregate,tonne,18.00,1.02,NM09
+material-029,MG0020UKS,Sharp sand,Aggregate,tonne,28.00,1.03,NM09
+material-030,MG0030UKS,Ballast 20mm,Aggregate,tonne,22.00,1.03,NM09
