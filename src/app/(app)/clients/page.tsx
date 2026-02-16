@@ -8,6 +8,7 @@ import {
   getClientStats,
   getClientActivities,
   initializeSampleProjects,
+  linkEnquiryToClient,
   type IntegratedProject,
   type ProjectStatus,
   type ProjectSource,

@@ -1166,7 +1166,9 @@ export default function EstimatingOverviewPage() {
       const contingency = (subtotal * profitPercent) / 100;
       
       const quoteData: TraditionalQuoteData = {
+        clientName: job.client || 'Client Name',
         projectName: job.projectName,
+        estimateNumber: job.quoteRef || `EST-${job.id.slice(0, 8)}`,
         preparedBy: job.estimator || 'Estimator',
         date: today,
         items: boqItems,

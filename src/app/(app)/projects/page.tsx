@@ -155,7 +155,7 @@ export default function ProjectsPage() {
                   <div key={p.id} className="rounded-lg bg-gray-700/40 p-4 hover:bg-gray-700/60 cursor-move border border-gray-700/50 transition-all">
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-xs font-semibold text-blue-400">{p.id}</span>
-                      <span className={`text-xs px-2 py-1 rounded font-semibold border ${riskColors[p.risk]}`}>
+                      <span className={`text-xs px-2 py-1 rounded font-semibold border ${riskColors[p.risk as keyof typeof riskColors]}`}>
                         {p.risk.charAt(0).toUpperCase() + p.risk.slice(1)}
                       </span>
                     </div>
@@ -192,7 +192,7 @@ export default function ProjectsPage() {
                   <div key={p.id} className={`rounded-lg p-4 hover:bg-gray-700/60 cursor-move border border-gray-700/50 transition-all ${p.risk === "high" ? "bg-red-900/40" : "bg-gray-700/40"}`}>
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-xs font-semibold text-orange-400">{p.id}</span>
-                      <span className={`text-xs px-2 py-1 rounded font-semibold border ${riskColors[p.risk]}`}>
+                      <span className={`text-xs px-2 py-1 rounded font-semibold border ${riskColors[p.risk as keyof typeof riskColors]}`}>
                         {p.risk.charAt(0).toUpperCase() + p.risk.slice(1)}
                       </span>
                     </div>
@@ -333,15 +333,15 @@ export default function ProjectsPage() {
                     <td className="py-3 text-sm text-gray-300">{p.manager}</td>
                     <td className="py-3">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        p.completedDate ? 'bg-green-900/30 text-green-400' :
-                        p.progress >= 90 ? 'bg-purple-900/30 text-purple-400' :
-                        p.progress ? 'bg-orange-900/30 text-orange-400' :
+                        'completedDate' in p ? 'bg-green-900/30 text-green-400' :
+                        'progress' in p && p.progress >= 90 ? 'bg-purple-900/30 text-purple-400' :
+                        'progress' in p ? 'bg-orange-900/30 text-orange-400' :
                         'bg-blue-900/30 text-blue-400'
                       }`}>
-                        {p.completedDate ? 'Completed' : p.progress >= 90 ? 'Review' : p.progress ? 'Active' : 'Planned'}
+                        {'completedDate' in p ? 'Completed' : 'progress' in p && p.progress >= 90 ? 'Review' : 'progress' in p ? 'Active' : 'Planned'}
                       </span>
                     </td>
-                    <td className="py-3 text-sm text-gray-400">{p.progress ? `${p.progress}%` : '—'}</td>
+                    <td className="py-3 text-sm text-gray-400">{'progress' in p ? `${p.progress}%` : '—'}</td>
                     <td className="py-3 text-right text-sm font-semibold text-orange-400">{p.budget}</td>
                   </tr>
                 ))}
