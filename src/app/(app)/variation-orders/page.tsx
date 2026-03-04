@@ -71,7 +71,9 @@ export default function VariationOrdersPage() {
 
 	const filtered = vos.filter((vo) => {
 		if (filter === "all") return true;
-			if (filter === "pending") return vo.status === "draft" || vo.status === "submitted";
+		if (filter === "pending") return vo.status === "draft" || vo.status === "submitted";
+		return vo.status === filter;
+	});
 
 	if (showForm && current) {
 		return (
