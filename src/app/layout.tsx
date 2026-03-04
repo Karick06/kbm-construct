@@ -11,13 +11,13 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "KBM Construct | Business Management",
+  title: "KBM Construct | Construction Management",
   description:
-    "Construction business management system for timesheets, leave, projects, estimates, and operations.",
+    "Complete construction management platform - Timesheets, Projects, Site Diary, Fleet, and more for field teams.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "KBM Construct",
   },
   formatDetection: {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FF6B35",
+  themeColor: "#ff8b2c",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

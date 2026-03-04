@@ -352,8 +352,8 @@ export default function AppShell({ children }: AppShellProps) {
 
       {/* Main Layout: Sidebar (Left) + Content (Right) */}
       <div className="flex flex-1 pt-16">
-        {/* Sidebar */}
-        <aside className="w-64 border-r border-[var(--line)] bg-[var(--sidebar-bg)] overflow-y-auto">
+        {/* Sidebar - Hidden on mobile, visible on desktop */}
+        <aside className="hidden lg:block w-64 border-r border-[var(--line)] bg-[var(--sidebar-bg)] overflow-y-auto">
           <nav className="space-y-4 p-4">
             {navSections.map((section) => (
               <div key={section.label}>
@@ -386,8 +386,8 @@ export default function AppShell({ children }: AppShellProps) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto bg-[var(--bg)] p-4 lg:p-8">
-          <div className="min-h-screen max-w-[100vw] lg:max-w-none">
+        <main className="flex-1 overflow-auto bg-[var(--bg)] px-2 py-4 lg:p-8">
+          <div className="min-h-screen max-w-full">
             {children}
           </div>
         </main>

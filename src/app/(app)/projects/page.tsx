@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 import { formatCurrency, type ConstructionProject } from "@/lib/operations-models";
 import { getProjectsFromStorage, sampleProjects, saveProjectsToStorage } from "@/lib/operations-data";
+import MobileCard from "@/components/MobileCard";
+import FloatingActionButton from "@/components/FloatingActionButton";
+import PullToRefresh from "@/components/PullToRefresh";
 
 type BoardProject = {
   id: string;
@@ -70,6 +73,7 @@ export default function ProjectsPage() {
   const [contractFileName, setContractFileName] = useState("");
   const [invoiceAddress, setInvoiceAddress] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
+  const [mobileFilter, setMobileFilter] = useState<string>("all");
 
   useEffect(() => {
     setProjects(getProjectsFromStorage());
@@ -148,6 +152,192 @@ export default function ProjectsPage() {
     setProjects(updatedProjects);
     saveProjectsToStorage(updatedProjects);
     closeEditModal();
+  };
+
+  const handleRefresh = async () => {
+    setProjects(getProjectsFromStorage());
+  };
+
+  const allProjects = useMemo(() => {
+    return [...projectsByStatus.mobilizing, ...projectsByStatus.planned, ...projectsByStatus.active, ...projectsByStatus.review, ...projectsByStatus.completed];
+  }, [projectsByStatus]);
+
+  const filteredMobileProjects = useMemo(() => {
+    if (mobileFilter === "all") return allProjects;
+    if (mobileFilter === "mobilizing") return projectsByStatus.mobilizing;
+    if (mobileFilter === "planned") return projectsByStatus.planned;
+    if (mobileFilter === "active") return projectsByStatus.active;
+    if (mobileFilter === "review") return projectsByStatus.review;
+    if (mobileFilter === "completed") return projectsByStatus.completed;
+    return allProjects;
+  }, [mobileFilter, allProjects, projectsByStatus]);
+
+  return (
+    <div className="space-y-6">
+      {/* Mobile View - Only visible on mobile */}
+      <div className="lg:hidden">
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div className="space-y-4 pb-24">
+            {/* Mobile Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-[var(--sidebar-text)]">Projects</h1>
+                <p className="text-sm text-[var(--sidebar-muted)] mt-1">
+                  {allProjects.length} active projects
+                </p>
+              </div>
+            </div>
+
+            {/* Mobile Filter Tabs */}
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2" style={{ scrollbarWidth: 'none' }}>
+              {[
+                { key: "all", label: "All", count: allProjects.length },
+                { key: "mobilizing", label: "Mobilizing", count: projectsByStatus.mobilizing.length },
+                { key: "active", label: "Active", count: projectsByStatus.active.length },
+                { key: "review", label: "Review", count: projectsByStatus.review.length },
+                { key: "completed", label: "Done", count: projectsByStatus.completed.length },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setMobileFilter(tab.key)}
+                  className={`flex-shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${
+                    mobileFilter === tab.key
+                      ? "bg-[var(--accent)] text-white"
+                      : "bg-[var(--surface)] text-[var(--sidebar-muted)] active:scale-95"
+                  }`}
+                >
+                  {tab.label} {tab.count > 0 && `(${tab.count})`}
+                </button>
+              ))}
+            </div>
+
+            {/* Mobile Project Cards */}
+            <div className="space-y-3">
+              {filteredMobileProjects.map(p => (
+                <MobileCard key={p.id} onClick={() => openEditModal(p.id)}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-[var(--sidebar-text)] mb-1">
+                        {p.name}
+                      </h3>
+                      <p className="text-sm text-[var(--sidebar-muted)]">{p.client}</p>
+                    </div>
+                    <span className={`flex-shrink-0 ml-3 text-xs px-2 py-1 rounded font-semibold border ${riskColors[p.risk as keyof typeof riskColors]}`}>
+                      {p.risk}
+                    </span>
+                  </div>
+
+                  {/* Project Stats */}
+                  <div className="grid grid-cols-3 gap-3 mb-3 py-3 border-y border-[var(--line)]">
+                    <div>
+                      <p className="text-xs text-[var(--sidebar-muted)]">Budget</p>
+                      <p className="text-sm font-bold text-[var(--accent)] mt-0.5">{p.budget}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[var(--sidebar-muted)]">Team</p>
+                      <p className="text-sm font-bold text-[var(--sidebar-text)] mt-0.5">{p.team}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[var(--sidebar-muted)]">Progress</p>
+                      <p className="text-sm font-bold text-[var(--sidebar-text)] mt-0.5">
+                        {typeof p.progress === 'number' ? `${p.progress}%` : '—'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  {typeof p.progress === 'number' && (
+                    <div className="mb-3">
+                      <div className="h-2 bg-[var(--line)] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-2)]" 
+                          style={{ width: `${p.progress}%` }} 
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Details */}
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--sidebar-muted)]">Manager</span>
+                      <span className="text-[var(--sidebar-text)] font-medium">{p.manager}</span>
+                    </div>
+                    {p.startDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[var(--sidebar-muted)]">Start Date</span>
+                        <span className="text-[var(--sidebar-text)] font-medium">{formatDate(p.startDate)}</span>
+                      </div>
+                    )}
+                    {p.orderNumber && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[var(--sidebar-muted)]">Order #</span>
+                        <span className="text-[var(--sidebar-text)] font-medium">{p.orderNumber}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="mt-3 pt-3 border-t border-[var(--line)]">
+                    <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                      p.stage === "complete"
+                        ? "bg-green-900/30 text-green-400"
+                        : p.stage === "snagging" || p.stage === "practical" || p.stage === "final"
+                        ? "bg-purple-900/30 text-purple-400"
+                        : p.stage === "active"
+                        ? "bg-orange-900/30 text-orange-400"
+                        : p.stage === "mobilisation"
+                        ? "bg-green-900/30 text-green-400"
+                        : "bg-blue-900/30 text-blue-400"
+                    }`}>
+                      {p.stage === "complete"
+                        ? "Completed"
+                        : p.stage === "snagging" || p.stage === "practical" || p.stage === "final"
+                        ? "In Review"
+                        : p.stage === "active"
+                        ? "Active"
+                        : p.stage === "mobilisation"
+                        ? "Mobilizing"
+                        : "Planned"}
+                    </span>
+                  </div>
+                </MobileCard>
+              ))}
+
+              {filteredMobileProjects.length === 0 && (
+                <MobileCard className="py-12 text-center">
+                  <p className="text-4xl mb-3">📦</p>
+                  <p className="text-[var(--sidebar-muted)]">No projects in this category</p>
+                </MobileCard>
+              )}
+            </div>
+          </div>
+        </PullToRefresh>
+
+        <FloatingActionButton 
+          onClick={() => console.log('Create new project')}
+          label="New"
+          icon="+"
+        />
+      </div>
+
+      {/* Desktop View - Hidden on mobile */}
+      <div className="hidden lg:block space-y-6">
+      {/* 
+
+  const allProjects = useMemo(() => {
+    return [...projectsByStatus.mobilizing, ...projectsByStatus.planned, ...projectsByStatus.active, ...projectsByStatus.review, ...projectsByStatus.completed];
+  }, [projectsByStatus]);
+
+  const filteredMobileProjects = useMemo(() => {
+    if (mobileFilter === "all") return allProjects;
+    if (mobileFilter === "mobilizing") return projectsByStatus.mobilizing;
+    if (mobileFilter === "planned") return projectsByStatus.planned;
+    if (mobileFilter === "active") return projectsByStatus.active;
+    if (mobileFilter === "review") return projectsByStatus.review;
+    if (mobileFilter === "completed") return projectsByStatus.completed;
+    return allProjects;
+  }, [mobileFilter, allProjects, projectsByStatus]);closeEditModal();
   };
 
   return (
@@ -567,6 +757,9 @@ export default function ProjectsPage() {
           </div>
         </div>
       )}
+
+      </div>
+      {/* End Desktop View */}
 
       {editingProject && (
         <div

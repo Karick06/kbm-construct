@@ -1,11 +1,11 @@
 {
-  "name": "KBM Construct - Business Management",
+  "name": "KBM Construct - Construction Management",
   "short_name": "KBM Construct",
-  "description": "Construction business management system for timesheets, leave, projects, and more",
+  "description": "Complete construction management platform - Timesheets, Projects, Site Diary, and more",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#FF6B35",
+  "background_color": "#0f1115",
+  "theme_color": "#ff8b2c",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -21,7 +21,37 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["business", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "My Timesheets",
+      "short_name": "Timesheets",
+      "description": "Submit and view your timesheets",
+      "url": "/my-timesheets",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Projects",
+      "short_name": "Projects",
+      "description": "View and manage projects",
+      "url": "/projects",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Site Diary",
+      "short_name": "Site Diary",
+      "description": "Log site activities and progress",
+      "url": "/site-diary",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Chat",
+      "short_name": "Chat",
+      "description": "Team communication",
+      "url": "/chat",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" }]
+    }
+  ],
+  "categories": ["business", "productivity", "construction"],
   "screenshots": [
     {
       "src": "/screenshot-mobile.png",
@@ -29,5 +59,6 @@
       "type": "image/png",
       "form_factor": "narrow"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }
