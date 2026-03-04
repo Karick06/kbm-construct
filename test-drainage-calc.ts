@@ -5,13 +5,13 @@
 
 import {
   calculateDrainageCost,
-  type DrainageParams,
+  type DrainageCostParams,
   DEFAULT_MATERIAL_COSTS,
   DEFAULT_LABOUR_RATES,
   DEFAULT_PLANT_RATES,
 } from './src/lib/drainage-pipe-data';
 
-const testParams: DrainageParams = {
+const testParams: DrainageCostParams = {
   pipeDiameter: 0.1, // 100mm
   pipeType: 'pvc',
   invertDepth: 1, // 1m

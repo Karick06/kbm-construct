@@ -258,7 +258,7 @@ export default function ChatPage() {
     }
 
     // Send notifications to other chat members
-    const currentChat = [...DEFAULT_CHANNELS, ...customChats, ...dmChats].find(c => c.id === selectedChat);
+    const currentChat = ([...DEFAULT_CHANNELS, ...customChats, ...dmChats] as Chat[]).find(c => c.id === selectedChat);
     if (currentChat) {
       // Determine who should receive notifications
       let recipientIds: string[] = [];
@@ -644,7 +644,7 @@ export default function ChatPage() {
   };
 
   const getDMAvatar = (dm: Chat): { initials: string; avatarUrl?: string } => {
-    if (!user) return dm.icon;
+    if (!user) return { initials: dm.icon };
     const otherParticipantId = dm.participants?.find(id => id !== user.id) || user.id;
     const person = allUsers.find(u => u.id === otherParticipantId);
     if (person?.name) {
@@ -660,7 +660,7 @@ export default function ChatPage() {
   const allUsers = getAllUsers?.() || [];
 
   // Get all available chats
-  const allChats = [...DEFAULT_CHANNELS, ...customChats, ...dmChats];
+  const allChats: Chat[] = [...DEFAULT_CHANNELS, ...customChats, ...dmChats];
   const activeChats = allChats.filter(chat => !archivedChats.includes(chat.id));
   const archived = allChats.filter(chat => archivedChats.includes(chat.id));
 

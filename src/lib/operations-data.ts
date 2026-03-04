@@ -753,6 +753,7 @@ export const sampleInvoices: InvoiceApplication[] = [
       to: "2026-01-31",
     },
     status: "certified",
+    lineItems: [],
     grossValuation: 3150000,
     retentionDeducted: 157500,
     previousPayments: 2706000,
@@ -776,6 +777,7 @@ export const sampleInvoices: InvoiceApplication[] = [
       to: "2026-01-31",
     },
     status: "submitted",
+    lineItems: [],
     grossValuation: 1950000,
     retentionDeducted: 97500,
     previousPayments: 1560000,
@@ -795,6 +797,7 @@ export const sampleInvoices: InvoiceApplication[] = [
       to: "2026-02-15",
     },
     status: "draft",
+    lineItems: [],
     grossValuation: 2100000,
     retentionDeducted: 105000,
     previousPayments: 1852500,
@@ -1515,7 +1518,7 @@ export const createProjectBoQLineItems = (
         unit: boqItem.unit,
         originalQuantity: boqItem.quantity,
         rate: boqItem.rate,
-        originalAmount: boqItem.totalAmount,
+        originalAmount: boqItem.amount,
         quantityClaimed: 0,
         amountClaimed: 0,
         percentageComplete: 0,
@@ -1600,7 +1603,7 @@ export const createBillOfQuantitiesFromBoQItems = (
   projectName: string,
   boqItems: BoQItem[]
 ): BillOfQuantities => {
-  const subtotal = boqItems.reduce((sum, item) => sum + item.total, 0);
+  const subtotal = boqItems.reduce((sum, item) => sum + item.amount, 0);
   const contingencyPercent = 5;
   const contingency = (subtotal * contingencyPercent) / 100;
   const total = subtotal + contingency;

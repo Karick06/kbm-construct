@@ -15,6 +15,8 @@ export default function MaterialReconciliationPage() {
 	const [reconciliations, setReconciliations] = useState<MaterialReconciliation[]>([]);
 	const [showForm, setShowForm] = useState(false);
 	const [current, setCurrent] = useState<MaterialReconciliation | null>(null);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	useEffect(() => {
 		loadReconciliations();
@@ -22,7 +24,7 @@ export default function MaterialReconciliationPage() {
 
 	async function loadReconciliations() {
 		const loaded = await getMaterialReconciliations();
-		setReconciliations(loaded.sort((a, b) => b.date.localeCompare(a.date)));
+		setReconciliations(loaded.sort((a, b) => b.reconciliationDate.localeCompare(a.reconciliationDate)));
 	}
 
 	function handleNew() {
@@ -36,7 +38,7 @@ export default function MaterialReconciliationPage() {
 			delivered: 0,
 			used: 0,
 			wasted: 0,
-			createdAt: new Date().toISOString(),
+			remaining: 0,
 		});
 		setShowForm(true);
 	}
@@ -51,6 +53,17 @@ export default function MaterialReconciliationPage() {
 
 	function update(updates: Partial<MaterialReconciliation>) {
 		if (current) setCurrent({ ...current, ...updates });
+	}
+
+	async function handleDelete() {
+		if (!current?.id) return;
+		setDeleteLoading(true);
+		await deleteMaterialReconciliation(current.id);
+		await loadReconciliations();
+		setShowForm(false);
+		setCurrent(null);
+		setShowDeleteConfirm(false);
+		setDeleteLoading(false);
 	}
 
 	if (showForm && current) {
@@ -81,7 +94,7 @@ export default function MaterialReconciliationPage() {
 								</label>
 								<input
 									type="date"
-									value={current.date}
+									value={current.reconciliationDate}
 									onChange={(e) => update({ reconciliationDate: e.target.value })}
 									className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-4 py-2 text-[var(--ink)]"
 								/>
@@ -240,7 +253,7 @@ export default function MaterialReconciliationPage() {
 				{current && (
 					<DeleteConfirmDialog
 						isOpen={showDeleteConfirm}
-						itemName={current.materialCode || "Reconciliation"}
+						itemName={current.material || "Reconciliation"}
 						onConfirm={handleDelete}
 						onCancel={() => setShowDeleteConfirm(false)}
 						isLoading={deleteLoading}
@@ -288,7 +301,7 @@ export default function MaterialReconciliationPage() {
 								<div className="flex items-start justify-between">
 									<div className="flex-1">
 										<p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--muted)]">
-											{rec.date}
+											{rec.reconciliationDate}
 										</p>
 										<h3 className="text-lg font-semibold text-[var(--ink)] mt-1">
 											{rec.material}

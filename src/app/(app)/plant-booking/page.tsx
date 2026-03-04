@@ -16,6 +16,8 @@ export default function PlantBookingPage() {
 	const [showForm, setShowForm] = useState(false);
 	const [current, setCurrent] = useState<PlantBooking | null>(null);
 	const [filter, setFilter] = useState<string>("all");
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	useEffect(() => {
 		loadBookings();
@@ -55,6 +57,17 @@ export default function PlantBookingPage() {
 
 	function update(updates: Partial<PlantBooking>) {
 		if (current) setCurrent({ ...current, ...updates });
+	}
+
+	async function handleDelete() {
+		if (!current?.id) return;
+		setDeleteLoading(true);
+		await deletePlantBooking(current.id);
+		await loadBookings();
+		setShowForm(false);
+		setCurrent(null);
+		setShowDeleteConfirm(false);
+		setDeleteLoading(false);
 	}
 
 	const filtered = bookings.filter((booking) => {
@@ -213,7 +226,7 @@ export default function PlantBookingPage() {
 				{current && (
 					<DeleteConfirmDialog
 						isOpen={showDeleteConfirm}
-						itemName={`${current.equipmentType} - ${current.startDate}`}
+						itemName={`${current.equipment} - ${current.startDate}`}
 						onConfirm={handleDelete}
 						onCancel={() => setShowDeleteConfirm(false)}
 						isLoading={deleteLoading}

@@ -15,6 +15,8 @@ export default function WeatherLoggingPage() {
 	const [logs, setLogs] = useState<WeatherLog[]>([]);
 	const [showForm, setShowForm] = useState(false);
 	const [current, setCurrent] = useState<WeatherLog | null>(null);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	useEffect(() => {
 		loadLogs();
@@ -31,8 +33,12 @@ export default function WeatherLoggingPage() {
 			date: new Date().toISOString().split("T")[0],
 			project: "",
 			condition: WEATHER_CONDITIONS[0],
+			temperature: 0,
+			windSpeed: "0",
+			rainfall: "0",
 			workingConditions: "good",
-			createdAt: new Date().toISOString(),
+			impact: "",
+			loggedBy: "",
 		});
 		setShowForm(true);
 	}
@@ -47,6 +53,17 @@ export default function WeatherLoggingPage() {
 
 	function update(updates: Partial<WeatherLog>) {
 		if (current) setCurrent({ ...current, ...updates });
+	}
+
+	async function handleDelete() {
+		if (!current?.id) return;
+		setDeleteLoading(true);
+		await deleteWeatherLog(current.id);
+		await loadLogs();
+		setShowForm(false);
+		setCurrent(null);
+		setShowDeleteConfirm(false);
+		setDeleteLoading(false);
 	}
 
 	if (showForm && current) {
@@ -127,7 +144,7 @@ export default function WeatherLoggingPage() {
 								<input
 									type="number"
 									value={current.temperature || ""}
-									onChange={(e) => update({ temperature: e.target.value })}
+									onChange={(e) => update({ temperature: parseFloat(e.target.value) || 0 })}
 									step="0.1"
 									className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-4 py-2 text-[var(--ink)]"
 								/>

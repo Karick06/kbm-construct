@@ -454,9 +454,9 @@ export default function CompliancePage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const [title, setTitle] = useState("");
-  const [projectName, setProjectName] = useState(projectOptions[0]?.name ?? "");
-  const [projectManager, setProjectManager] = useState(projectOptions[0]?.manager ?? "");
-  const [projectPhase, setProjectPhase] = useState(projectOptions[0]?.phase ?? "");
+  const [projectName, setProjectName] = useState<string>(projectOptions[0]?.name ?? "");
+  const [projectManager, setProjectManager] = useState<string>(projectOptions[0]?.manager ?? "");
+  const [projectPhase, setProjectPhase] = useState<string>(projectOptions[0]?.phase ?? "");
   const [location, setLocation] = useState("");
   const [sitePostcode, setSitePostcode] = useState("");
   const [siteLat, setSiteLat] = useState<number | null>(null);

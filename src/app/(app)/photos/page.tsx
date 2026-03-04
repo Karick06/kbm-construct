@@ -41,10 +41,11 @@ export default function PhotosPage() {
 			id: `PHOTO-${Date.now()}`,
 			project: "",
 			location: "",
+			description: "",
 			category: PHOTO_CATEGORIES[0],
 			date: new Date().toISOString().split("T")[0],
+			takenBy: "",
 			url: "",
-			createdAt: new Date().toISOString(),
 		});
 		setShowForm(true);
 	}
@@ -116,7 +117,7 @@ export default function PhotosPage() {
 								</label>
 								<select
 									value={current.category}
-									onChange={(e) => update({ category: e.target.value })}
+									onChange={(e) => update({ category: e.target.value as Photo["category"] })}
 									className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-4 py-2 text-[var(--ink)]"
 								>
 									{PHOTO_CATEGORIES.map((cat) => (

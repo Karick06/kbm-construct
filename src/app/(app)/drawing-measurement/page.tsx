@@ -15,7 +15,7 @@ type Point = { x: number; y: number };
 
 type Measurement = {
   id: string;
-  type: 'linear' | 'area' | 'count' | 'volume' | 'angle';
+  type: 'linear' | 'polyline' | 'area' | 'count' | 'volume' | 'angle';
   points: Point[];
   value: number;
   unit: string;
@@ -1173,6 +1173,7 @@ export default function DrawingMeasurementPage() {
                 canvas.height = scaledViewport.height;
                 
                 await page.render({
+                  canvas,
                   canvasContext: context,
                   viewport: scaledViewport
                 }).promise;

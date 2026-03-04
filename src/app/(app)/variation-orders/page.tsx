@@ -372,6 +372,5 @@ export default function VariationOrdersPage() {
 				)}
 			</div>
 		</div>
-	</div>
 	);
 }
