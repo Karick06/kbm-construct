@@ -29,3 +29,9 @@ material-027,MA0020UKS,Asphalt binder course,Asphalt,tonne,55.00,1.02,NM08
 material-028,MG0010UKS,MOT Type 1 sub-base,Aggregate,tonne,18.00,1.02,NM09
 material-029,MG0020UKS,Sharp sand,Aggregate,tonne,28.00,1.03,NM09
 material-030,MG0030UKS,Ballast 20mm,Aggregate,tonne,22.00,1.03,NM09
+material-031,MG0040UKS,Stone aggregate 20-40mm,Aggregate,tonne,24.00,1.03,NM09
+material-032,MG0050UKS,Stone aggregate 40mm,Aggregate,tonne,26.00,1.03,NM09
+material-033,MG0060UKS,Granite chips 20mm,Stone,tonne,35.00,1.02,NM09
+material-034,MG0070UKS,Granite chips 40mm,Stone,tonne,38.00,1.02,NM09
+material-035,MG0080UKS,Flint gravel 20mm,Stone,tonne,32.00,1.02,NM09
+material-036,MG0090UKS,Decorative stone chips,Stone,tonne,45.00,1.02,NM09

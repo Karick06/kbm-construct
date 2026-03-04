@@ -1,0 +1,73 @@
+
+> kbm-construct@0.1.0 dev
+> next dev
+
+⚠ turbopack.root should be absolute, using: /Users/mick/Desktop/kbm-construct
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.193:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 441ms
+ GET / 200 in 1085ms (compile: 1012ms, render: 72ms)
+ GET /?id=9a3bbaa7-1a60-41b2-9349-f92ca658b200&vscodeBrowserReqId=1771263351418 200 in 33ms (compile: 5ms, render: 28ms)
+ GET /login 200 in 214ms (compile: 205ms, render: 9ms)
+ GET /chat 200 in 322ms (compile: 305ms, render: 17ms)
+⚠ Cross origin request detected from 192.168.0.193 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /leave 200 in 237ms (compile: 215ms, render: 22ms)
+✓ Compiled in 149ms
+✓ Compiled in 89ms
+ GET /login 200 in 188ms (compile: 24ms, render: 164ms)
+ GET /login 200 in 58ms (compile: 4ms, render: 54ms)
+ GET /chat 200 in 143ms (compile: 62ms, render: 81ms)
+ GET /chat 200 in 48ms (compile: 3ms, render: 45ms)
+ GET /login 200 in 34ms (compile: 2ms, render: 32ms)
+ GET /chat 200 in 25ms (compile: 2ms, render: 23ms)
+ GET /?id=9a3bbaa7-1a60-41b2-9349-f92ca658b200&vscodeBrowserReqId=1771263579725 200 in 142ms (compile: 67ms, render: 75ms)
+ GET /login 200 in 18ms (compile: 8ms, render: 10ms)
+ GET / 200 in 94ms (compile: 11ms, render: 84ms)
+ GET /chat 200 in 17ms (compile: 5ms, render: 13ms)
+ GET /bd-overview 200 in 370ms (compile: 321ms, render: 49ms)
+ GET /clients 200 in 290ms (compile: 281ms, render: 9ms)
+ GET /campaigns 200 in 168ms (compile: 159ms, render: 9ms)
+✓ Compiled in 53ms
+✓ Compiled in 105ms
+✓ Compiled in 55ms
+ GET /?id=9a3bbaa7-1a60-41b2-9349-f92ca658b200&vscodeBrowserReqId=1771263931020 200 in 168ms (compile: 77ms, render: 91ms)
+ GET /login 200 in 21ms (compile: 8ms, render: 13ms)
+✓ Compiled in 52ms
+ GET /?id=9a3bbaa7-1a60-41b2-9349-f92ca658b200&vscodeBrowserReqId=1771264086632 200 in 129ms (compile: 52ms, render: 77ms)
+ GET /login 200 in 14ms (compile: 4ms, render: 10ms)
+✓ Compiled in 91ms
+✓ Compiled in 66ms
+✓ Compiled in 35ms
+✓ Compiled in 96ms
+ GET /login 200 in 401ms (compile: 4ms, render: 397ms)
+ GET /login 200 in 325ms (compile: 1926µs, render: 323ms)
+ GET /campaigns 200 in 316ms (compile: 87ms, render: 229ms)
+ GET /campaigns 200 in 165ms (compile: 9ms, render: 156ms)
+ GET /campaigns 200 in 134ms (compile: 4ms, render: 130ms)
+ GET /campaigns 200 in 129ms (compile: 3ms, render: 126ms)
+ GET /campaigns 200 in 135ms (compile: 2ms, render: 132ms)
+ GET /campaigns 200 in 125ms (compile: 5ms, render: 120ms)
+ GET /campaigns 200 in 126ms (compile: 3ms, render: 123ms)
+ GET /campaigns 200 in 106ms (compile: 1053µs, render: 105ms)
+ GET /campaigns 200 in 72ms (compile: 1747µs, render: 70ms)
+ GET /campaigns 200 in 48ms (compile: 1139µs, render: 47ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 74ms
+ GET /campaigns 200 in 182ms (compile: 95ms, render: 86ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 86ms
+ GET /campaigns 200 in 142ms (compile: 50ms, render: 92ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 46ms
+ GET /campaigns 200 in 136ms (compile: 67ms, render: 70ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 61ms
+ GET /campaigns 200 in 193ms (compile: 80ms, render: 113ms)
+ GET / 200 in 94ms (compile: 68ms, render: 26ms)
+ GET / 200 in 11ms (compile: 3ms, render: 8ms)
+[?25h

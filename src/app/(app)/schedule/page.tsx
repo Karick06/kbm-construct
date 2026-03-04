@@ -49,7 +49,7 @@ const scheduleData: ScheduleItem[] = [
   { id: "SCH-017", project: "Riverside Park", projectId: "PRJ-008", phase: "Snagging & Commissioning", startDate: "2026-03-10", endDate: "2026-03-31", duration: 21, progress: 40, status: "in-progress", dependencies: ["SCH-016"], assignedTo: "Sarah Chen" },
   
   // North District Complex
-  { id: "SCH-018", project: "North District Complex", projectId: "PRJ-001", phase: "Site Mobilization", startDate: "2026-02-20", endDate: "2026-03-10", duration: 18, progress: 0, status: "not-started", assignedTo: "Andrew Clark" },
+  { id: "SCH-018", project: "North District Complex", projectId: "PRJ-001", phase: "Site Mobilisation", startDate: "2026-02-20", endDate: "2026-03-10", duration: 18, progress: 0, status: "not-started", assignedTo: "Andrew Clark" },
   { id: "SCH-019", project: "North District Complex", projectId: "PRJ-001", phase: "Site Investigation", startDate: "2026-03-05", endDate: "2026-03-25", duration: 20, progress: 0, status: "not-started", dependencies: ["SCH-018"], assignedTo: "Andrew Clark" },
   
   // Shopping District
@@ -103,11 +103,7 @@ export default function SchedulePage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Schedule</h1>
-          <p className="text-gray-400 mt-1">Project timeline & Gantt chart</p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex gap-3">
           <select
             value={filterProject}

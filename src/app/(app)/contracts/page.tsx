@@ -346,13 +346,7 @@ export default function ContractsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Contract Reviewer</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Review key terms, risk flags, and approvals for commercial contracts.
-          </p>
-        </div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
         <button
           onClick={() => setShowNewModal(true)}
           className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"

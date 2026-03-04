@@ -1,10 +1,6 @@
 export default function PaymentsPage() {
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Payments</h1>
-        <p className="mt-2 text-gray-300">Manage payments and reconciliation</p>
-      </div>
       <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Payment Records</h2>

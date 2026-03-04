@@ -1,0 +1,77 @@
+{
+  "id": "RAMS-1772555250099",
+  "title": "pppp",
+  "projectId": "Arbor Park build",
+  "projectName": "Arbor Park build",
+  "projectManager": "Theo Grant",
+  "projectPhase": "Framing",
+  "location": "ppp",
+  "sitePostcode": "S73 8AZ",
+  "siteLat": 53.530068,
+  "siteLon": -1.386376,
+  "nearestHospitalName": "Barnsley Hospital A&E",
+  "nearestHospitalAddress": "Gawber Road, Barnsley, S75 2EP",
+  "nearestHospitalDistanceKm": 6,
+  "nearestHospitalPhone": "01226 730000",
+  "hospitalLat": 53.5512,
+  "hospitalLon": -1.4694,
+  "workType": "Earthworks Cut & Fill",
+  "author": "Site Manager",
+  "approver": "Compliance Lead",
+  "issueDate": "2026-03-03",
+  "tier1Profile": "Standard",
+  "revision": 1,
+  "approvalStatus": "Draft",
+  "ppeRequired": [
+    "Hard hat",
+    "Hi-vis",
+    "Safety boots",
+    "Gloves",
+    "Eye protection",
+    "Hearing protection"
+  ],
+  "plantEquipment": [
+    "Excavator",
+    "Dozer",
+    "Dumper",
+    "GPS machine control",
+    "Compaction roller"
+  ],
+  "riskAssessment": [
+    {
+      "hazard": "Slope instability during cut operations",
+      "initialRisk": "High",
+      "controls": "Engineered batter profiles, phased excavation and supervisor inspections",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Plant collision in bulk earthworks zone",
+      "initialRisk": "High",
+      "controls": "One-way routes, exclusion zones, banksman support and radio comms",
+      "residualRisk": "Low"
+    }
+  ],
+  "methodStatementSteps": [
+    "Set out cut/fill boundaries, levels and haul routes.",
+    "Strip unsuitable material and stockpile in designated areas.",
+    "Execute cut and fill in engineered layers and sequence.",
+    "Compact each layer to specified density with testing records.",
+    "Trim formation and complete as-built level checks."
+  ],
+  "emergencyProcedures": [
+    "Stop plant and secure workface",
+    "Isolate unstable areas",
+    "Escalate incident response"
+  ],
+  "environmentalControls": [
+    "Dust suppression",
+    "Haul road wheel wash",
+    "Spoil segregation and tracking"
+  ],
+  "permitsRequired": [
+    "Permit to Dig",
+    "Earthworks Permit (where required)"
+  ],
+  "createdDate": "2026-03-03T16:27:30.099Z",
+  "lastModifiedDate": "2026-03-03T16:27:30.099Z"
+}

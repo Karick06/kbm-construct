@@ -8,6 +8,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string;
   permissions?: string[];
   lineManagerId?: string;
   lineManagerName?: string;
@@ -121,6 +122,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
       localStorage.setItem("kbm_user", JSON.stringify(updatedUser));
+
+      try {
+        const users = getAllUsers();
+        const index = users.findIndex((u) => u.id === user.id);
+        if (index !== -1) {
+          users[index] = { ...users[index], ...updates };
+          localStorage.setItem("kbm_all_users", JSON.stringify(users));
+        }
+      } catch (error) {
+        console.error("Failed to sync updated user profile:", error);
+      }
     }
   };
 

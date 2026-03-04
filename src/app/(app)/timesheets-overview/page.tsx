@@ -19,11 +19,6 @@ export default function TimesheetsOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Timesheets</h1>
-        <p className="mt-2 text-gray-300">GPS-based automated timesheet tracking</p>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="flex flex-col gap-3 rounded-lg border border-gray-700 border-l-4 border-l-orange-500 bg-gray-800 px-5 py-4">
           <p className="text-xs font-bold uppercase text-gray-400">This Week</p>

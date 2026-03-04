@@ -22,14 +22,14 @@ export default function StatCard({
 }: StatCardProps) {
   const style = toneClasses[tone];
   return (
-    <div className={`flex flex-col gap-3 rounded-2xl border border-gray-700/50 border-l-4 ${style.border} bg-gray-800/80 px-5 py-4 shadow-[var(--shadow)]`}>
+    <div className={`flex flex-col gap-2 sm:gap-3 rounded-2xl border border-gray-700/50 border-l-4 ${style.border} bg-gray-800/80 px-4 py-3 sm:px-5 sm:py-4 shadow-[var(--shadow)]`}>
       <div className="flex items-start justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
           {label}
         </p>
-        <span className="text-xl">{style.icon}</span>
+        <span className="text-lg sm:text-xl">{style.icon}</span>
       </div>
-      <p className="text-2xl font-bold text-white">
+      <p className="text-xl sm:text-2xl font-bold text-white">
         {value}
       </p>
       <p className="text-xs text-gray-300">{change}</p>

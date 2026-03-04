@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getProjectsFromStorage } from "@/lib/operations-data";
+import { getCostReportsFromStorage, saveCostReportsToStorage } from "@/lib/commercial-data";
 
 type RequisitionStatus = "draft" | "pending" | "approved" | "rejected" | "ordered";
 type OrderStatus = "draft" | "pending_approval" | "approved" | "sent" | "acknowledged" | "partial" | "delivered" | "cancelled" | "rejected";
@@ -62,6 +64,7 @@ interface POItem {
   description: string;
   quantity: number;
   unit: string;
+  category: string;
   unitPrice: number;
   total: number;
 }
@@ -124,35 +127,12 @@ export default function PurchaseOrdersPage() {
     if (storedOrders) setOrders(JSON.parse(storedOrders));
     if (storedNotifications) setNotifications(JSON.parse(storedNotifications));
     
-    // Load projects - combine all project statuses into one list
-    const projectsByStatus = {
-      mobilizing: [
-        { id: "PRJ-2024-051", name: "Commercial Office Refurbishment", client: "Greenwich Properties" },
-        { id: "PRJ-2024-052", name: "Residential Housing Development", client: "Fortis Developments" },
-      ],
-      planned: [
-        { id: "PRJ-2606", name: "North District Complex", client: "Bellway" },
-        { id: "PRJ-2607", name: "Shopping District", client: "Hammerson" },
-      ],
-      active: [
-        { id: "PRJ-2501", name: "Thames Retail Park", client: "Westfield" },
-        { id: "PRJ-2502", name: "Premier Mixed Use", client: "Berkeley Group" },
-        { id: "PRJ-2503", name: "Central Warehouse", client: "DHL" },
-        { id: "PRJ-2504", name: "Tech Campus Phase 1", client: "Google" },
-      ],
-      review: [
-        { id: "PRJ-2505", name: "Riverside Park", client: "Barratt" },
-        { id: "PRJ-2506", name: "Office Complex Tower B", client: "Canary Wharf" },
-      ],
-    };
-    
-    const allProjects: Project[] = [
-      ...projectsByStatus.mobilizing.map(p => ({ ...p, status: "mobilizing" })),
-      ...projectsByStatus.planned.map(p => ({ ...p, status: "planned" })),
-      ...projectsByStatus.active.map(p => ({ ...p, status: "active" })),
-      ...projectsByStatus.review.map(p => ({ ...p, status: "review" })),
-    ];
-    
+    const allProjects: Project[] = getProjectsFromStorage().map(project => ({
+      id: project.id,
+      name: project.projectName,
+      client: project.client,
+      status: project.stage,
+    }));
     setProjects(allProjects);
   }, []);
 
@@ -237,17 +217,45 @@ export default function PurchaseOrdersPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    const items: POItem[] = selectedReq ? selectedReq.items.map((item, i) => {
-      const unitPrice = parseFloat(formData.get(`item_price_${i}`) as string) || 0;
-      return {
-        id: item.id,
-        description: item.description,
-        quantity: item.quantity,
-        unit: item.unit,
-        unitPrice,
-        total: item.quantity * unitPrice,
-      };
-    }) : [];
+    const items: POItem[] = selectedReq
+      ? selectedReq.items.map((item, i) => {
+          const unitPrice = parseFloat(formData.get(`item_price_${i}`) as string) || 0;
+          return {
+            id: item.id,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            category: item.category || "Other",
+            unitPrice,
+            total: item.quantity * unitPrice,
+          };
+        })
+      : (() => {
+          const itemCount = Math.floor(
+            Array.from(formData.keys()).filter(k => k.startsWith("item_desc_")).length
+          );
+          const manualItems: POItem[] = [];
+          for (let i = 0; i < itemCount; i++) {
+            const desc = formData.get(`item_desc_${i}`) as string;
+            const qty = parseFloat(formData.get(`item_qty_${i}`) as string) || 0;
+            const unit = formData.get(`item_unit_${i}`) as string;
+            const category = (formData.get(`item_category_${i}`) as string) || "Other";
+            const unitPrice = parseFloat(formData.get(`item_price_${i}`) as string) || 0;
+
+            if (desc && qty && unit) {
+              manualItems.push({
+                id: `item-${Date.now()}-${i}`,
+                description: desc,
+                quantity: qty,
+                unit,
+                category,
+                unitPrice,
+                total: qty * unitPrice,
+              });
+            }
+          }
+          return manualItems;
+        })();
 
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
     const tax = subtotal * 0.2; // 20% VAT
@@ -279,6 +287,52 @@ export default function PurchaseOrdersPage() {
     };
 
     setOrders([newPO, ...orders]);
+
+    const costReports = getCostReportsFromStorage();
+    const categoryTotals = items.reduce<Record<string, number>>((acc, item) => {
+      const key = item.category || "Other";
+      acc[key] = (acc[key] || 0) + item.total;
+      return acc;
+    }, {});
+
+    const updatedReports = [...costReports];
+    Object.entries(categoryTotals).forEach(([category, categoryTotal]) => {
+      const packageName = `Procurement - ${category}`;
+      const index = updatedReports.findIndex(
+        report => report.projectId === projectId && report.packageName === packageName
+      );
+
+      if (index >= 0) {
+        const existing = updatedReports[index];
+        const newForecast = existing.forecast + categoryTotal;
+        const newCommitted = existing.committed + categoryTotal;
+        const variance = existing.budget - newForecast;
+        updatedReports[index] = {
+          ...existing,
+          committed: newCommitted,
+          forecast: newForecast,
+          variance,
+          variancePercentage: existing.budget ? (variance / existing.budget) * 100 : 0,
+          lastUpdated: new Date().toISOString().split("T")[0],
+        };
+      } else {
+        updatedReports.unshift({
+          id: `COST-PO-${Date.now()}-${category}`,
+          projectId,
+          packageName,
+          budget: categoryTotal,
+          committed: categoryTotal,
+          forecast: categoryTotal,
+          variance: 0,
+          variancePercentage: 0,
+          status: "on-track",
+          lastUpdated: new Date().toISOString().split("T")[0],
+          notes: `Initial ${category} spend from ${newPO.id}`,
+        });
+      }
+    });
+
+    saveCostReportsToStorage(updatedReports);
     
     // Create notification if approval required
     if (newPO.status === "pending_approval") {
@@ -403,95 +457,8 @@ export default function PurchaseOrdersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Procurement Buying System</h1>
-          <p className="mt-1 text-sm text-gray-400">Manage requisitions and purchase orders</p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex gap-3">
-          {/* Notifications Bell */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white hover:bg-gray-600"
-            >
-              <span className="text-xl">🔔</span>
-              {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            
-            {/* Notifications Dropdown */}
-            {showNotifications && (
-              <div className="absolute right-0 top-12 z-50 w-96 rounded-lg border border-gray-700 bg-gray-800 shadow-xl">
-                <div className="border-b border-gray-700 p-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-white">Approval Notifications</h3>
-                    <span className="text-xs text-gray-400">{unreadCount} unread</span>
-                  </div>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400">
-                      <p className="text-3xl mb-2">🔕</p>
-                      <p className="text-sm">No notifications</p>
-                    </div>
-                  ) : (
-                    notifications.slice(0, 10).map((notif) => (
-                      <button
-                        key={notif.id}
-                        onClick={() => handleNotificationClick(notif)}
-                        className={`w-full border-b border-gray-700 p-4 text-left transition-colors hover:bg-gray-700/50 ${
-                          !notif.read ? "bg-blue-900/20" : ""
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-white">
-                              PO {notif.poNumber} Requires Approval
-                            </p>
-                            <p className="mt-1 text-xs text-gray-400">
-                              {notif.projectName} • {notif.supplier}
-                            </p>
-                            <div className="mt-2 flex items-center gap-4 text-xs">
-                              <span className="font-semibold text-orange-400">
-                                £{notif.amount.toLocaleString()}
-                              </span>
-                              <span className="rounded bg-yellow-900/30 px-2 py-0.5 text-yellow-400">
-                                {notif.approvalLevel}
-                              </span>
-                            </div>
-                            <p className="mt-1 text-xs text-gray-500">
-                              {new Date(notif.date).toLocaleDateString()} at{" "}
-                              {new Date(notif.date).toLocaleTimeString()}
-                            </p>
-                          </div>
-                          {!notif.read && (
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                          )}
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-                {notifications.length > 0 && (
-                  <div className="border-t border-gray-700 p-2">
-                    <button
-                      onClick={() => {
-                        setNotifications(notifications.map(n => ({ ...n, read: true })));
-                      }}
-                      className="w-full rounded py-2 text-xs text-gray-400 hover:bg-gray-700/50 hover:text-white"
-                    >
-                      Mark all as read
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          
           <select
             value={selectedProjectFilter}
             onChange={(e) => setSelectedProjectFilter(e.target.value)}
@@ -505,7 +472,14 @@ export default function PurchaseOrdersPage() {
             ))}
           </select>
           <button
-            onClick={() => activeTab === "requisitions" ? setShowReqModal(true) : setShowPOModal(true)}
+            onClick={() => {
+              console.log("Button clicked, activeTab:", activeTab);
+              if (activeTab === "requisitions") {
+                setShowReqModal(true);
+              } else {
+                setShowPOModal(true);
+              }
+            }}
             className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
           >
             + {activeTab === "requisitions" ? "New Requisition" : "New Purchase Order"}
@@ -1013,7 +987,7 @@ export default function PurchaseOrdersPage() {
                 </div>
               </div>
 
-              {selectedReq && (
+              {selectedReq ? (
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300">Items & Unit Prices</label>
                   {selectedReq.items.map((item, i) => (
@@ -1037,6 +1011,58 @@ export default function PurchaseOrdersPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-300">Items</label>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        const container = e.currentTarget.parentElement?.parentElement?.querySelector("#po-items-container");
+                        if (container) {
+                          const itemCount = container.children.length;
+                          const newItem = document.createElement("div");
+                          newItem.className = "grid gap-2 rounded bg-gray-700/50 p-3 md:grid-cols-5";
+                          newItem.innerHTML = `
+                            <input type="text" name="item_desc_${itemCount}" placeholder="Description" required class="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white md:col-span-2" />
+                            <input type="number" name="item_qty_${itemCount}" placeholder="Qty" required step="0.01" class="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white" />
+                            <input type="text" name="item_unit_${itemCount}" placeholder="Unit" required class="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white" />
+                            <input type="number" name="item_price_${itemCount}" placeholder="Price" required step="0.01" class="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white" />
+                            <select name="item_category_${itemCount}" required class="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white md:col-span-5">
+                              <option value="">Category</option>
+                              <option value="Materials">Materials</option>
+                              <option value="Equipment">Equipment</option>
+                              <option value="Labour">Labour</option>
+                              <option value="Services">Services</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          `;
+                          container.appendChild(newItem);
+                        }
+                      }}
+                      className="text-sm text-orange-500 hover:text-orange-400"
+                    >
+                      + Add Item
+                    </button>
+                  </div>
+                  
+                  <div id="po-items-container" className="space-y-2">
+                    <div className="grid gap-2 rounded bg-gray-700/50 p-3 md:grid-cols-5">
+                      <input type="text" name="item_desc_0" placeholder="Description" required className="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white md:col-span-2" />
+                      <input type="number" name="item_qty_0" placeholder="Qty" required step="0.01" className="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white" />
+                      <input type="text" name="item_unit_0" placeholder="Unit" required className="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white" />
+                      <input type="number" name="item_price_0" placeholder="Price" required step="0.01" className="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white" />
+                      <select name="item_category_0" required className="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white md:col-span-5">
+                        <option value="">Select Category</option>
+                        <option value="Materials">Materials</option>
+                        <option value="Equipment">Equipment</option>
+                        <option value="Labour">Labour</option>
+                        <option value="Services">Services</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               )}
 

@@ -33,7 +33,6 @@ export default function MyTimesheetsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-white">My Timesheets</h1>
         <p className="text-gray-300">Loading...</p>
       </div>
     );
@@ -41,11 +40,6 @@ export default function MyTimesheetsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">My Timesheets</h1>
-        <p className="mt-2 text-gray-300">View and manage your timesheets</p>
-      </div>
-
       {timesheets.length === 0 ? (
         <div className="rounded-lg border border-gray-700 bg-gray-800 p-12 text-center">
           <p className="text-5xl mb-4">📋</p>

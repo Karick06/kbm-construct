@@ -39,11 +39,6 @@ export default function GeofencesPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Geofences</h1>
-        <p className="mt-2 text-gray-300">Manage tracked locations for timesheet automation</p>
-      </div>
-
       <div className="grid md:grid-cols-2 gap-6">
         <div>
           <div className="flex items-center justify-between mb-4">

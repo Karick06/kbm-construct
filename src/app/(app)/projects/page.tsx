@@ -1,32 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatDate } from "@/lib/date-utils";
+import { formatCurrency, type ConstructionProject } from "@/lib/operations-models";
+import { getProjectsFromStorage, sampleProjects, saveProjectsToStorage } from "@/lib/operations-data";
 
-const projectsByStatus = {
-  mobilizing: [
-    { id: "PRJ-2024-051", name: "Commercial Office Refurbishment", client: "Greenwich Properties", estimateId: "EST-2024-038", startDate: "2026-02-28", duration: "8 months", team: 0, budget: "£580K", risk: "low", manager: "Awaiting assignment", mobilizationProgress: 25 },
-    { id: "PRJ-2024-052", name: "Residential Housing Development", client: "Fortis Developments", estimateId: "EST-2024-039", startDate: "2026-03-10", duration: "16 months", team: 0, budget: "£3.2M", risk: "medium", manager: "Awaiting assignment", mobilizationProgress: 15 },
-  ],
-  planned: [
-    { id: "PRJ-2606", name: "North District Complex", client: "Bellway", startDate: "2026-03-15", duration: "18 months", team: 12, budget: "£3.2M", risk: "medium", manager: "Sarah Mitchell" },
-    { id: "PRJ-2607", name: "Shopping District", client: "Hammerson", startDate: "2026-04-01", duration: "14 months", team: 10, budget: "£2.8M", risk: "low", manager: "James Bradford" },
-  ],
-  active: [
-    { id: "PRJ-2501", name: "Thames Retail Park", client: "Westfield", progress: 68, team: 18, budget: "£4.2M", end: "2026-06-15", risk: "low", manager: "Emma Patel" },
-    { id: "PRJ-2502", name: "Premier Mixed Use", client: "Berkeley Group", progress: 52, team: 22, budget: "£6.8M", end: "2026-08-20", risk: "high", manager: "Michael Chen" },
-    { id: "PRJ-2503", name: "Central Warehouse", client: "DHL", progress: 85, team: 15, budget: "£2.1M", end: "2026-04-01", risk: "low", manager: "David Johnson" },
-    { id: "PRJ-2504", name: "Tech Campus Phase 1", client: "Google", progress: 91, team: 20, budget: "£5.5M", end: "2026-03-15", risk: "low", manager: "Lisa Wong" },
-  ],
-  review: [
-    { id: "PRJ-2505", name: "Riverside Park", client: "Barratt", progress: 98, team: 14, budget: "£3.9M", end: "2026-02-28", risk: "low", manager: "Sarah Mitchell" },
-    { id: "PRJ-2506", name: "Office Complex Tower B", client: "Canary Wharf", progress: 95, team: 16, budget: "£4.5M", end: "2026-03-05", risk: "low", manager: "James Bradford" },
-  ],
-  completed: [
-    { id: "PRJ-2601", name: "Market Square Renovation", client: "Local Authority", completedDate: "2026-01-20", team: 12, budget: "£1.8M", manager: "Emma Patel" },
-    { id: "PRJ-2602", name: "Industrial Estate Phase 2", client: "Panattoni", completedDate: "2026-01-15", team: 14, budget: "£3.2M", manager: "Michael Chen" },
-    { id: "PRJ-2603", name: "Residential Development A", client: "Taylor Wimpey", completedDate: "2026-01-10", team: 10, budget: "£2.4M", manager: "David Johnson" },
-  ],
+type BoardProject = {
+  id: string;
+  name: string;
+  client: string;
+  estimateId?: string;
+  stage: ConstructionProject["stage"];
+  startDate?: string;
+  end?: string;
+  completedDate?: string;
+  duration?: string;
+  team: number;
+  budget: string;
+  risk: "low" | "medium" | "high";
+  manager: string;
+  progress?: number;
+  mobilisationProgress?: number;
+  orderNumber?: string;
+  paymentTerms?: string;
+};
+
+const normalizeRisk = (risk: ConstructionProject["riskLevel"]): "low" | "medium" | "high" => {
+  if (risk === "critical") return "high";
+  return risk;
+};
+
+const mapProjectToBoard = (project: ConstructionProject): BoardProject => {
+  const durationWeeks = project.contractDuration || 0;
+  const durationMonths = durationWeeks ? `${Math.max(1, Math.round(durationWeeks / 4))} months` : "TBD";
+  const isCompleted = project.stage === "complete";
+
+  return {
+    id: project.id,
+    name: project.projectName,
+    client: project.client,
+    estimateId: project.estimateId,
+    stage: project.stage,
+    startDate: project.contractStartDate,
+    end: project.contractCompletionDate,
+    completedDate: project.completedAt || (isCompleted ? project.contractCompletionDate : undefined),
+    duration: durationMonths,
+    team: project.team?.length || 0,
+    budget: formatCurrency(project.contractValue),
+    risk: normalizeRisk(project.riskLevel),
+    manager: project.projectManager || "Awaiting assignment",
+    progress: project.overallProgress,
+    mobilisationProgress: Math.min(100, Math.max(10, project.overallProgress || 0)),
+    orderNumber: project.orderNumber,
+    paymentTerms: project.paymentTerms,
+  };
 };
 
 const riskColors = {
@@ -37,15 +64,96 @@ const riskColors = {
 
 export default function ProjectsPage() {
   const [view, setView] = useState("board");
+  const [projects, setProjects] = useState<ConstructionProject[]>(sampleProjects);
+  const [editingProject, setEditingProject] = useState<ConstructionProject | null>(null);
+  const [orderNumber, setOrderNumber] = useState("");
+  const [contractFileName, setContractFileName] = useState("");
+  const [invoiceAddress, setInvoiceAddress] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("");
+
+  useEffect(() => {
+    setProjects(getProjectsFromStorage());
+  }, []);
+
+  const projectsByStatus = useMemo(() => {
+    const buckets = {
+      mobilizing: [] as BoardProject[],
+      planned: [] as BoardProject[],
+      active: [] as BoardProject[],
+      review: [] as BoardProject[],
+      completed: [] as BoardProject[],
+    };
+
+    projects.forEach(project => {
+      const mapped = mapProjectToBoard(project);
+      switch (project.stage) {
+        case "mobilisation":
+          buckets.mobilizing.push(mapped);
+          break;
+        case "handover":
+          buckets.planned.push(mapped);
+          break;
+        case "active":
+          buckets.active.push(mapped);
+          break;
+        case "snagging":
+        case "practical":
+        case "final":
+          buckets.review.push(mapped);
+          break;
+        case "complete":
+          buckets.completed.push(mapped);
+          break;
+        default:
+          buckets.planned.push(mapped);
+          break;
+      }
+    });
+
+    return buckets;
+  }, [projects]);
+
+  const openEditModal = (projectId: string) => {
+    const project = projects.find(item => item.id === projectId);
+    if (!project) return;
+    setEditingProject(project);
+    setOrderNumber(project.orderNumber || "");
+    setContractFileName(project.contractFileName || "");
+    setInvoiceAddress(project.invoiceAddress || "");
+    setPaymentTerms(project.paymentTerms || "");
+  };
+
+  const closeEditModal = () => {
+    setEditingProject(null);
+    setOrderNumber("");
+    setContractFileName("");
+    setInvoiceAddress("");
+    setPaymentTerms("");
+  };
+
+  const saveCommercialSetup = () => {
+    if (!editingProject) return;
+    const updatedProjects = projects.map(project =>
+      project.id === editingProject.id
+        ? {
+            ...project,
+            orderNumber: orderNumber.trim() || undefined,
+            contractFileName: contractFileName.trim() || undefined,
+            invoiceAddress: invoiceAddress.trim() || undefined,
+            paymentTerms: paymentTerms.trim() || undefined,
+            updatedAt: new Date().toISOString(),
+          }
+        : project
+    );
+    setProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+    closeEditModal();
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Projects</h1>
-          <p className="mt-1 text-sm text-gray-400">Kanban workflow board for all projects</p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex gap-2">
           <button
             onClick={() => setView("board")}
@@ -73,23 +181,23 @@ export default function ProjectsPage() {
       <section className="grid gap-4 md:grid-cols-5">
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Mobilizing</p>
-          <p className="mt-2 text-2xl font-bold text-green-400">2</p>
+          <p className="mt-2 text-2xl font-bold text-green-400">{projectsByStatus.mobilizing.length}</p>
         </div>
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Planned</p>
-          <p className="mt-2 text-2xl font-bold text-blue-400">2</p>
+          <p className="mt-2 text-2xl font-bold text-blue-400">{projectsByStatus.planned.length}</p>
         </div>
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Active</p>
-          <p className="mt-2 text-2xl font-bold text-orange-400">4</p>
+          <p className="mt-2 text-2xl font-bold text-orange-400">{projectsByStatus.active.length}</p>
         </div>
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">In Review</p>
-          <p className="mt-2 text-2xl font-bold text-purple-400">2</p>
+          <p className="mt-2 text-2xl font-bold text-purple-400">{projectsByStatus.review.length}</p>
         </div>
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Completed</p>
-          <p className="mt-2 text-2xl font-bold text-gray-400">3</p>
+          <p className="mt-2 text-2xl font-bold text-gray-400">{projectsByStatus.completed.length}</p>
         </div>
       </section>
 
@@ -114,15 +222,26 @@ export default function ProjectsPage() {
                         New Win
                       </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-white mb-2">{p.name}</h4>
+                    <div className="mb-2 flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-white">{p.name}</h4>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openEditModal(p.id);
+                        }}
+                        className="text-xs text-gray-300 hover:text-white"
+                      >
+                        Edit
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-400 mb-3">{p.client}</p>
                     <div className="mb-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-gray-400">Setup</span>
-                        <span className="text-xs font-semibold text-white">{p.mobilizationProgress}%</span>
+                        <span className="text-xs font-semibold text-white">{p.mobilisationProgress}%</span>
                       </div>
                       <div className="h-1.5 bg-gray-600/50 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-green-500 to-green-400" style={{ width: `${p.mobilizationProgress}%` }} />
+                        <div className="h-full bg-gradient-to-r from-green-500 to-green-400" style={{ width: `${p.mobilisationProgress}%` }} />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-700/30 text-xs">
@@ -138,6 +257,20 @@ export default function ProjectsPage() {
                     <div className="mt-3 pt-3 border-t border-gray-700/30 text-xs">
                       <p className="text-gray-500">Start: <span className="text-white font-semibold">{formatDate(p.startDate)}</span></p>
                     </div>
+                    {(p.orderNumber || p.paymentTerms) && (
+                      <div className="mt-3 rounded border border-gray-700/50 bg-gray-800/60 p-2 text-xs text-gray-300">
+                        {p.orderNumber && (
+                          <p>
+                            <span className="text-gray-400">Order #:</span> {p.orderNumber}
+                          </p>
+                        )}
+                        {p.paymentTerms && (
+                          <p>
+                            <span className="text-gray-400">Terms:</span> {p.paymentTerms}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -159,7 +292,18 @@ export default function ProjectsPage() {
                         {p.risk.charAt(0).toUpperCase() + p.risk.slice(1)}
                       </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-white mb-2">{p.name}</h4>
+                    <div className="mb-2 flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-white">{p.name}</h4>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openEditModal(p.id);
+                        }}
+                        className="text-xs text-gray-300 hover:text-white"
+                      >
+                        Edit
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-400 mb-3">{p.client}</p>
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-700/30 text-xs">
                       <div>
@@ -175,6 +319,20 @@ export default function ProjectsPage() {
                       <p className="text-gray-500">Start: <span className="text-white font-semibold">{formatDate(p.startDate)}</span></p>
                       <p className="text-gray-500 mt-1">Manager: <span className="text-white font-semibold">{p.manager}</span></p>
                     </div>
+                    {(p.orderNumber || p.paymentTerms) && (
+                      <div className="mt-3 rounded border border-gray-700/50 bg-gray-800/60 p-2 text-xs text-gray-300">
+                        {p.orderNumber && (
+                          <p>
+                            <span className="text-gray-400">Order #:</span> {p.orderNumber}
+                          </p>
+                        )}
+                        {p.paymentTerms && (
+                          <p>
+                            <span className="text-gray-400">Terms:</span> {p.paymentTerms}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -196,7 +354,18 @@ export default function ProjectsPage() {
                         {p.risk.charAt(0).toUpperCase() + p.risk.slice(1)}
                       </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-white mb-2">{p.name}</h4>
+                    <div className="mb-2 flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-white">{p.name}</h4>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openEditModal(p.id);
+                        }}
+                        className="text-xs text-gray-300 hover:text-white"
+                      >
+                        Edit
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-400 mb-3">{p.client}</p>
                     <div className="mb-3">
                       <div className="flex items-center justify-between mb-1">
@@ -242,7 +411,18 @@ export default function ProjectsPage() {
                         {p.progress}%
                       </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-white mb-2">{p.name}</h4>
+                    <div className="mb-2 flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-white">{p.name}</h4>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openEditModal(p.id);
+                        }}
+                        className="text-xs text-gray-300 hover:text-white"
+                      >
+                        Edit
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-400 mb-3">{p.client}</p>
                     <div className="mb-3">
                       <div className="h-1.5 bg-gray-600/50 rounded-full overflow-hidden">
@@ -284,7 +464,18 @@ export default function ProjectsPage() {
                         ✓ Done
                       </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-white mb-2">{p.name}</h4>
+                    <div className="mb-2 flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-white">{p.name}</h4>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openEditModal(p.id);
+                        }}
+                        className="text-xs text-gray-300 hover:text-white"
+                      >
+                        Edit
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-400 mb-3">{p.client}</p>
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-700/30 text-xs">
                       <div>
@@ -319,34 +510,136 @@ export default function ProjectsPage() {
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Project</th>
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Client</th>
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Manager</th>
+                  <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Order #</th>
+                  <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Payment Terms</th>
+                  <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Edit</th>
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Status</th>
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Progress</th>
                   <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">Budget</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
-                {[...projectsByStatus.planned, ...projectsByStatus.active, ...projectsByStatus.review, ...projectsByStatus.completed].map(p => (
+                {[...projectsByStatus.mobilizing, ...projectsByStatus.planned, ...projectsByStatus.active, ...projectsByStatus.review, ...projectsByStatus.completed].map(p => (
                   <tr key={p.id} className="hover:bg-gray-700/30">
                     <td className="py-3 text-sm font-medium text-white">{p.id}</td>
                     <td className="py-3 text-sm text-white">{p.name}</td>
                     <td className="py-3 text-sm text-gray-400">{p.client}</td>
                     <td className="py-3 text-sm text-gray-300">{p.manager}</td>
+                    <td className="py-3 text-sm text-gray-300">{p.orderNumber || "—"}</td>
+                    <td className="py-3 text-sm text-gray-300">{p.paymentTerms || "—"}</td>
+                    <td className="py-3 text-sm text-gray-300">
+                      <button
+                        onClick={() => openEditModal(p.id)}
+                        className="rounded bg-gray-700 px-2 py-1 text-xs text-white hover:bg-gray-600"
+                      >
+                        Edit
+                      </button>
+                    </td>
                     <td className="py-3">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        'completedDate' in p ? 'bg-green-900/30 text-green-400' :
-                        'progress' in p && p.progress >= 90 ? 'bg-purple-900/30 text-purple-400' :
-                        'progress' in p ? 'bg-orange-900/30 text-orange-400' :
-                        'bg-blue-900/30 text-blue-400'
+                        p.stage === "complete"
+                          ? "bg-green-900/30 text-green-400"
+                          : p.stage === "snagging" || p.stage === "practical" || p.stage === "final"
+                          ? "bg-purple-900/30 text-purple-400"
+                          : p.stage === "active"
+                          ? "bg-orange-900/30 text-orange-400"
+                          : p.stage === "mobilisation"
+                          ? "bg-green-900/30 text-green-400"
+                          : "bg-blue-900/30 text-blue-400"
                       }`}>
-                        {'completedDate' in p ? 'Completed' : 'progress' in p && p.progress >= 90 ? 'Review' : 'progress' in p ? 'Active' : 'Planned'}
+                        {p.stage === "complete"
+                          ? "Completed"
+                          : p.stage === "snagging" || p.stage === "practical" || p.stage === "final"
+                          ? "Review"
+                          : p.stage === "active"
+                          ? "Active"
+                          : p.stage === "mobilisation"
+                          ? "Mobilizing"
+                          : "Planned"}
                       </span>
                     </td>
-                    <td className="py-3 text-sm text-gray-400">{'progress' in p ? `${p.progress}%` : '—'}</td>
+                    <td className="py-3 text-sm text-gray-400">{typeof p.progress === 'number' ? `${p.progress}%` : '—'}</td>
                     <td className="py-3 text-right text-sm font-semibold text-orange-400">{p.budget}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {editingProject && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={closeEditModal}
+        >
+          <div
+            className="w-full max-w-lg rounded-lg border border-gray-700/50 bg-gray-900 p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white">Edit Commercial Setup</h3>
+                <p className="text-sm text-gray-400">{editingProject.projectName}</p>
+              </div>
+              <button onClick={closeEditModal} className="text-gray-400 hover:text-white">
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">Order Number</label>
+                <input
+                  value={orderNumber}
+                  onChange={(event) => setOrderNumber(event.target.value)}
+                  className="mt-2 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">Contract File</label>
+                <input
+                  value={contractFileName}
+                  onChange={(event) => setContractFileName(event.target.value)}
+                  className="mt-2 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">Invoice Address</label>
+                <textarea
+                  value={invoiceAddress}
+                  onChange={(event) => setInvoiceAddress(event.target.value)}
+                  rows={3}
+                  className="mt-2 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">Payment Terms</label>
+                <input
+                  value={paymentTerms}
+                  onChange={(event) => setPaymentTerms(event.target.value)}
+                  className="mt-2 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={closeEditModal}
+                className="rounded bg-gray-700 px-4 py-2 text-sm text-white hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveCommercialSetup}
+                className="rounded bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}

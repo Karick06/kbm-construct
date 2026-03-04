@@ -17,7 +17,7 @@ const navSections = [
   { 
     label: "Business Dev", 
     items: [
-      { label: "BD Overview", href: "/bd-overview" },
+      { label: "CRM", href: "/crm" },
       { label: "Clients", href: "/clients" },
       { label: "Tenders", href: "/tender-portal" },
     ] 
@@ -26,7 +26,6 @@ const navSections = [
     label: "Estimating", 
     items: [
       { label: "Overview", href: "/estimating-overview" },
-      { label: "BoQ Creator", href: "/boq-creator" },
       { label: "Rates", href: "/labour-rates" },
     ] 
   },
@@ -43,6 +42,7 @@ const navSections = [
     items: [
       { label: "Staff", href: "/staff" },
       { label: "My Timesheets", href: "/my-timesheets" },
+      { label: "Compliance & RAMS", href: "/compliance" },
       { label: "Leave", href: "/leave" },
     ] 
   },

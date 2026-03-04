@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/date-utils";
 
 const procurementStats = [
@@ -40,17 +41,17 @@ const orderStatus = [
 ];
 
 export default function ProcurementOverviewPage() {
+  const router = useRouter();
   const maxSpend = Math.max(...spendData.map(d => d.value));
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Procurement Overview</h1>
-          <p className="mt-1 text-sm text-gray-400">Real-time procurement metrics and supplier management</p>
-        </div>
-        <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+      <div className="flex items-center justify-end">
+        <button 
+          onClick={() => router.push('/purchase-orders')}
+          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+        >
           + New Purchase Order
         </button>
       </div>

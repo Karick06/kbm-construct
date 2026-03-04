@@ -159,7 +159,7 @@ export const projects = [
   {
     name: "Northbank retail fitout",
     manager: "Jonas Pratt",
-    phase: "Mobilization",
+    phase: "Mobilisation",
     health: "on-track",
     budget: "£96k",
   },

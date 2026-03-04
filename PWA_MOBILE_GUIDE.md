@@ -14,10 +14,10 @@ KBM Construct is now a **Progressive Web App (PWA)** that works on mobile device
 - Works without internet connection
 - Automatic background sync when online
 
-### 3. **Mobile-Optimized UI**
+### 3. **Mobile-Optimised UI**
 - Responsive navigation menu (hamburger icon)
 - Touch-friendly buttons and forms
-- Optimized layout for small screens
+- Optimised layout for small screens
 - Proper viewport settings
 
 ### 4. **Native Features**
@@ -60,7 +60,7 @@ The app needs proper icons. Currently using placeholder:
    - PNG format recommended
 
 ### Theme Colors
-Customize in `/public/manifest.json`:
+Customise in `/public/manifest.json`:
 ```json
 {
   "theme_color": "#FF6B35",  // Orange accent

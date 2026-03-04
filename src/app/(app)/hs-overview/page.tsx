@@ -48,11 +48,7 @@ export default function HSOverviewPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Health & Safety Overview</h1>
-          <p className="mt-1 text-sm text-gray-400">Real-time compliance, incident tracking, and safety management</p>
-        </div>
+      <div className="flex items-center justify-end">
         <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
           + Report Incident
         </button>

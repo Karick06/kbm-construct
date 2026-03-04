@@ -1,0 +1,108 @@
+{
+  "id": "RAMS-1772555030714",
+  "title": "pppp",
+  "projectId": "Arbor Park build",
+  "projectName": "Arbor Park build",
+  "projectManager": "Theo Grant",
+  "projectPhase": "Framing",
+  "location": "ppp",
+  "sitePostcode": "S73 8AZ",
+  "siteLat": 53.530068,
+  "siteLon": -1.386376,
+  "nearestHospitalName": "Barnsley Hospital A&E",
+  "nearestHospitalAddress": "Gawber Road, Barnsley, S75 2EP",
+  "nearestHospitalDistanceKm": 6,
+  "nearestHospitalPhone": "01226 730000",
+  "hospitalLat": 53.5512,
+  "hospitalLon": -1.4694,
+  "workType": "Tarmac / Asphalt Surfacing",
+  "author": "Site Manager",
+  "approver": "Compliance Lead",
+  "issueDate": "2026-03-03",
+  "tier1Profile": "Standard",
+  "revision": 1,
+  "approvalStatus": "Draft",
+  "ppeRequired": [
+    "Hard hat",
+    "Hi-vis (Class 3 for road works)",
+    "Heat-resistant gloves",
+    "Safety boots",
+    "Eye protection",
+    "Hearing protection",
+    "RPE where fumes/dust require"
+  ],
+  "plantEquipment": [
+    "Asphalt paver",
+    "Tandem roller",
+    "Bomag/compaction roller",
+    "Bitumen sprayer",
+    "Road saw/cutter",
+    "Thermal lance/hand tools"
+  ],
+  "riskAssessment": [
+    {
+      "hazard": "Burns from hot bitumen/asphalt",
+      "initialRisk": "High",
+      "controls": "Heat PPE, controlled discharge zones, no standing behind paver screed, burn kits available",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Plant movement and reversing",
+      "initialRisk": "High",
+      "controls": "Segregation, banksman, reverse alarms/cameras, one-way plan",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Traffic incursion",
+      "initialRisk": "High",
+      "controls": "Approved traffic management, lane closures, barriers, lookout/marshal",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Fume inhalation",
+      "initialRisk": "Medium",
+      "controls": "Ventilation/working position controls, RPE where assessed, exposure minimisation",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Manual handling of kerbs/ironwork",
+      "initialRisk": "Medium",
+      "controls": "Lifting aids, team lift, training and task rotation",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Weather impact on compaction quality and safety",
+      "initialRisk": "Medium",
+      "controls": "Weather checks, revised laying plan, stop-work criteria for rain/low temperature",
+      "residualRisk": "Low"
+    }
+  ],
+  "methodStatementSteps": [
+    "Confirm approved mix design, delivery plan, weather window and target layer thickness.",
+    "Implement traffic management and workface segregation before surfacing starts.",
+    "Prepare substrate (clean, dry, to level) and apply tack coat to specification.",
+    "Lay asphalt using paver in controlled passes with joint management plan.",
+    "Roll and compact to target density/voids with documented rolling pattern.",
+    "Carry out temperature, level and compaction quality checks and record results.",
+    "Reinstate road markings/signage and reopen area only after release criteria met."
+  ],
+  "emergencyProcedures": [
+    "Isolate hot material/plant area",
+    "Cool burns with clean water and seek urgent first aid",
+    "Escalate major incident via emergency chain",
+    "Secure traffic interface and prevent secondary incidents"
+  ],
+  "environmentalControls": [
+    "Fume and dust minimisation",
+    "Spill control for bitumen/fuels",
+    "Noise control and restricted working windows",
+    "Waste asphalt recycling and transfer documentation"
+  ],
+  "permitsRequired": [
+    "Road Opening / Occupation Permit",
+    "Traffic Management Permit",
+    "Hot Works Permit (where applicable)"
+  ],
+  "createdDate": "2026-03-03T16:23:50.714Z",
+  "lastModifiedDate": "2026-03-03T16:23:50.714Z"
+}

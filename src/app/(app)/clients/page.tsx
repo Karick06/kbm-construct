@@ -666,13 +666,7 @@ export default function ClientsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Client Directory</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Manage client relationships and project portfolio
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <button 
           onClick={() => setShowAddClientModal(true)}
           className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"

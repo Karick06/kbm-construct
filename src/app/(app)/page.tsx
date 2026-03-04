@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StatCard from "@/components/StatCard";
 import StatusPill from "@/components/StatusPill";
 import { dashboardStats, projects, invoices, reports } from "@/lib/sample-data";
+import { seedAllModules, checkDataExists } from "@/lib/seed-data";
 
 const revenueDataSets = {
   "6months": [
@@ -50,6 +51,7 @@ const upcomingMilestones = [
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<"6months" | "12months" | "ytd">("6months");
+  const [seedLoading, setSeedLoading] = useState(false);
   const revenueData = revenueDataSets[period];
   const maxRevenue = Math.max(...revenueData.map(d => d.value));
   
@@ -62,14 +64,35 @@ export default function DashboardPage() {
   // Calculate percentage change (mock data)
   const percentageChange = period === "6months" ? 18 : period === "12months" ? 24 : 12;
 
+  // Auto-load seed data on first visit
+  useEffect(() => {
+    const autoSeed = async () => {
+      const hasData = await checkDataExists();
+      if (!hasData) {
+        console.log("🌱 No existing data found. Auto-loading seed data...");
+        await seedAllModules();
+      }
+    };
+    autoSeed();
+  }, []);
+
+  const handleSeedData = async () => {
+    setSeedLoading(true);
+    try {
+      await seedAllModules();
+      alert("✅ Sample data loaded! Check RFIs, Defects, Photos, Plant Booking, etc.");
+    } catch (error) {
+      console.error("Failed to seed data:", error);
+      alert("❌ Failed to load sample data");
+    } finally {
+      setSeedLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Business Overview</h1>
-          <p className="mt-1 text-sm text-gray-400">Real-time insights across your construction business</p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex gap-3">
           <select 
             value={period}
@@ -80,6 +103,13 @@ export default function DashboardPage() {
             <option value="12months">Last 12 months</option>
             <option value="ytd">Year to date</option>
           </select>
+          <button 
+            onClick={handleSeedData}
+            disabled={seedLoading}
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+          >
+            {seedLoading ? "Loading..." : "Load Sample Data"}
+          </button>
           <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
             Export Report
           </button>

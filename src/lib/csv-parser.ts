@@ -118,6 +118,44 @@ export async function parseCSV<T>(
   return result.rows;
 }
 
+export function parseCSVText<T>(
+  text: string,
+  mapper?: (row: Record<string, string | number>) => T
+): T[] {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n');
+  if (lines.length < 2) return [];
+
+  let headerIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const parsed = parseCSVLine(lines[i]);
+    const hasContent = parsed.some((cell) => cell.trim().length > 0);
+    if (hasContent) {
+      headerIndex = i;
+      break;
+    }
+  }
+
+  if (headerIndex === -1) return [];
+
+  const headers = parseCSVLine(lines[headerIndex]);
+  const rows: T[] = [];
+
+  for (let i = headerIndex + 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const values = parseCSVLine(lines[i]);
+    const row: Record<string, string | number> = {};
+
+    headers.forEach((header, index) => {
+      const value = values[index] ?? '';
+      row[header] = coerceValue(value);
+    });
+
+    rows.push(mapper ? (mapper(row) as T) : (row as T));
+  }
+
+  return rows;
+}
+
 export function downloadCSV(data: any[], filename: string) {
   if (data.length === 0) return;
   

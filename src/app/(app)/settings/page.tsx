@@ -13,6 +13,7 @@ export default function SettingsPage() {
   // Profile settings
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [phone, setPhone] = useState("");
   const [jobTitle, setJobTitle] = useState("");
 
@@ -37,6 +38,7 @@ export default function SettingsPage() {
     if (user) {
       setName(user.name);
       setEmail(user.email);
+      setAvatarUrl(user.avatarUrl || "");
       // Load other settings from localStorage
       const savedSettings = localStorage.getItem("user_settings");
       if (savedSettings) {
@@ -64,9 +66,9 @@ export default function SettingsPage() {
   const handleSaveProfile = () => {
     setIsSaving(true);
     
-    // Update user name in auth context if changed
-    if (user && name !== user.name) {
-      updateUser({ name });
+    // Update user profile fields in auth context if changed
+    if (user && (name !== user.name || avatarUrl !== (user.avatarUrl || ""))) {
+      updateUser({ name, avatarUrl });
     }
     
     const settings = {
@@ -88,6 +90,23 @@ export default function SettingsPage() {
       setSaveMessage("Settings saved successfully!");
       setTimeout(() => setSaveMessage(""), 3000);
     }, 500);
+  };
+
+  const handleAvatarUpload = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setSaveMessage("Please choose an image file.");
+      setTimeout(() => setSaveMessage(""), 3000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setAvatarUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleChangePassword = async () => {
@@ -145,8 +164,8 @@ export default function SettingsPage() {
       {saveMessage && (
         <div className={`rounded-lg border p-3 text-sm ${
           saveMessage.includes("success") 
-            ? "border-green-200 bg-green-50 text-green-700" 
-            : "border-red-200 bg-red-50 text-red-700"
+            ? "border-green-500/30 bg-green-900/20 text-green-400" 
+            : "border-red-500/30 bg-red-900/20 text-red-400"
         }`}>
           {saveMessage}
         </div>
@@ -175,36 +194,74 @@ export default function SettingsPage() {
       {/* Profile Tab */}
       {activeTab === "profile" && (
         <section className="space-y-6">
-          <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
+          <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Personal Information</h2>
+
+            <div className="mb-6 flex items-center gap-4">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={name || "User avatar"}
+                  className="h-16 w-16 rounded-full object-cover border border-gray-700"
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-bold text-lg">
+                  {(name || "U")
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <label className="cursor-pointer rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white hover:border-orange-500">
+                  Upload Avatar
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleAvatarUpload(e.target.files?.[0] || null)}
+                  />
+                </label>
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarUrl("")}
+                    className="rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-300 hover:text-white"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
             
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Full Name
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Email Address
                 </label>
                 <input
                   type="email"
                   value={email}
                   disabled
-                  className="w-full rounded border border-[var(--line)] bg-gray-100 px-3 py-2 text-sm text-gray-500 cursor-not-allowed"
+                  className="w-full rounded border border-gray-700 bg-gray-950/50 px-3 py-2 text-sm text-gray-500 cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Phone Number
                 </label>
                 <input
@@ -212,19 +269,19 @@ export default function SettingsPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+44 7XXX XXXXXX"
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Job Title
                 </label>
                 <input
                   type="text"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
               </div>
             </div>
@@ -235,43 +292,43 @@ export default function SettingsPage() {
       {/* Security Tab */}
       {activeTab === "security" && (
         <section className="space-y-6">
-          <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
+          <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Change Password</h2>
             
             <div className="max-w-md space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Current Password
                 </label>
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   New Password
                 </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Confirm New Password
                 </label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
               </div>
 
@@ -285,20 +342,20 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Active Sessions</h2>
-            <p className="text-sm text-gray-600 mb-4">Manage your active sessions and devices</p>
+          <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+            <h2 className="text-lg font-semibold text-white mb-2">Active Sessions</h2>
+            <p className="text-sm text-gray-400 mb-4">Manage your active sessions and devices</p>
             
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded border border-[var(--line)] bg-white p-4">
+              <div className="flex items-center justify-between rounded border border-gray-700/50 bg-gray-900/50 p-4">
                 <div className="flex items-center gap-3">
                   <div className="text-2xl">💻</div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Current Device</p>
-                    <p className="text-xs text-gray-600">Active now</p>
+                    <p className="text-sm font-medium text-white">Current Device</p>
+                    <p className="text-xs text-gray-500">Active now</p>
                   </div>
                 </div>
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-400 border border-green-500/30">
                   Active
                 </span>
               </div>
@@ -310,19 +367,19 @@ export default function SettingsPage() {
       {/* Notifications Tab */}
       {activeTab === "notifications" && (
         <section className="space-y-6">
-          <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Notification Preferences</h2>
+          <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Notification Preferences</h2>
             
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-[var(--line)]">
+              <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Email Notifications</p>
-                  <p className="text-xs text-gray-600">Receive notifications via email</p>
+                  <p className="text-sm font-medium text-white">Email Notifications</p>
+                  <p className="text-xs text-gray-400">Receive notifications via email</p>
                 </div>
                 <button
                   onClick={() => setEmailNotifications(!emailNotifications)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    emailNotifications ? "bg-orange-500" : "bg-gray-300"
+                    emailNotifications ? "bg-orange-500" : "bg-gray-700"
                   }`}
                 >
                   <span
@@ -333,15 +390,15 @@ export default function SettingsPage() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-[var(--line)]">
+              <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Push Notifications</p>
-                  <p className="text-xs text-gray-600">Receive browser push notifications</p>
+                  <p className="text-sm font-medium text-white">Push Notifications</p>
+                  <p className="text-xs text-gray-400">Receive browser push notifications</p>
                 </div>
                 <button
                   onClick={() => setPushNotifications(!pushNotifications)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    pushNotifications ? "bg-orange-500" : "bg-gray-300"
+                    pushNotifications ? "bg-orange-500" : "bg-gray-700"
                   }`}
                 >
                   <span
@@ -352,15 +409,15 @@ export default function SettingsPage() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-[var(--line)]">
+              <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Weekly Reports</p>
-                  <p className="text-xs text-gray-600">Receive weekly summary reports</p>
+                  <p className="text-sm font-medium text-white">Weekly Reports</p>
+                  <p className="text-xs text-gray-400">Receive weekly summary reports</p>
                 </div>
                 <button
                   onClick={() => setWeeklyReports(!weeklyReports)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    weeklyReports ? "bg-orange-500" : "bg-gray-300"
+                    weeklyReports ? "bg-orange-500" : "bg-gray-700"
                   }`}
                 >
                   <span
@@ -371,15 +428,15 @@ export default function SettingsPage() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-[var(--line)]">
+              <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Project Updates</p>
-                  <p className="text-xs text-gray-600">Get notified about project changes</p>
+                  <p className="text-sm font-medium text-white">Project Updates</p>
+                  <p className="text-xs text-gray-400">Get notified about project changes</p>
                 </div>
                 <button
                   onClick={() => setProjectUpdates(!projectUpdates)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    projectUpdates ? "bg-orange-500" : "bg-gray-300"
+                    projectUpdates ? "bg-orange-500" : "bg-gray-700"
                   }`}
                 >
                   <span
@@ -392,13 +449,13 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Invoice Alerts</p>
-                  <p className="text-xs text-gray-600">Get notified about invoice status changes</p>
+                  <p className="text-sm font-medium text-white">Invoice Alerts</p>
+                  <p className="text-xs text-gray-400">Get notified about invoice status changes</p>
                 </div>
                 <button
                   onClick={() => setInvoiceAlerts(!invoiceAlerts)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    invoiceAlerts ? "bg-orange-500" : "bg-gray-300"
+                    invoiceAlerts ? "bg-orange-500" : "bg-gray-700"
                   }`}
                 >
                   <span
@@ -416,18 +473,18 @@ export default function SettingsPage() {
       {/* Preferences Tab */}
       {activeTab === "preferences" && (
         <section className="space-y-6">
-          <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Regional Settings</h2>
+          <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Regional Settings</h2>
             
             <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Language
                 </label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 >
                   <option value="en">English (UK)</option>
                   <option value="en-us">English (US)</option>
@@ -438,13 +495,13 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Timezone
                 </label>
                 <select
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 >
                   <option value="Europe/London">London (GMT)</option>
                   <option value="Europe/Paris">Paris (CET)</option>
@@ -455,13 +512,13 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Date Format
                 </label>
                 <select
                   value={dateFormat}
                   onChange={(e) => setDateFormat(e.target.value)}
-                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 >
                   <option value="DD/MM/YYYY">DD/MM/YYYY (16/02/2026)</option>
                   <option value="MM/DD/YYYY">MM/DD/YYYY (02/16/2026)</option>
@@ -471,11 +528,11 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-red-900 mb-2">Danger Zone</h2>
-            <p className="text-sm text-red-700 mb-4">Irreversible actions for your account</p>
+          <div className="rounded-lg border border-red-500/30 bg-red-900/20 p-6">
+            <h2 className="text-lg font-semibold text-red-400 mb-2">Danger Zone</h2>
+            <p className="text-sm text-red-400/80 mb-4">Irreversible actions for your account</p>
             
-            <button className="rounded border border-red-600 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+            <button className="rounded border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/20">
               Delete Account
             </button>
           </div>

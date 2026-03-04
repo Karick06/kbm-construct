@@ -14,7 +14,7 @@
 	Otherwise, create the project structure manually using available file creation tools.
 	-->
 
-- [x] Customize the Project
+- [x] Customise the Project
 	<!--
 	Verify that all previous steps have been completed successfully and you have marked the step as completed.
 	Develop a plan to modify codebase according to user requirements.

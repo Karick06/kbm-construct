@@ -1,10 +1,6 @@
 export default function IncidentsPage() {
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Incidents</h1>
-        <p className="mt-2 text-gray-300">Report and manage safety incidents</p>
-      </div>
       <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Incident Log</h2>

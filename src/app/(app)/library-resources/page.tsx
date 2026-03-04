@@ -1,10 +1,6 @@
 export default function LibraryResourcesPage() {
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Resources</h1>
-        <p className="mt-2 text-gray-300">Reference materials and guidelines</p>
-      </div>
       <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Resource Library</h2>

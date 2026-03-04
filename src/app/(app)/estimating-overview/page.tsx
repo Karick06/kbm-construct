@@ -2,6 +2,7 @@
 
 import * as XLSX from "xlsx";
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LABOUR_RATES } from "@/lib/labour-rates";
 import { PLANT_RATES } from "@/lib/plant-rates";
 import { MATERIAL_RATES } from "@/lib/material-rates";
@@ -12,10 +13,13 @@ import { loadLabourRatesFromCSV, type CSVLabourRate } from "@/lib/csv-labour-rat
 import { loadPlantRatesFromCSV, type CSVPlantRate } from "@/lib/csv-plant-rates";
 import { loadMaterialRatesFromCSV, type CSVMaterialRate } from "@/lib/csv-material-rates";
 import { parseBOQFile, type parsedBOQRow } from "@/lib/boq-parser";
-import { initialEstimateJobs, type EstimateJob, type BOQItem, type RateComponent, getEstimateJobsFromStorage, saveEstimateJobsToStorage, getEnquiriesFromStorage, type Enquiry, formatFileSize, getFileIcon } from "@/lib/enquiries-store";
+import { initialEstimateJobs, type EstimateJob, type BOQItem, type RateComponent, type DrawingFile, getEstimateJobsFromStorage, saveEstimateJobsToStorage, getEnquiriesFromStorage, type Enquiry, formatFileSize, getFileIcon, convertFilesToDrawings } from "@/lib/enquiries-store";
 import { formatDate } from "@/lib/date-utils";
 import { generateQuotePDF, generateTraditionalBoQPDF, type TraditionalQuoteData } from "@/lib/pdf-generator";
 import { syncEstimateToIntegratedProject, updateProjectFromEstimate } from "@/lib/client-integration";
+import { createHandoverFromEstimate, getHandoversFromStorage, saveHandoversToStorage } from "@/lib/operations-data";
+import type { ProjectHandover } from "@/lib/operations-models";
+import { PRODUCTIVITY_TEMPLATES, type ProductivityRateTemplate } from '@/lib/productivity-outputs';
 
 interface TreeNode {
   id: string;
@@ -158,7 +162,7 @@ const estimateJobsData: EstimateJob[] = [
     status: "won",
     quoteRef: "QTE-2024-039",
     submittedDate: "01 Feb 2024",
-    outcome: "Contract signed, mobilization in progress",
+    outcome: "Contract signed, mobilisation in progress",
     notes: "Client very impressed with detailed breakdown and value engineering suggestions",
   },
   
@@ -224,7 +228,10 @@ const rateLibraries = {
 };
 
 export default function EstimatingOverviewPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<EstimateJob[]>(initialEstimateJobs);
+  const [handovers, setHandovers] = useState<ProjectHandover[]>([]);
   const [selectedJob, setSelectedJob] = useState<EstimateJob | null>(null);
   const [workingOnJob, setWorkingOnJob] = useState<EstimateJob | null>(null);
   const [showSMM7Modal, setShowSMM7Modal] = useState(false);
@@ -236,6 +243,7 @@ export default function EstimatingOverviewPage() {
   const [editingComponents, setEditingComponents] = useState<RateComponent[]>([]);
   const [editingComponentInputs, setEditingComponentInputs] = useState<{ outputPerUnit: string; unitRate: string }[]>([]);
   const [showAddComponent, setShowAddComponent] = useState(false);
+  const [showCivilsRateLoader, setShowCivilsRateLoader] = useState(false);
   const [newComponent, setNewComponent] = useState<RateComponent>({
     componentId: '',
     type: 'labour',
@@ -258,24 +266,36 @@ export default function EstimatingOverviewPage() {
   const [activeLibraryTab, setActiveLibraryTab] = useState<'labour' | 'plant' | 'materials'>('labour');
   const [activeSMM7Tab, setActiveSMM7Tab] = useState<'smm7' | 'cessm' | 'valescape'>('smm7');
   const [smm7Search, setSmm7Search] = useState('');
+
   const [cessmSearch, setCessmSearch] = useState('');
   const [valescapeSearch, setValescapeSearch] = useState('');
+
+  // Civils Rate Builder embedded state
+  type CategoryFilter = 'all' | 'roads' | 'excavation' | 'drainage' | 'concrete' | 'brickwork' | 'paving' | 'kerbs' | 'formwork' | 'reinforcement' | 'stonework' | 'general';
+  const [civilsCategory, setCivilsCategory] = useState<CategoryFilter>('roads');
+  const [civilsTemplate, setCivilsTemplate] = useState<ProductivityRateTemplate | null>(null);
+  const [civilsOutputPerDay, setCivilsOutputPerDay] = useState<number | null>(null);
+  const [civilsLabourItems, setCivilsLabourItems] = useState<Array<{ id: string; rate: CSVLabourRate; quantity: number; overrideRate?: number }>>([]);
+  const [civilsPlantItems, setCivilsPlantItems] = useState<Array<{ id: string; rate: CSVPlantRate; quantity: number; overrideRate?: number }>>([]);
+  const [civilsMaterialItems, setCivilsMaterialItems] = useState<Array<{ 
+    id: string; 
+    name: string; 
+    purchaseRate: number; 
+    purchaseUnit: string;
+    quantityPerUnit: number;
+    depth?: number;
+    density?: number;
+    overridePurchaseRate?: number;
+  }>>([]);
   const [labourSearch, setLabourSearch] = useState('');
   const [plantSearch, setPlantSearch] = useState('');
   const [materialSearch, setMaterialSearch] = useState('');
   const [csvLabourRates, setCsvLabourRates] = useState<CSVLabourRate[]>([]);
   const [csvPlantRates, setCsvPlantRates] = useState<CSVPlantRate[]>([]);
   const [csvMaterialRates, setCsvMaterialRates] = useState<CSVMaterialRate[]>([]);
-  const [boqItems, setBoqItems] = useState<BOQItem[]>([
-    { id: "1", description: "Excavation and earthworks", unit: "m³", quantity: 450, baseRate: 28.50, rate: 34.20, total: 15390 },
-    { id: "2", description: "Concrete foundation", unit: "m³", quantity: 120, baseRate: 185.00, rate: 222.00, total: 26640 },
-    { id: "3", description: "Structural steelwork", unit: "tonne", quantity: 45, baseRate: 2850.00, rate: 3420.00, total: 153900 },
-    { id: "4", description: "Brickwork external", unit: "m²", quantity: 850, baseRate: 95.00, rate: 114.00, total: 96900 },
-    { id: "5", description: "Roof coverings", unit: "m²", quantity: 320, baseRate: 125.00, rate: 150.00, total: 48000 },
-  ]);
+  const [boqItems, setBoqItems] = useState<BOQItem[]>([]);
   const [newItem, setNewItem] = useState({ description: "", unit: "m²", quantity: 0, rate: 0 });
-  const [overheadsPercent, setOverheadsPercent] = useState(12);
-  const [profitPercent, setProfitPercent] = useState(8);
+  const [marginPercent, setMarginPercent] = useState(20);
   const [boqUploadInput, setBoqUploadInput] = useState<HTMLInputElement | null>(null);
   const [isUploadingBoq, setIsUploadingBoq] = useState(false);
   const [boqUploadError, setBoqUploadError] = useState<string>('');
@@ -283,14 +303,32 @@ export default function EstimatingOverviewPage() {
   const [showLostModal, setShowLostModal] = useState(false);
   const [selectedJobForOutcome, setSelectedJobForOutcome] = useState<EstimateJob | null>(null);
   const [winReason, setWinReason] = useState('');
+  const [orderNumber, setOrderNumber] = useState('');
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [invoiceAddress, setInvoiceAddress] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState('');
   const [lostReason, setLostReason] = useState('');
   const [lostToCompetitor, setLostToCompetitor] = useState('');
+  
+  // Drawing measurement integration state
+  const [drawingFiles, setDrawingFiles] = useState<DrawingFile[]>([]);
+  const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
+  const [measuringBoqItem, setMeasuringBoqItem] = useState<BOQItem | null>(null);
+  const [showDrawingUpload, setShowDrawingUpload] = useState(false);
+  const [uploadingDrawing, setUploadingDrawing] = useState(false);
+  
+  // Workload management state
+  const [selectedEstimatorFilter, setSelectedEstimatorFilter] = useState<string | null>(null);
+  const [showWorkloadView, setShowWorkloadView] = useState(false);
+  const [sortBy, setSortBy] = useState<'dueDate' | 'value' | 'client'>('dueDate');
 
-  // Load estimate jobs from localStorage on mount to avoid hydration mismatch
+  // Load estimate jobs from localStorage (on mount and when enquiry param changes)
+  const enquiryParam = searchParams.get('enquiry');
   useEffect(() => {
     const storedJobs = getEstimateJobsFromStorage();
     setJobs(storedJobs);
-  }, []);
+    setHandovers(getHandoversFromStorage());
+  }, [enquiryParam]); // Re-run when enquiry param changes
 
   // Load CSV rate data on mount
   useEffect(() => {
@@ -299,30 +337,218 @@ export default function EstimatingOverviewPage() {
     loadMaterialRatesFromCSV().then(setCsvMaterialRates);
   }, []);
 
-  // Save estimate jobs to localStorage whenever they change
-  useEffect(() => {
-    saveEstimateJobsToStorage(jobs);
-  }, [jobs]);
+  // NOTE: Auto-save disabled - jobs are saved explicitly when updated by user actions
+  // Having auto-save here creates race conditions with the load effect
 
-  // Recalculate BOQ rates and totals when OH/P percentages change
+  // Recalculate BOQ rates and totals when margin percentage changes
   useEffect(() => {
-    const markupFactor = 1 + (overheadsPercent / 100) + (profitPercent / 100);
+    const markupFactor = 1 + (marginPercent / 100);
     const updatedItems = boqItems.map(item => ({
       ...item,
       rate: item.baseRate * markupFactor,
       total: item.quantity * (item.baseRate * markupFactor)
     }));
     setBoqItems(updatedItems);
-  }, [overheadsPercent, profitPercent]);
+  }, [marginPercent]);
+
+  // Save BOQ items to the current working job whenever they change
+  useEffect(() => {
+    if (workingOnJob && boqItems.length > 0) {
+      // Calculate progress based on BOQ items
+      const itemCount = boqItems.length;
+      const newProgress = Math.min(Math.round((itemCount / 10) * 100), 95);
+      
+      const updatedJobs = jobs.map(job => {
+        if (job.id === workingOnJob.id) {
+          return {
+            ...job,
+            boqItems: boqItems,
+            marginPercent: marginPercent,
+            progress: newProgress
+          };
+        }
+        return job;
+      });
+      setJobs(updatedJobs);
+    }
+ }, [boqItems, marginPercent, workingOnJob?.id]);
+
+  // Helper function to get display value for a job (use quoteTotal if available, otherwise value)
+  const getJobDisplayValue = (job: EstimateJob): string => {
+    // If job has BOQ items, calculate current total
+    if (job.boqItems && job.boqItems.length > 0) {
+      const baseSubtotal = job.boqItems.reduce((sum, item) => sum + (item.quantity * item.baseRate), 0);
+      const margin = job.marginPercent ?? marginPercent;
+      const marginAmount = baseSubtotal * (margin / 100);
+      const total = baseSubtotal + marginAmount;
+      
+      if (total >= 1000000) {
+        return `£${(total / 1000000).toFixed(1)}M`;
+      } else if (total >= 1000) {
+        return `£${(total / 1000).toFixed(0)}K`;
+      } else {
+        return `£${total.toFixed(0)}`;
+      }
+    }
+    
+    if (job.quoteTotal !== undefined) {
+      // Format the quoteTotal number as currency
+      const total = job.quoteTotal;
+      if (total >= 1000000) {
+        return `£${(total / 1000000).toFixed(1)}M`;
+      } else if (total >= 1000) {
+        return `£${(total / 1000).toFixed(0)}K`;
+      } else {
+        return `£${total.toFixed(0)}`;
+      }
+    }
+    return job.value;
+  };
+
+  // Helper function to get numeric value from job for calculations
+  const getJobNumericValue = (job: EstimateJob): number => {
+    // If job has BOQ items, calculate current total
+    if (job.boqItems && job.boqItems.length > 0) {
+      const baseSubtotal = job.boqItems.reduce((sum, item) => sum + (item.quantity * item.baseRate), 0);
+      const margin = job.marginPercent ?? marginPercent;
+      const marginAmount = baseSubtotal * (margin / 100);
+      return baseSubtotal + marginAmount;
+    }
+    
+    if (job.quoteTotal !== undefined) {
+      return job.quoteTotal;
+    }
+    // Parse the string value
+    const valueStr = job.value.replace(/[£,]/g, '');
+    const multiplier = valueStr.includes('M') ? 1000000 : valueStr.includes('K') ? 1000 : 1;
+    const numValue = parseFloat(valueStr.replace(/[MK]/g, '')) * multiplier;
+    return isNaN(numValue) ? 0 : numValue;
+  };
+
+  // Sort jobs based on selected criteria
+  const sortJobs = (jobsToSort: EstimateJob[]): EstimateJob[] => {
+    const enquiries = getEnquiriesFromStorage();
+    
+    return [...jobsToSort].sort((a, b) => {
+      if (sortBy === 'dueDate') {
+        const enquiryA = enquiries.find((e: Enquiry) => e.id === a.enquiryId);
+        const enquiryB = enquiries.find((e: Enquiry) => e.id === b.enquiryId);
+        // Use job.dueDate if set, otherwise fall back to enquiry.returnDate
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : (enquiryA?.returnDate ? new Date(enquiryA.returnDate).getTime() : Infinity);
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : (enquiryB?.returnDate ? new Date(enquiryB.returnDate).getTime() : Infinity);
+        return dateA - dateB; // Ascending (earliest first)
+      } else if (sortBy === 'value') {
+        return getJobNumericValue(b) - getJobNumericValue(a); // Descending (highest first)
+      } else if (sortBy === 'client') {
+        return a.client.localeCompare(b.client); // Alphabetical
+      }
+      return 0;
+    });
+  };
+
+  // Get urgency status for a job based on due date
+  const getUrgencyStatus = (job: EstimateJob): 'overdue' | 'urgent' | 'normal' | 'none' => {
+    // Check if job has manual due date override, otherwise use enquiry returnDate
+    let dueDateStr: string | undefined = job.dueDate;
+    if (!dueDateStr) {
+      const enquiries = getEnquiriesFromStorage();
+      const enquiry = enquiries.find((e: Enquiry) => e.id === job.enquiryId);
+      dueDateStr = enquiry?.returnDate;
+    }
+    if (!dueDateStr) return 'none';
+    
+    const now = new Date();
+    const dueDate = new Date(dueDateStr);
+    const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilDue < 0) return 'overdue';
+    if (daysUntilDue <= 3) return 'urgent';
+    return 'normal';
+  };
+
+  // Get effective due date (job override or enquiry return date)
+  const getEffectiveDueDate = (job: EstimateJob): string | undefined => {
+    if (job.dueDate) return job.dueDate;
+    const enquiries = getEnquiriesFromStorage();
+    const enquiry = enquiries.find((e: Enquiry) => e.id === job.enquiryId);
+    return enquiry?.returnDate;
+  };
+
+  // Get color class for urgency
+  const getUrgencyColor = (urgency: 'overdue' | 'urgent' | 'normal' | 'none'): string => {
+    switch (urgency) {
+      case 'overdue': return 'text-red-400 font-bold';
+      case 'urgent': return 'text-orange-400 font-semibold';
+      case 'normal': return 'text-purple-400 font-semibold';
+      default: return 'text-gray-400';
+    }
+  };
 
   // Compute jobs by status
   const jobsByStatus = {
-    "new-assignment": jobs.filter((j) => j.status === "new-assignment"),
-    "in-progress": jobs.filter((j) => j.status === "in-progress"),
-    "quote-submitted": jobs.filter((j) => j.status === "quote-submitted"),
-    "won": jobs.filter((j) => j.status === "won"),
-    "lost": jobs.filter((j) => j.status === "lost"),
+    "new-assignment": sortJobs(jobs.filter((j) => {
+      if (!selectedEstimatorFilter) return j.status === "new-assignment";
+      if (selectedEstimatorFilter === 'unassigned') return j.status === "new-assignment" && !j.estimator;
+      return j.status === "new-assignment" && j.estimator === selectedEstimatorFilter;
+    })),
+    "in-progress": sortJobs(jobs.filter((j) => {
+      if (!selectedEstimatorFilter) return j.status === "in-progress";
+      if (selectedEstimatorFilter === 'unassigned') return j.status === "in-progress" && !j.estimator;
+      return j.status === "in-progress" && j.estimator === selectedEstimatorFilter;
+    })),
+    "quote-submitted": sortJobs(jobs.filter((j) => {
+      if (!selectedEstimatorFilter) return j.status === "quote-submitted";
+      if (selectedEstimatorFilter === 'unassigned') return j.status === "quote-submitted" && !j.estimator;
+      return j.status === "quote-submitted" && j.estimator === selectedEstimatorFilter;
+    })),
+    "won": sortJobs(jobs.filter((j) => {
+      if (!selectedEstimatorFilter) return j.status === "won";
+      if (selectedEstimatorFilter === 'unassigned') return j.status === "won" && !j.estimator;
+      return j.status === "won" && j.estimator === selectedEstimatorFilter;
+    })),
+    "lost": sortJobs(jobs.filter((j) => {
+      if (!selectedEstimatorFilter) return j.status === "lost";
+      if (selectedEstimatorFilter === 'unassigned') return j.status === "lost" && !j.estimator;
+      return j.status === "lost" && j.estimator === selectedEstimatorFilter;
+    })),
   };
+  
+  // Compute workload by estimator
+  const workloadByEstimator = ESTIMATORS.map(estimator => {
+    const estimatorJobs = jobs.filter(j => j.estimator === estimator);
+    const wonJobs = estimatorJobs.filter(j => j.status === 'won').length;
+    const lostJobs = estimatorJobs.filter(j => j.status === 'lost').length;
+    const totalDecided = wonJobs + lostJobs;
+    const winRate = totalDecided > 0 ? Math.round((wonJobs / totalDecided) * 100) : 0;
+    
+    // Calculate total value (parse £ values)
+    const totalValue = estimatorJobs.reduce((sum, job) => {
+      return sum + getJobNumericValue(job);
+    }, 0);
+    
+    // Calculate average won value (only won jobs)
+    const wonJobsArray = estimatorJobs.filter(j => j.status === 'won');
+    const totalWonValue = wonJobsArray.reduce((sum, job) => {
+      return sum + getJobNumericValue(job);
+    }, 0);
+    const avgOrderValue = wonJobs > 0 ? totalWonValue / wonJobs : 0;
+    
+    return {
+      estimator,
+      total: estimatorJobs.length,
+      newAssignments: estimatorJobs.filter(j => j.status === 'new-assignment').length,
+      inProgress: estimatorJobs.filter(j => j.status === 'in-progress').length,
+      quotesOut: estimatorJobs.filter(j => j.status === 'quote-submitted').length,
+      won: wonJobs,
+      lost: lostJobs,
+      winRate,
+      totalValue,
+      avgOrderValue,
+      jobs: estimatorJobs
+    };
+  });
+  
+  const unassignedJobs = jobs.filter(j => !j.estimator);
 
   // Build SMM7 tree from flat data
   const buildSMM7Tree = (items: SMM7Item[]): TreeNode[] => {
@@ -895,7 +1121,7 @@ export default function EstimatingOverviewPage() {
     if (selectedRateItem) {
       const totalCost = editingComponents.reduce((sum, c) => sum + c.cost, 0);
       const newBaseRate = selectedRateItem.quantity > 0 ? totalCost / selectedRateItem.quantity : totalCost;
-      const markupFactor = 1 + (overheadsPercent / 100) + (profitPercent / 100);
+      const markupFactor = 1 + (marginPercent / 100);
       const newRate = newBaseRate * markupFactor;
       
       const updatedItem: BOQItem = {
@@ -911,6 +1137,247 @@ export default function EstimatingOverviewPage() {
       ));
       setShowRateBreakdown(false);
     }
+  };
+
+  const loadCivilsRate = (savedRate: any) => {
+    if (savedRate.components && Array.isArray(savedRate.components)) {
+      // Add all components from the saved rate
+      const newComponents = savedRate.components.map((comp: RateComponent) => ({
+        ...comp,
+        componentId: `civils-${Date.now()}-${Math.random()}`, // Generate new IDs
+      }));
+      
+      setEditingComponents([...editingComponents, ...newComponents]);
+      setEditingComponentInputs([
+        ...editingComponentInputs,
+        ...newComponents.map((comp: RateComponent) => ({
+          outputPerUnit: comp.outputPerUnit.toString(),
+          unitRate: comp.unitRate.toString()
+        }))
+      ]);
+      
+      setShowCivilsRateLoader(false);
+    }
+  };
+
+  // Civils Rate Builder functions
+  const autopopulateCivilsTemplate = (template: ProductivityRateTemplate) => {
+    // Clear existing items
+    setCivilsLabourItems([]);
+    setCivilsPlantItems([]);
+    setCivilsMaterialItems([]);
+    
+    // Populate labour from gang
+    const newLabourItems = template.gang.map((gangMember, idx) => {
+      let matchedRate = gangMember.labourCode 
+        ? csvLabourRates.find(r => r.id === gangMember.labourCode)
+        : csvLabourRates.find(r => r.description.toLowerCase().includes(gangMember.role.toLowerCase()));
+      
+      if (!matchedRate && gangMember.fallbackRate) {
+        matchedRate = {
+          id: `fallback-${idx}`,
+          trade: gangMember.role,
+          description: gangMember.role,
+          hourlyRate: gangMember.fallbackRate,
+          dailyRate: gangMember.fallbackRate * 8,
+          productivityFactor: 1.0,
+          overtimeRate: gangMember.fallbackRate * 1.5,
+          costCode: '',
+        };
+      }
+      
+      return matchedRate ? {
+        id: `labour-${idx}`,
+        rate: matchedRate,
+        quantity: gangMember.count,
+      } : null;
+    }).filter(Boolean) as Array<{ id: string; rate: CSVLabourRate; quantity: number }>;
+    
+    setCivilsLabourItems(newLabourItems);
+    
+    // Populate plant
+    if (template.plant) {
+      const newPlantItems = template.plant.map((plantItem, idx) => {
+        let matchedRate = plantItem.plantCode
+          ? csvPlantRates.find(r => r.id === plantItem.plantCode)
+          : csvPlantRates.find(r => r.name.toLowerCase().includes(plantItem.description.toLowerCase()));
+        
+        if (!matchedRate && plantItem.fallbackRate) {
+          matchedRate = {
+            id: `fallback-plant-${idx}`,
+            code: '',
+            name: plantItem.description,
+            category: 'Equipment',
+            description: plantItem.description,
+            rate: plantItem.fallbackRate,
+            unit: plantItem.unit,
+            costCode: '',
+          };
+        }
+        
+        return matchedRate ? {
+          id: `plant-${idx}`,
+          rate: matchedRate,
+          quantity: plantItem.quantityPerUnit,
+        } : null;
+      }).filter(Boolean) as Array<{ id: string; rate: CSVPlantRate; quantity: number }>;
+      
+      setCivilsPlantItems(newPlantItems);
+    }
+    
+    // Populate materials
+    if (template.materials) {
+      const newMaterialItems = template.materials.map((matItem, idx) => {
+        const isAggregate = matItem.unit === 'm³' || matItem.unit === 'tonne';
+        
+        let defaultDensity = 1.8;
+        if (isAggregate) {
+          const description = matItem.description.toLowerCase();
+          if (description.includes('asphalt') || description.includes('bitumen') || description.includes('tarmac')) {
+            defaultDensity = 2.4;
+          }
+        }
+        
+        return {
+          id: `material-${idx}`,
+          name: matItem.description,
+          purchaseRate: matItem.fallbackRate || 0,
+          purchaseUnit: matItem.unit,
+          quantityPerUnit: matItem.quantityPerUnit,
+          density: isAggregate ? defaultDensity : undefined,
+        };
+      });
+      
+      setCivilsMaterialItems(newMaterialItems);
+    }
+  };
+
+  const calculateCivilsRate = () => {
+    if (!civilsTemplate) return null;
+
+    const hoursPerDay = 8;
+    const outputPerDay = civilsOutputPerDay || civilsTemplate.outputPerDay;
+    const hoursPerUnit = hoursPerDay / outputPerDay;
+
+    let labourCost = 0;
+    civilsLabourItems.forEach(item => {
+      const hourlyRate = item.overrideRate !== undefined ? item.overrideRate : item.rate.hourlyRate;
+      labourCost += hourlyRate * item.quantity * hoursPerUnit;
+    });
+
+    let plantCost = 0;
+    civilsPlantItems.forEach(item => {
+      const plantRate = item.overrideRate !== undefined ? item.overrideRate : item.rate.rate;
+      if (item.rate.unit === 'day') {
+        plantCost += (plantRate / 8) * hoursPerUnit * item.quantity;
+      } else if (item.rate.unit === 'hr') {
+        plantCost += plantRate * hoursPerUnit * item.quantity;
+      } else {
+        plantCost += plantRate * item.quantity;
+      }
+    });
+
+    const totalMaterialCost = civilsMaterialItems.reduce((sum, item) => {
+      const purchaseRate = (item.overridePurchaseRate !== undefined && !isNaN(item.overridePurchaseRate)) 
+        ? item.overridePurchaseRate 
+        : item.purchaseRate;
+      const cost = purchaseRate * item.quantityPerUnit;
+      return sum + cost;
+    }, 0);
+
+    const totalCost = labourCost + totalMaterialCost + plantCost;
+
+    return {
+      outputPerDay,
+      hoursPerUnit,
+      labourCost,
+      totalMaterialCost,
+      plantCost,
+      finalRate: totalCost,
+      unitRate: totalCost,
+    };
+  };
+
+  const addCivilsRateToBoQ = () => {
+    const result = calculateCivilsRate();
+    if (!civilsTemplate || !result) return;
+
+    const components: RateComponent[] = [];
+    const outputPerDay = result.outputPerDay;
+
+    // Add labour components
+    civilsLabourItems.forEach((item, idx) => {
+      const hourlyRate = item.overrideRate !== undefined ? item.overrideRate : item.rate.hourlyRate;
+      components.push({
+        componentId: `civils-labour-${Date.now()}-${idx}`,
+        type: 'labour',
+        description: item.rate.description,
+        outputPerUnit: outputPerDay,
+        quantity: item.quantity,
+        unit: 'shift',
+        unitRate: hourlyRate * 8,
+        cost: hourlyRate * item.quantity * result.hoursPerUnit,
+      });
+    });
+
+    // Add plant components
+    civilsPlantItems.forEach((item, idx) => {
+      const plantRate = item.overrideRate !== undefined ? item.overrideRate : item.rate.rate;
+      let cost = 0;
+      if (item.rate.unit === 'day') {
+        cost = (plantRate / 8) * result.hoursPerUnit * item.quantity;
+      } else if (item.rate.unit === 'hr') {
+        cost = plantRate * result.hoursPerUnit * item.quantity;
+      } else {
+        cost = plantRate * item.quantity;
+      }
+      
+      components.push({
+        componentId: `civils-plant-${Date.now()}-${idx}`,
+        type: 'plant',
+        description: item.rate.name,
+        outputPerUnit: outputPerDay,
+        quantity: item.quantity,
+        unit: item.rate.unit,
+        unitRate: plantRate,
+        cost: cost,
+      });
+    });
+
+    // Add material components
+    civilsMaterialItems.forEach((item, idx) => {
+      const purchaseRate = (item.overridePurchaseRate !== undefined && !isNaN(item.overridePurchaseRate)) 
+        ? item.overridePurchaseRate 
+        : item.purchaseRate;
+      
+      components.push({
+        componentId: `civils-material-${Date.now()}-${idx}`,
+        type: 'materials',
+        description: item.name,
+        outputPerUnit: item.quantityPerUnit,
+        quantity: item.quantityPerUnit,
+        unit: item.purchaseUnit,
+        unitRate: purchaseRate,
+        cost: purchaseRate * item.quantityPerUnit,
+      });
+    });
+
+    // Add to editing components
+    setEditingComponents([...editingComponents, ...components]);
+    setEditingComponentInputs([
+      ...editingComponentInputs,
+      ...components.map((comp) => ({
+        outputPerUnit: comp.outputPerUnit.toString(),
+        unitRate: comp.unitRate.toString()
+      }))
+    ]);
+
+    // Clear and close
+    setCivilsTemplate(null);
+    setCivilsLabourItems([]);
+    setCivilsPlantItems([]);
+    setCivilsMaterialItems([]);
+    setShowCivilsRateLoader(false);
   };
 
   // Tree rendering component for SMM7
@@ -1163,7 +1630,7 @@ export default function EstimatingOverviewPage() {
     const job = jobs.find(j => j.id === jobId);
     if (job && boqItems.length > 0) {
       const subtotal = boqItems.reduce((sum, item) => sum + item.total, 0);
-      const contingency = (subtotal * profitPercent) / 100;
+      const contingency = (subtotal * marginPercent) / 100;
       
       const quoteData: TraditionalQuoteData = {
         clientName: job.client || 'Client Name',
@@ -1173,7 +1640,7 @@ export default function EstimatingOverviewPage() {
         date: today,
         items: boqItems,
         subtotal,
-        contingencyPercent: profitPercent,
+        contingencyPercent: marginPercent,
         contingency,
         total: subtotal + contingency,
         standard: 'SMM7',
@@ -1201,7 +1668,7 @@ export default function EstimatingOverviewPage() {
     try {
       const today = new Date().toISOString().split('T')[0];
       const subtotal = boqItems.reduce((sum, item) => sum + item.total, 0);
-      const contingency = (subtotal * profitPercent) / 100;
+      const contingency = (subtotal * marginPercent) / 100;
       
       const quoteData: TraditionalQuoteData = {
         clientName: workingOnJob.client || 'Client',
@@ -1211,7 +1678,7 @@ export default function EstimatingOverviewPage() {
         date: today,
         items: boqItems,
         subtotal,
-        contingencyPercent: profitPercent,
+        contingencyPercent: marginPercent,
         contingency,
         total: subtotal + contingency,
         standard: 'SMM7',
@@ -1271,16 +1738,14 @@ export default function EstimatingOverviewPage() {
 
       // Summary data - use the same calculation as the grand total
       const baseSubtotalExcel = boqItems.reduce((sum, item) => sum + (item.quantity * item.baseRate), 0);
-      const overheadsExcel = baseSubtotalExcel * (overheadsPercent / 100);
-      const profitExcel = (baseSubtotalExcel + overheadsExcel) * (profitPercent / 100);
-      const totalExcel = baseSubtotalExcel + overheadsExcel + profitExcel;
+      const marginExcel = baseSubtotalExcel * (marginPercent / 100);
+      const totalExcel = baseSubtotalExcel + marginExcel;
 
       const summaryData = [
         [],
         ['SUMMARY'],
         ['Base Subtotal:', '', '', '', '', baseSubtotalExcel.toFixed(2)],
-        ['Overheads:', '', '', '', '', overheadsExcel.toFixed(2)],
-        ['Profit:', '', '', '', '', profitExcel.toFixed(2)],
+        [`Margin (${marginPercent}%):`, '', '', '', '', marginExcel.toFixed(2)],
         ['TOTAL:', '', '', '', '', totalExcel.toFixed(2)]
       ];
 
@@ -1329,7 +1794,11 @@ export default function EstimatingOverviewPage() {
         return {
           ...j,
           status: "won" as const,
-          outcome: winReason || "Successful bid"
+          outcome: winReason || "Successful bid",
+          orderNumber: orderNumber || undefined,
+          contractFileName: contractFile?.name || undefined,
+          invoiceAddress: invoiceAddress || undefined,
+          paymentTerms: paymentTerms || undefined,
         };
       }
       return j;
@@ -1344,7 +1813,7 @@ export default function EstimatingOverviewPage() {
       enquiryId: job.enquiryId,
       clientName: job.client,
       projectName: job.projectName,
-      value: job.value,
+      value: getJobDisplayValue(job),
       status: "won",
       submittedDate: job.submittedDate,
       winReason: winReason || "Successful bid",
@@ -1377,7 +1846,7 @@ export default function EstimatingOverviewPage() {
       enquiryId: job.enquiryId,
       clientName: job.client,
       projectName: job.projectName,
-      value: job.value,
+      value: getJobDisplayValue(job),
       status: "lost",
       submittedDate: job.submittedDate,
       lostReason: lostReason || "Unsuccessful bid",
@@ -1387,15 +1856,74 @@ export default function EstimatingOverviewPage() {
     console.log(`Job ${jobId} marked as lost and synced to client tracking`);
   };
 
+  const handleSendToOperations = (jobId: string) => {
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return;
+
+    const navigateToOperations = () => {
+      try {
+        router.push("/operations-overview");
+      } catch {
+        if (typeof window !== "undefined") {
+          window.location.href = "/operations-overview";
+        }
+      }
+    };
+
+    const existing = handovers.find(h => h.estimateId === job.id);
+    if (existing) {
+      alert("This estimate is already sent to Operations. Opening Operations Overview.");
+      navigateToOperations();
+      return;
+    }
+
+    const handover = createHandoverFromEstimate(job);
+    const updatedHandovers = [...handovers, handover];
+    setHandovers(updatedHandovers);
+    saveHandoversToStorage(updatedHandovers);
+    alert("Handover created for Operations. Opening Operations Overview.");
+    navigateToOperations();
+  };
+
+  const handleUpdateDueDate = (jobId: string, newDueDate: string) => {
+    const updatedJobs = jobs.map(j => 
+      j.id === jobId 
+        ? { ...j, dueDate: newDueDate }
+        : j
+    );
+    setJobs(updatedJobs);
+    saveEstimateJobsToStorage(updatedJobs);
+    // Update selectedJob if it's the one being edited
+    if (selectedJob?.id === jobId) {
+      setSelectedJob({ ...selectedJob, dueDate: newDueDate });
+    }
+  };
+
+  const handleReopenForRepricing = (jobId: string) => {
+    if (!confirm("Re-open this job for repricing? The status will be changed back to 'In Progress'.")) {
+      return;
+    }
+    
+    const updatedJobs = jobs.map(j => 
+      j.id === jobId 
+        ? { ...j, status: "in-progress" as const }
+        : j
+    );
+    setJobs(updatedJobs);
+    saveEstimateJobsToStorage(updatedJobs);
+    setSelectedJob(null);
+  };
+
   const addBoqItem = () => {
-    if (newItem.description && newItem.quantity > 0 && newItem.rate > 0) {
-      const markupFactor = 1 + (overheadsPercent / 100) + (profitPercent / 100);
-      const total = newItem.quantity * newItem.rate * markupFactor;
+    if (newItem.description && newItem.quantity > 0) {
+      const markupFactor = 1 + (marginPercent / 100);
+      const rate = newItem.rate || 0;
+      const total = newItem.quantity * rate * markupFactor;
       setBoqItems([...boqItems, { 
         id: Date.now().toString(), 
         ...newItem,
-        baseRate: newItem.rate,
-        rate: newItem.rate * markupFactor,
+        baseRate: rate,
+        rate: rate * markupFactor,
         total 
       }]);
       setNewItem({ description: "", unit: "m²", quantity: 0, rate: 0 });
@@ -1427,7 +1955,7 @@ export default function EstimatingOverviewPage() {
       }
 
       const newItems: BOQItem[] = rows.map((row, idx) => {
-        const markupFactor = 1 + (overheadsPercent / 100) + (profitPercent / 100);
+        const markupFactor = 1 + (marginPercent / 100);
         return {
           id: Date.now().toString() + idx,
           description: row.description,
@@ -1456,9 +1984,195 @@ export default function EstimatingOverviewPage() {
     }
   };
 
+  // Drawing measurement integration handlers
+  const handleDrawingUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !workingOnJob) return;
+    
+    setUploadingDrawing(true);
+    
+    try {
+      const drawings = await convertFilesToDrawings(Array.from(files));
+      const updatedDrawings = [...(drawingFiles || []), ...drawings];
+      setDrawingFiles(updatedDrawings);
+      
+      // Update the job with drawing files
+      const updatedJobs = jobs.map(j => 
+        j.id === workingOnJob.id  
+          ? { ...j, drawingFiles: updatedDrawings }
+          : j
+      );
+      setJobs(updatedJobs);
+      saveEstimateJobsToStorage(updatedJobs);
+      
+      if (e.target) {
+        e.target.value = '';
+      }
+    } catch (error) {
+      console.error('Drawing upload error:', error);
+      alert('Failed to upload drawing file');
+    } finally {
+      setUploadingDrawing(false);
+      setShowDrawingUpload(false);
+    }
+  };
+  
+  const openMeasurementTool = (boqItem: BOQItem, drawingFileId?: string) => {
+    // Store context in localStorage for the measurement tool to access
+    const measurementContext = {
+      jobId: workingOnJob?.id,
+      boqItemId: boqItem.id,
+      boqDescription: boqItem.description,
+      boqUnit: boqItem.unit,
+      drawingFileId: drawingFileId || selectedDrawingId,
+      timestamp: Date.now()
+    };
+    
+    localStorage.setItem('measurement-context', JSON.stringify(measurementContext));
+    
+    // Store the drawing file data if selected
+    if (drawingFileId || selectedDrawingId) {
+      const drawing = drawingFiles.find(d => d.id === (drawingFileId || selectedDrawingId));
+      if (drawing) {
+        localStorage.setItem('measurement-drawing', JSON.stringify(drawing));
+      }
+    }
+    
+    // Open measurement tool in popup window
+    const width = 1400;
+    const height = 900;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    window.open(
+      '/drawing-measurement',
+      'Drawing Measurement Tool',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+  };
+  
+  // Listen for measurement updates from measurement tool
+  useEffect(() => {
+    const handleMeasurementUpdate = () => {
+      const context = localStorage.getItem('measurement-context');
+      const measurements = localStorage.getItem('drawing-measurements');
+      
+      if (!context || !measurements) return;
+      
+      try {
+        const ctx = JSON.parse(context);
+        const meas = JSON.parse(measurements);
+        
+        // Find if there's a measurement for this BOQ item
+        if (ctx.jobId === workingOnJob?.id && ctx.boqItemId) {
+          // Find the most recent measurement (last one in array)
+          const boqMeasurement = meas[meas.length - 1];
+          
+          if (boqMeasurement) {
+            // Round measurement value to 1 decimal place
+            const roundedQuantity = Math.round(boqMeasurement.value * 10) / 10;
+            
+            // Update the BOQ item with the measured quantity
+            setBoqItems(prev => {
+              const updatedItems = prev.map(item => {
+                if (item.id === ctx.boqItemId) {
+                  return {
+                    ...item,
+                    quantity: roundedQuantity,
+                    measuredQuantity: roundedQuantity,
+                    measurementId: boqMeasurement.id,
+                    drawingFileId: ctx.drawingFileId,
+                    total: roundedQuantity * item.rate
+                  };
+                }
+                return item;
+              });
+              
+              return updatedItems;
+            });
+            
+            // Also update the job's BOQ items in storage using functional update
+            setJobs(prevJobs => {
+              const updatedJobs = prevJobs.map(j => 
+                j.id === workingOnJob?.id ? { 
+                  ...j, 
+                  boqItems: j.boqItems?.map(item => 
+                    item.id === ctx.boqItemId ? {
+                      ...item,
+                      quantity: roundedQuantity,
+                      measuredQuantity: roundedQuantity,
+                      measurementId: boqMeasurement.id,
+                      drawingFileId: ctx.drawingFileId,
+                      total: roundedQuantity * item.rate
+                    } : item
+                  )
+                } : j
+              );
+              saveEstimateJobsToStorage(updatedJobs);
+              return updatedJobs;
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to process measurement update:', error);
+      }
+    };
+    
+    // Listen for storage events
+    window.addEventListener('storage', handleMeasurementUpdate);
+    
+    // Also check when component mounts or when workingOnJob changes
+    handleMeasurementUpdate();
+    
+    return () => window.removeEventListener('storage', handleMeasurementUpdate);
+  }, [workingOnJob]);
+  
+  // Load drawing files when working on a job
+  useEffect(() => {
+    if (workingOnJob && workingOnJob.drawingFiles) {
+      setDrawingFiles(workingOnJob.drawingFiles);
+    } else {
+      setDrawingFiles([]);
+    }
+  }, [workingOnJob]);
+
+  // Load BOQ items and overheads/profit when working on a job
+  useEffect(() => {
+    if (workingOnJob) {
+      // Load BOQ items from the job (or empty array if none)
+      setBoqItems(workingOnJob.boqItems || []);
+      // Load overheads and profit percentages from the job
+      setMarginPercent(workingOnJob.marginPercent || 20);
+    } else {
+      // Clear BOQ when no job is being worked on
+      setBoqItems([]);
+      setMarginPercent(20);
+    }
+  }, [workingOnJob]);
+
+  // Import calculator results into rate buildup if available
+  useEffect(() => {
+    const importParam = searchParams.get('import');
+    
+    // Import from Materials Calculator
+    if (importParam === 'materials') {
+      const storedComponents = localStorage.getItem('materials-calculator-export');
+      if (storedComponents) {
+        try {
+          const importedComponents: RateComponent[] = JSON.parse(storedComponents);
+          setEditingComponents(prev => [...prev, ...importedComponents]);
+          localStorage.removeItem('materials-calculator-export');
+          console.log(`Imported ${importedComponents.length} material components to rate buildup`);
+        } catch (error) {
+          console.error('Failed to import materials calculator components:', error);
+        }
+      }
+    }
+  }, [searchParams]);
+
   const addSMM7Item = (description: string, unit: string, quantity: number, rate: number = 0) => {
     if (quantity > 0) {
-      const markupFactor = 1 + (overheadsPercent / 100) + (profitPercent / 100);
+      const markupFactor = 1 + (marginPercent / 100);
       const total = quantity * rate * markupFactor;
       setBoqItems([...boqItems, {
         id: Date.now().toString(),
@@ -1475,7 +2189,7 @@ export default function EstimatingOverviewPage() {
   const addCESSMItem = (item: CESSMItem, quantity: number) => {
     if (quantity > 0) {
       const rate = item.sellPrice > 0 ? item.sellPrice : item.costPrice;
-      const markupFactor = 1 + (overheadsPercent / 100) + (profitPercent / 100);
+      const markupFactor = 1 + (marginPercent / 100);
       const total = quantity * rate * markupFactor;
       setBoqItems([...boqItems, {
         id: Date.now().toString(),
@@ -1491,7 +2205,7 @@ export default function EstimatingOverviewPage() {
 
   const addValescapeItem = (description: string, unit: string, quantity: number, rate: number = 0) => {
     if (quantity > 0) {
-      const markupFactor = 1 + (overheadsPercent / 100) + (profitPercent / 100);
+      const markupFactor = 1 + (marginPercent / 100);
       const total = quantity * rate * markupFactor;
       setBoqItems([...boqItems, {
         id: Date.now().toString(),
@@ -1507,7 +2221,7 @@ export default function EstimatingOverviewPage() {
 
   const addLibraryItem = (description: string, unit: string, rate: number, quantity: number) => {
     if (quantity > 0) {
-      const markupFactor = 1 + (overheadsPercent / 100) + (profitPercent / 100);
+      const markupFactor = 1 + (marginPercent / 100);
       const total = quantity * rate * markupFactor;
       setBoqItems([...boqItems, {
         id: Date.now().toString(),
@@ -1522,11 +2236,27 @@ export default function EstimatingOverviewPage() {
   };
 
   const saveProgress = () => {
+    if (!workingOnJob) return;
+    
     // Calculate progress based on BOQ items (simple logic: more items = more progress)
     const itemCount = boqItems.length;
     const newProgress = Math.min(Math.round((itemCount / 10) * 100), 95); // Cap at 95% until submitted
-    console.log(`Saving progress: ${newProgress}%`);
-    // In real app: Update the job progress in database
+    
+    // Update the job's progress in state
+    const updatedJobs = jobs.map(job => {
+      if (job.id === workingOnJob.id) {
+        return {
+          ...job,
+          progress: newProgress
+        };
+      }
+      return job;
+    });
+    
+    setJobs(updatedJobs);
+    saveEstimateJobsToStorage(updatedJobs);
+    
+    console.log(`Progress saved: ${newProgress}%`);
     alert(`Progress saved: ${newProgress}%`);
   };
 
@@ -1553,7 +2283,9 @@ export default function EstimatingOverviewPage() {
           ...job,
           status: "quote-submitted" as const,
           submittedDate: todayFormatted,
-          quoteRef: quoteRef
+          quoteRef: quoteRef,
+          quoteTotal: grandTotal,
+          progress: 100
         };
       }
       return job;
@@ -1563,13 +2295,20 @@ export default function EstimatingOverviewPage() {
     setJobs(updatedJobs);
     saveEstimateJobsToStorage(updatedJobs);
     
+    // Format quote total for display
+    const formattedQuoteTotal = grandTotal >= 1000000
+      ? `£${(grandTotal / 1000000).toFixed(1)}M`
+      : grandTotal >= 1000
+      ? `£${(grandTotal / 1000).toFixed(0)}K`
+      : `£${grandTotal.toFixed(0)}`;
+    
     // Update integrated project to "Submitted" status
     updateProjectFromEstimate({
       estimateId: workingOnJob.id,
       enquiryId: workingOnJob.enquiryId,
       clientName: workingOnJob.client,
       projectName: workingOnJob.projectName,
-      value: workingOnJob.value,
+      value: formattedQuoteTotal,
       submittedDate: todayFormatted,
     });
     
@@ -1579,21 +2318,146 @@ export default function EstimatingOverviewPage() {
 
   const baseSubtotal = boqItems.reduce((sum, item) => sum + (item.quantity * item.baseRate), 0);
   const subtotal = baseSubtotal;
-  const overheads = baseSubtotal * (overheadsPercent / 100);
-  const profit = (baseSubtotal + overheads) * (profitPercent / 100);
-  const grandTotal = baseSubtotal + overheads + profit;
+  const margin = baseSubtotal * (marginPercent / 100);
+  const grandTotal = baseSubtotal + margin;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Estimating Overview</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Assign estimators, price jobs, submit quotes, and track outcomes
-          </p>
+      <div className="flex items-center justify-end">
+        <div className="flex gap-3">
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'dueDate' | 'value' | 'client')}
+              className="rounded-lg bg-gray-700 px-3 py-2 text-sm text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="dueDate">Due Date</option>
+              <option value="value">Value</option>
+              <option value="client">Client</option>
+            </select>
+          </div>
+          <button
+            onClick={() => setShowWorkloadView(!showWorkloadView)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              showWorkloadView
+                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                : 'bg-gray-700 text-white hover:bg-gray-600'
+            }`}
+          >
+            {showWorkloadView ? '📊 Hide Workload' : '📊 Show Workload'}
+          </button>
         </div>
       </div>
+
+      {/* Workload Management Section */}
+      {showWorkloadView && (
+        <section className="rounded-lg border border-orange-700/50 bg-orange-900/10 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-orange-400">Workload Distribution</h2>
+            {selectedEstimatorFilter && (
+              <button
+                onClick={() => setSelectedEstimatorFilter(null)}
+                className="text-sm text-orange-400 hover:text-orange-300 underline"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+          
+          {/* Estimator Filter Chips */}
+          <div className="mb-4 flex flex-wrap gap-2">
+            {ESTIMATORS.map(estimator => {
+              const workload = workloadByEstimator.find(w => w.estimator === estimator);
+              return (
+                <button
+                  key={estimator}
+                  onClick={() => setSelectedEstimatorFilter(
+                    selectedEstimatorFilter === estimator ? null : estimator
+                  )}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                    selectedEstimatorFilter === estimator
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  {estimator} ({workload?.total || 0})
+                </button>
+              );
+            })}
+            {unassignedJobs.length > 0 && (
+              <button
+                onClick={() => setSelectedEstimatorFilter('unassigned')}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  selectedEstimatorFilter === 'unassigned'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                Unassigned ({unassignedJobs.length})
+              </button>
+            )}
+          </div>
+
+          {/* Workload Summary Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {workloadByEstimator.map(({ estimator, total, newAssignments, inProgress, quotesOut, winRate, totalValue, avgOrderValue }) => (
+              <div
+                key={estimator}
+                className={`rounded-lg border p-4 transition-all ${
+                  selectedEstimatorFilter === estimator
+                    ? 'border-orange-500 bg-orange-500/10'
+                    : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                }`}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white">{estimator.split(' ')[0]}</h3>
+                  <span className="text-2xl font-bold text-orange-400">{total}</span>
+                </div>
+                
+                {/* Value and Win Rate */}
+                <div className="mb-3 space-y-1 border-b border-gray-700 pb-2">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-400">Total Value:</span>
+                    <span className="text-xs font-bold text-green-400">
+                      £{totalValue >= 1000000 ? `${(totalValue / 1000000).toFixed(1)}M` : totalValue >= 1000 ? `${(totalValue / 1000).toFixed(0)}K` : totalValue.toFixed(0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-400">Avg Won Value:</span>
+                    <span className="text-xs font-bold text-cyan-400">
+                      £{avgOrderValue >= 1000000 ? `${(avgOrderValue / 1000000).toFixed(1)}M` : avgOrderValue >= 1000 ? `${(avgOrderValue / 1000).toFixed(0)}K` : avgOrderValue.toFixed(0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-400">Win Rate:</span>
+                    <span className={`text-xs font-bold ${winRate >= 60 ? 'text-green-400' : winRate >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {winRate}%
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-1 text-xs text-gray-400">
+                  <div className="flex justify-between">
+                    <span>New:</span>
+                    <span className="font-semibold text-blue-400">{newAssignments}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>In Progress:</span>
+                    <span className="font-semibold text-yellow-400">{inProgress}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Quotes Out:</span>
+                    <span className="font-semibold text-purple-400">{quotesOut}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Key Metrics */}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -1613,6 +2477,24 @@ export default function EstimatingOverviewPage() {
           </div>
         ))}
       </section>
+
+      {/* Active Filter Indicator */}
+      {selectedEstimatorFilter && (
+        <div className="rounded-lg border border-orange-500/50 bg-orange-500/10 px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-orange-400 font-semibold">🔍 Filtered by:</span>
+            <span className="text-white font-bold">
+              {selectedEstimatorFilter === 'unassigned' ? 'Unassigned Jobs' : selectedEstimatorFilter}
+            </span>
+          </div>
+          <button
+            onClick={() => setSelectedEstimatorFilter(null)}
+            className="text-sm text-orange-400 hover:text-orange-300 underline"
+          >
+            Clear Filter
+          </button>
+        </div>
+      )}
 
       {/* Estimating Workflow Kanban */}
       <section className="grid grid-cols-5 gap-4">
@@ -1654,7 +2536,7 @@ export default function EstimatingOverviewPage() {
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-sm font-bold text-green-400">
-                    {job.value}
+                    {getJobDisplayValue(job)}
                   </span>
                   <span className="rounded-full bg-blue-900/30 px-2 py-1 text-xs font-semibold text-blue-400">
                     {job.id}
@@ -1663,9 +2545,11 @@ export default function EstimatingOverviewPage() {
                 <p className="text-xs text-gray-500 mt-2">
                   Received: {formatDate(job.receivedDate)}
                 </p>
-                {linkedEnquiry?.returnDate && (
-                  <p className="text-xs text-purple-400 mt-1">
-                    Return Date: {formatDate(linkedEnquiry.returnDate)}
+                {getEffectiveDueDate(job) && (
+                  <p className={`text-xs mt-1 ${getUrgencyColor(getUrgencyStatus(job))}`}>
+                    Due: {formatDate(getEffectiveDueDate(job)!)}
+                    {getUrgencyStatus(job) === 'overdue' && ' ⚠️'}
+                    {getUrgencyStatus(job) === 'urgent' && ' 🔥'}
                   </p>
                 )}
                 {job.estimator && (
@@ -1727,30 +2611,20 @@ export default function EstimatingOverviewPage() {
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-sm font-bold text-green-400">
-                    {job.value}
+                    {getJobDisplayValue(job)}
                   </span>
                   <span className="rounded-full bg-yellow-900/30 px-2 py-1 text-xs font-semibold text-yellow-400">
                     {job.id}
                   </span>
                 </div>
-                <div className="mt-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs text-gray-400">Progress</p>
-                    <p className="text-xs font-semibold text-white">{job.progress}%</p>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-gray-700">
-                    <div
-                      className="h-2 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500"
-                      style={{ width: `${job.progress}%` }}
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 mt-3">
                   Estimator: {job.estimator}
                 </p>
-                {linkedEnquiry?.returnDate && (
-                  <p className="text-xs text-purple-400 mt-1">
-                    Return Date: {formatDate(linkedEnquiry.returnDate)}
+                {getEffectiveDueDate(job) && (
+                  <p className={`text-xs mt-1 ${getUrgencyColor(getUrgencyStatus(job))}`}>
+                    Due: {formatDate(getEffectiveDueDate(job)!)}
+                    {getUrgencyStatus(job) === 'overdue' && ' ⚠️'}
+                    {getUrgencyStatus(job) === 'urgent' && ' 🔥'}
                   </p>
                 )}
                 <button
@@ -1772,30 +2646,6 @@ export default function EstimatingOverviewPage() {
                 >
                   Change Estimator
                 </button>
-                {job.progress && job.progress >= 90 && (
-                  <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setWorkingOnJob(job);
-                        // Trigger PDF generation after state updates
-                        setTimeout(handleGenerateQuotePDF, 100);
-                      }}
-                      className="mt-2 w-full rounded bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-600 transition-colors"
-                    >
-                      Generate Quote PDF
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSubmitQuote(job.id);
-                      }}
-                      className="mt-2 w-full rounded bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 transition-colors"
-                    >
-                      Submit Quote
-                    </button>
-                  </>
-                )}
               </div>
             );
             })}
@@ -1840,7 +2690,7 @@ export default function EstimatingOverviewPage() {
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-sm font-bold text-green-400">
-                    {job.value}
+                    {getJobDisplayValue(job)}
                   </span>
                   <span className="rounded-full bg-purple-900/30 px-2 py-1 text-xs font-semibold text-purple-400">
                     {job.quoteRef}
@@ -1849,9 +2699,9 @@ export default function EstimatingOverviewPage() {
                 <p className="text-xs text-gray-500 mt-2">
                   Submitted: {formatDate(job.submittedDate)}
                 </p>
-                {linkedEnquiry?.returnDate && (
+                {getEffectiveDueDate(job) && (
                   <p className="text-xs text-purple-400 mt-1">
-                    Return Date: {formatDate(linkedEnquiry.returnDate)}
+                    Due Date: {formatDate(getEffectiveDueDate(job)!)}
                   </p>
                 )}
                 <div className="mt-3 flex gap-2">
@@ -1902,6 +2752,7 @@ export default function EstimatingOverviewPage() {
             {jobsByStatus["won"].map((job) => {
               const enquiries = getEnquiriesFromStorage();
               const linkedEnquiry = enquiries.find((e: Enquiry) => e.id === job.enquiryId);
+              const isSentToOperations = handovers.some(h => h.estimateId === job.id);
               return (
               <div
                 key={job.id}
@@ -1920,7 +2771,7 @@ export default function EstimatingOverviewPage() {
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-sm font-bold text-green-400">
-                    {job.value}
+                    {getJobDisplayValue(job)}
                   </span>
                   <span className="rounded-full bg-green-900/30 px-2 py-1 text-xs font-semibold text-green-400">
                     Won ✓
@@ -1929,13 +2780,28 @@ export default function EstimatingOverviewPage() {
                 <p className="text-xs text-gray-400 mt-2 line-clamp-2">
                   {job.outcome}
                 </p>
-                {linkedEnquiry?.returnDate && (
+                {getEffectiveDueDate(job) && (
                   <p className="text-xs text-purple-400 mt-1">
-                    Return Date: {formatDate(linkedEnquiry.returnDate)}
+                    Due Date: {formatDate(getEffectiveDueDate(job)!)}
                   </p>
                 )}
-                <button className="mt-3 w-full rounded bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors">
-                  Send to Operations →
+                <button
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.stopPropagation();
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleSendToOperations(job.id);
+                  }}
+                  disabled={isSentToOperations}
+                  className={`mt-3 w-full rounded px-3 py-1.5 text-xs font-semibold text-white transition-colors ${
+                    isSentToOperations
+                      ? "bg-gray-700 cursor-not-allowed"
+                      : "bg-orange-500 hover:bg-orange-600"
+                  }`}
+                >
+                  {isSentToOperations ? "Sent to Operations" : "Send to Operations →"}
                 </button>
               </div>
             );
@@ -1978,7 +2844,7 @@ export default function EstimatingOverviewPage() {
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-sm font-bold text-gray-400">
-                    {job.value}
+                    {getJobDisplayValue(job)}
                   </span>
                   <span className="rounded-full bg-red-900/30 px-2 py-1 text-xs font-semibold text-red-400">
                     Lost
@@ -2055,7 +2921,7 @@ export default function EstimatingOverviewPage() {
                     </div>
                     <div className="bg-gray-700/30 rounded-lg p-3">
                       <p className="text-xs text-gray-400">Project Value</p>
-                      <p className="text-sm font-bold text-green-400 mt-1">{selectedJob.value}</p>
+                      <p className="text-sm font-bold text-green-400 mt-1">{getJobDisplayValue(selectedJob)}</p>
                     </div>
                     <div className="bg-gray-700/30 rounded-lg p-3">
                       <p className="text-xs text-gray-400">Received Date</p>
@@ -2130,18 +2996,43 @@ export default function EstimatingOverviewPage() {
                     </>
                   )}
 
+                  {/* Editable Due Date */}
+                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-4">
+                    <h4 className="text-xs font-semibold text-orange-400 mb-3">⏰ DUE DATE</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-xs text-gray-400 block mb-1">
+                          Custom Due Date {selectedJob.dueDate && '(Override)'}
+                        </label>
+                        <input
+                          type="date"
+                          value={selectedJob.dueDate || ''}
+                          onChange={(e) => handleUpdateDueDate(selectedJob.id, e.target.value)}
+                          className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white text-sm focus:border-orange-500 focus:outline-none"
+                        />
+                      </div>
+                      {linkedEnquiry?.returnDate && (
+                        <p className="text-xs text-gray-400">
+                          Original Return Date: {formatDate(linkedEnquiry.returnDate)}
+                        </p>
+                      )}
+                      {getEffectiveDueDate(selectedJob) && (
+                        <p className={`text-xs font-semibold ${getUrgencyColor(getUrgencyStatus(selectedJob))}`}>
+                          Effective Due Date: {formatDate(getEffectiveDueDate(selectedJob)!)}
+                          {getUrgencyStatus(selectedJob) === 'overdue' && ' ⚠️ Overdue'}
+                          {getUrgencyStatus(selectedJob) === 'urgent' && ' 🔥 Urgent'}
+                          {getUrgencyStatus(selectedJob) === 'normal' && ' ✓'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Job Status Information */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     {selectedJob.estimator && (
                       <div className="bg-gray-700/30 rounded-lg p-3">
                         <p className="text-xs text-gray-400">Estimator</p>
                         <p className="text-sm text-white mt-1">{selectedJob.estimator}</p>
-                      </div>
-                    )}
-                    {selectedJob.progress !== undefined && (
-                      <div className="bg-gray-700/30 rounded-lg p-3">
-                        <p className="text-xs text-gray-400">Progress</p>
-                        <p className="text-sm text-white mt-1">{selectedJob.progress}%</p>
                       </div>
                     )}
                     {selectedJob.quoteRef && (
@@ -2176,6 +3067,33 @@ export default function EstimatingOverviewPage() {
                     <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
                       <p className="text-xs text-yellow-400 font-semibold">Enquiry Notes</p>
                       <p className="text-sm text-white mt-1">{linkedEnquiry.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Drawings Section */}
+                  {selectedJob.drawingFiles && selectedJob.drawingFiles.length > 0 && (
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
+                      <h4 className="text-xs font-semibold text-blue-400 mb-3">📐 DRAWINGS ({selectedJob.drawingFiles.length})</h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {selectedJob.drawingFiles.map((drawing) => (
+                          <div key={drawing.id} className="flex items-center justify-between bg-gray-700/40 rounded p-2 hover:bg-gray-700/60 transition-colors">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="text-lg">{getFileIcon(drawing.fileType)}</span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-medium text-gray-200 truncate">{drawing.fileName}</p>
+                                <p className="text-xs text-gray-500">{formatFileSize(drawing.fileSize)}</p>
+                              </div>
+                            </div>
+                            <a
+                              href={drawing.dataUrl}
+                              download={drawing.fileName}
+                              className="ml-2 px-2 py-1 rounded bg-blue-500/30 border border-blue-500/50 text-blue-300 hover:bg-blue-500/40 transition-colors text-xs font-medium"
+                            >
+                              Download
+                            </a>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -2224,8 +3142,20 @@ export default function EstimatingOverviewPage() {
                         Work on Estimate →
                       </button>
                     )}
+                    {selectedJob.status === "quote-submitted" && (
+                      <button 
+                        onClick={() => handleReopenForRepricing(selectedJob.id)}
+                        className="flex-1 rounded bg-yellow-500 px-4 py-2 font-medium text-white hover:bg-yellow-600 transition-colors"
+                      >
+                        ↩ Re-open for Repricing
+                      </button>
+                    )}
                     {selectedJob.status === "won" && (
-                      <button className="flex-1 rounded bg-orange-500 px-4 py-2 font-medium text-white hover:bg-orange-600 transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => handleSendToOperations(selectedJob.id)}
+                        className="flex-1 rounded bg-orange-500 px-4 py-2 font-medium text-white hover:bg-orange-600 transition-colors"
+                      >
                         Send to Operations →
                       </button>
                     )}
@@ -2257,12 +3187,6 @@ export default function EstimatingOverviewPage() {
                 >
                   ← Back to Overview
                 </button>
-                <button 
-                  onClick={saveProgress}
-                  className="rounded bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
-                >
-                  Save Progress
-                </button>
               </div>
             </div>
 
@@ -2273,7 +3197,7 @@ export default function EstimatingOverviewPage() {
                   <h3 className="mb-4 text-lg font-bold text-white">Bill of Quantities</h3>
                   
                   {/* BOQ Actions */}
-                  <div className="mb-4 flex gap-2 flex-wrap">
+                  <div className="mb-4 flex gap-2 flex-wrap items-center">
                     <button 
                       onClick={handleBOQUploadClick}
                       disabled={isUploadingBoq}
@@ -2294,6 +3218,39 @@ export default function EstimatingOverviewPage() {
                     >
                       📚 Import from Libraries
                     </button>
+                    
+                    <div className="h-6 w-px bg-gray-700"></div>
+                    
+                    <button 
+                      onClick={() => document.getElementById('drawingUpload')?.click()}
+                      disabled={uploadingDrawing}
+                      className="rounded bg-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+                    >
+                      {uploadingDrawing ? 'Uploading...' : '📎 Upload Drawing'}
+                    </button>
+                    <input
+                      id="drawingUpload"
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      multiple
+                      onChange={handleDrawingUpload}
+                      className="hidden"
+                    />
+                    
+                    {drawingFiles.length > 0 && (
+                      <select
+                        value={selectedDrawingId || ''}
+                        onChange={(e) => setSelectedDrawingId(e.target.value)}
+                        className="rounded bg-gray-700 px-3 py-1.5 text-sm text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">Select drawing ({drawingFiles.length})</option>
+                        {drawingFiles.map(d => (
+                          <option key={d.id} value={d.id}>
+                            {d.fileType === 'application/pdf' ? '📄' : '🖼️'} {d.fileName}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   {boqUploadError && (
                     <div className="mb-4 rounded border border-red-500/50 bg-red-500/10 p-3">
@@ -2318,7 +3275,22 @@ export default function EstimatingOverviewPage() {
                           <tr key={item.id} className="hover:bg-gray-700/30">
                             <td className="py-3 text-sm text-white">{item.description}</td>
                             <td className="py-3 text-sm text-gray-400">{item.unit}</td>
-                            <td className="py-3 text-right text-sm text-white">{item.quantity.toLocaleString()}</td>
+                            <td className="py-3 text-right text-sm">
+                              <div className="flex items-center justify-end gap-2">
+                                <span className={`${item.measuredQuantity ? 'text-green-400 font-semibold' : 'text-white'}`}>
+                                  {item.quantity.toLocaleString()}
+                                </span>
+                                {drawingFiles.length > 0 && (
+                                  <button
+                                    onClick={() => openMeasurementTool(item)}
+                                    className="px-2 py-0.5 rounded bg-purple-500/20 border border-purple-500/50 text-purple-300 hover:bg-purple-500/30 transition-colors text-xs"
+                                    title="Measure on drawing"
+                                  >
+                                    📐
+                                  </button>
+                                )}
+                              </div>
+                            </td>
                             <td className="py-3 text-right text-sm">
                               <button
                                 onClick={() => openRateBreakdown(item)}
@@ -2419,41 +3391,22 @@ export default function EstimatingOverviewPage() {
                       </span>
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-400">Overheads</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value={overheadsPercent}
-                          onChange={(e) => setOverheadsPercent(parseFloat(e.target.value) || 0)}
-                          className="w-16 rounded bg-gray-700 px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                        <span className="text-xs text-gray-400">%</span>
-                      </div>
-                      <span className="text-sm font-semibold text-gray-300">
-                        £{overheads.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                    
                     <div className="flex items-center justify-between pb-3 border-b border-gray-700/50">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-400">Profit</span>
+                        <span className="text-sm text-gray-400">Margin</span>
                         <input
                           type="number"
                           min="0"
                           max="100"
                           step="0.1"
-                          value={profitPercent}
-                          onChange={(e) => setProfitPercent(parseFloat(e.target.value) || 0)}
+                          value={marginPercent}
+                          onChange={(e) => setMarginPercent(parseFloat(e.target.value) || 0)}
                           className="w-16 rounded bg-gray-700 px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                         />
                         <span className="text-xs text-gray-400">%</span>
                       </div>
                       <span className="text-sm font-semibold text-gray-300">
-                        £{profit.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        £{margin.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     
@@ -2467,23 +3420,10 @@ export default function EstimatingOverviewPage() {
                 </div>
 
                 <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
-                  <h3 className="mb-4 text-lg font-bold text-white">Progress</h3>
+                  <h3 className="mb-4 text-lg font-bold text-white">Job Details</h3>
                   
                   <div className="space-y-3">
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-400">Completion</span>
-                        <span className="text-sm font-semibold text-white">{workingOnJob.progress}%</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-gray-700">
-                        <div
-                          className="h-2 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500"
-                          style={{ width: `${workingOnJob.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="pt-3 border-t border-gray-700/50">
                       <p className="text-xs text-gray-400 mb-2">Estimator</p>
                       <p className="text-sm font-semibold text-white">{workingOnJob.estimator}</p>
                     </div>
@@ -3345,13 +4285,39 @@ export default function EstimatingOverviewPage() {
                       </div>
                     )}
 
+                    {/* Quick Tools */}
+                    <div className="mt-4 rounded-lg border border-gray-700 bg-gray-850/50 p-4">
+                      <p className="text-xs font-medium text-gray-400 mb-2">Quick Tools</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => window.open('/tools/materials-calculator', '_blank')}
+                          className="rounded bg-gray-800 px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition-colors flex items-center justify-center gap-1"
+                        >
+                          <span>🔧</span>
+                          <span>Materials Calculator</span>
+                        </button>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500">
+                        Calculate quantities and outputs, then import directly to this rate buildup
+                      </p>
+                    </div>
+
+                    {/* Open Civils Rate Builder */}
+                    <button
+                      onClick={() => setShowCivilsRateLoader(true)}
+                      className="mt-4 w-full rounded border border-green-500/50 bg-green-500/10 py-3 text-sm text-green-400 hover:bg-green-500/20 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <span>🏗️</span>
+                      <span>Open Civils Rate Builder</span>
+                    </button>
+
                     {/* Add Component Section */}
                     {!showAddComponent ? (
                       <button
                         onClick={() => setShowAddComponent(true)}
                         className="mt-4 w-full rounded border-2 border-dashed border-gray-600 py-3 text-sm text-gray-400 hover:border-blue-500 hover:text-blue-400 transition-colors"
                       >
-                        + Add Component
+                        + Add Component Manually
                       </button>
                     ) : (
                       <div className="mt-4 rounded border border-blue-500/50 bg-blue-500/10 p-4">
@@ -3658,6 +4624,53 @@ export default function EstimatingOverviewPage() {
               />
             </div>
 
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Order number (or contract upload)
+                </label>
+                <div className="flex flex-col gap-3">
+                  <input
+                    value={orderNumber}
+                    onChange={(e) => setOrderNumber(e.target.value)}
+                    placeholder="Order number"
+                    className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <input
+                    type="file"
+                    onChange={(e) => setContractFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm text-gray-300"
+                  />
+                  <p className="text-xs text-gray-500">Provide either an order number or upload a contract file.</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Invoice address
+                </label>
+                <textarea
+                  value={invoiceAddress}
+                  onChange={(e) => setInvoiceAddress(e.target.value)}
+                  rows={3}
+                  placeholder="Full invoice address"
+                  className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Payment terms
+                </label>
+                <input
+                  value={paymentTerms}
+                  onChange={(e) => setPaymentTerms(e.target.value)}
+                  placeholder="e.g., 30 days from invoice"
+                  className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
             <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-3 mb-4">
               <div className="flex items-start gap-2">
                 <svg className="h-5 w-5 text-green-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -3675,6 +4688,10 @@ export default function EstimatingOverviewPage() {
                   setShowWonModal(false);
                   setSelectedJobForOutcome(null);
                   setWinReason('');
+                  setOrderNumber('');
+                  setContractFile(null);
+                  setInvoiceAddress('');
+                  setPaymentTerms('');
                 }}
                 className="rounded bg-gray-700 px-4 py-2 text-sm text-white hover:bg-gray-600 transition-colors"
               >
@@ -3682,10 +4699,26 @@ export default function EstimatingOverviewPage() {
               </button>
               <button
                 onClick={() => {
+                  if (!orderNumber.trim() && !contractFile) {
+                    alert("Please provide an order number or upload a contract file.");
+                    return;
+                  }
+                  if (!invoiceAddress.trim()) {
+                    alert("Please provide an invoice address.");
+                    return;
+                  }
+                  if (!paymentTerms.trim()) {
+                    alert("Please provide payment terms.");
+                    return;
+                  }
                   handleMarkWon(selectedJobForOutcome.id, winReason || undefined);
                   setShowWonModal(false);
                   setSelectedJobForOutcome(null);
                   setWinReason('');
+                  setOrderNumber('');
+                  setContractFile(null);
+                  setInvoiceAddress('');
+                  setPaymentTerms('');
                 }}
                 className="rounded bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 transition-colors"
               >
@@ -3778,6 +4811,200 @@ export default function EstimatingOverviewPage() {
               >
                 Confirm Loss
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Civils Rate Builder Modal */}
+      {showCivilsRateLoader && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setShowCivilsRateLoader(false)}
+        >
+          <div
+            className="w-full max-w-7xl rounded-lg border border-gray-700/50 bg-gray-900 max-h-[95vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="border-b border-gray-700 p-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Civils Rate Builder</h2>
+                <p className="text-sm text-gray-400 mt-1">Build a rate and add components to this BOQ item</p>
+              </div>
+              <button
+                onClick={() => setShowCivilsRateLoader(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Left: Template Selection */}
+                <div className="lg:col-span-1 space-y-4">
+                  {/* Category */}
+                  <div className="rounded-lg border border-gray-800 bg-gray-800/50 p-4">
+                    <h3 className="text-sm font-semibold text-white mb-3">Category</h3>
+                    <div className="space-y-1">
+                      {(['roads', 'excavation', 'drainage', 'concrete', 'kerbs', 'paving'] as const).map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => {
+                            setCivilsCategory(cat);
+                            setCivilsTemplate(null);
+                          }}
+                          className={`w-full text-left px-2 py-1.5 rounded text-sm ${
+                            civilsCategory === cat
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }`}
+                        >
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Templates */}
+                  <div className="rounded-lg border border-gray-800 bg-gray-800/50 p-4">
+                    <h3 className="text-sm font-semibold text-white mb-3">Templates</h3>
+                    <div className="space-y-1 max-h-96 overflow-y-auto">
+                      {PRODUCTIVITY_TEMPLATES
+                        .filter(t => civilsCategory === 'all' || t.category === civilsCategory)
+                        .map((template) => (
+                          <button
+                            key={template.id}
+                            onClick={() => {
+                              setCivilsTemplate(template);
+                              autopopulateCivilsTemplate(template);
+                            }}
+                            className={`w-full text-left px-2 py-1.5 rounded text-xs ${
+                              civilsTemplate?.id === template.id
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            {template.description}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Rate Details */}
+                <div className="lg:col-span-2">
+                  {civilsTemplate ? (
+                    <div className="space-y-4">
+                      {/* Template Info */}
+                      <div className="rounded-lg border border-gray-800 bg-gray-800/50 p-4">
+                        <h3 className="text-base font-semibold text-white mb-2">{civilsTemplate.description}</h3>
+                        <div className="flex gap-4 text-xs text-gray-400">
+                          <span>Output: {civilsTemplate.outputPerDay} {civilsTemplate.unit}/day</span>
+                          <span>Category: {civilsTemplate.category}</span>
+                        </div>
+                        {(() => {
+                          const result = calculateCivilsRate();
+                          return result ? (
+                            <div className="mt-3 pt-3 border-t border-gray-700">
+                              <div className="text-lg font-bold text-green-400">
+                                £{result.finalRate.toFixed(2)} per {civilsTemplate.unit}
+                              </div>
+                              <div className="flex gap-4 text-xs text-gray-400 mt-1">
+                                <span>Labour: £{result.labourCost.toFixed(2)}</span>
+                                <span>Plant: £{result.plantCost.toFixed(2)}</span>
+                                <span>Materials: £{result.totalMaterialCost.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+
+                      {/* Labour */}
+                      {civilsLabourItems.length > 0 && (
+                        <div className="rounded-lg border border-gray-800 bg-gray-800/50 p-4">
+                          <h4 className="text-sm font-semibold text-blue-400 mb-2">Labour</h4>
+                          <div className="space-y-2">
+                            {civilsLabourItems.map((item, idx) => (
+                              <div key={idx} className="text-xs text-gray-300 bg-gray-700/50 p-2 rounded">
+                                <div>{item.rate.description}</div>
+                                <div className="text-gray-400">Qty: {item.quantity} × £{item.rate.hourlyRate}/hr</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Plant */}
+                      {civilsPlantItems.length > 0 && (
+                        <div className="rounded-lg border border-gray-800 bg-gray-800/50 p-4">
+                          <h4 className="text-sm font-semibold text-yellow-400 mb-2">Plant</h4>
+                          <div className="space-y-2">
+                            {civilsPlantItems.map((item, idx) => (
+                              <div key={idx} className="text-xs text-gray-300 bg-gray-700/50 p-2 rounded">
+                                <div>{item.rate.name}</div>
+                                <div className="text-gray-400">Qty: {item.quantity} × £{item.rate.rate}/{item.rate.unit}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Materials */}
+                      {civilsMaterialItems.length > 0 && (
+                        <div className="rounded-lg border border-gray-800 bg-gray-800/50 p-4">
+                          <h4 className="text-sm font-semibold text-green-400 mb-2">Materials</h4>
+                          <div className="space-y-2">
+                            {civilsMaterialItems.map((item, idx) => (
+                              <div key={idx} className="text-xs text-gray-300 bg-gray-700/50 p-2 rounded">
+                                <div>{item.name}</div>
+                                <div className="text-gray-400">
+                                  {item.quantityPerUnit.toFixed(3)} {item.purchaseUnit} @ £{item.purchaseRate.toFixed(2)}/{item.purchaseUnit}
+                                  {item.density && ` (${item.density}t/m³)`}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-gray-800 bg-gray-800/50 p-12 text-center">
+                      <p className="text-gray-400">Select a template to build a rate</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-700 p-4 flex justify-between items-center">
+              <div className="text-sm text-gray-400">
+                {civilsTemplate && calculateCivilsRate() ? (
+                  <span>
+                    {civilsLabourItems.length + civilsPlantItems.length + civilsMaterialItems.length} components ready to add
+                  </span>
+                ) : (
+                  <span>Select a template to get started</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCivilsRateLoader(false)}
+                  className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addCivilsRateToBoQ}
+                  disabled={!civilsTemplate}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium"
+                >
+                  Add to BOQ Item
+                </button>
+              </div>
             </div>
           </div>
         </div>

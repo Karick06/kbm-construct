@@ -51,8 +51,17 @@ body {
   background-image: radial-gradient(circle at top, rgba(255, 139, 44, 0.08), transparent 55%),
     radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 45%);
   background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .font-display {
   font-family: var(--font-display), system-ui, -apple-system, sans-serif;
+}
+
+/* Mobile touch optimizations */
+@media (max-width: 1023px) {
+  * {
+    -webkit-tap-highlight-color: rgba(255, 139, 44, 0.15);
+  }
 }

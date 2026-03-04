@@ -1,0 +1,4393 @@
+{
+  "materials": [
+    {
+      "id": "mat-001",
+      "name": "Topsoil (screened)",
+      "category": "earthworks",
+      "unit": "m3",
+      "density": 1.3,
+      "defaultRate": 18.0,
+      "description": "Screened topsoil for landscaping and reinstatement"
+    },
+    {
+      "id": "mat-002",
+      "name": "Topsoil (as dug)",
+      "category": "earthworks",
+      "unit": "m3",
+      "density": 1.3,
+      "defaultRate": 12.0,
+      "description": "Unscreened topsoil from site"
+    },
+    {
+      "id": "mat-003",
+      "name": "Subsoil",
+      "category": "earthworks",
+      "unit": "m3",
+      "density": 1.8,
+      "defaultRate": 8.0,
+      "description": "General subsoil material"
+    },
+    {
+      "id": "mat-004",
+      "name": "Granular fill Type 1",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 2.1,
+      "defaultRate": 22.0,
+      "description": "MOT Type 1 sub-base material"
+    },
+    {
+      "id": "mat-005",
+      "name": "Granular fill Type 2",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 1.95,
+      "defaultRate": 18.5,
+      "description": "MOT Type 2 sub-base material"
+    },
+    {
+      "id": "mat-006",
+      "name": "Granular fill Type 3",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 2.0,
+      "defaultRate": 24.0,
+      "description": "Selected granular fill"
+    },
+    {
+      "id": "mat-007",
+      "name": "6F2 capping layer",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 2.0,
+      "defaultRate": 19.5,
+      "description": "Capping layer material to improve CBR"
+    },
+    {
+      "id": "mat-008",
+      "name": "6F5 selected fill",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 2.1,
+      "defaultRate": 17.0,
+      "description": "General granular fill selected"
+    },
+    {
+      "id": "mat-009",
+      "name": "Crushed concrete Type 1",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 1.9,
+      "defaultRate": 15.0,
+      "description": "Recycled concrete aggregate Type 1"
+    },
+    {
+      "id": "mat-010",
+      "name": "Sand blinding layer",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 1.6,
+      "defaultRate": 28.0,
+      "description": "Sharp sand for blinding"
+    },
+    {
+      "id": "mat-011",
+      "name": "Pea gravel 10mm",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 35.0,
+      "description": "Pea shingle for drainage and landscaping"
+    },
+    {
+      "id": "mat-012",
+      "name": "All-in ballast",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.75,
+      "defaultRate": 32.0,
+      "description": "Mixed aggregate for concrete"
+    },
+    {
+      "id": "mat-013",
+      "name": "Sharp sand",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.6,
+      "defaultRate": 30.0,
+      "description": "Concreting sand"
+    },
+    {
+      "id": "mat-014",
+      "name": "Building sand",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.4,
+      "defaultRate": 28.0,
+      "description": "Fine sand for mortar and render"
+    },
+    {
+      "id": "mat-015",
+      "name": "Coarse aggregate 20mm",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 34.0,
+      "description": "Crushed stone 20mm for concrete"
+    },
+    {
+      "id": "mat-016",
+      "name": "Coarse aggregate 40mm",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.7,
+      "defaultRate": 32.0,
+      "description": "Crushed stone 40mm for mass concrete"
+    },
+    {
+      "id": "mat-017",
+      "name": "Concrete C20/25 poured in-situ",
+      "category": "concrete",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 105.0,
+      "description": "Gen 3 concrete for general use"
+    },
+    {
+      "id": "mat-018",
+      "name": "Concrete C25/30 poured in-situ",
+      "category": "concrete",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 115.0,
+      "description": "RC25 structural concrete"
+    },
+    {
+      "id": "mat-019",
+      "name": "Concrete C32/40 poured in-situ",
+      "category": "concrete",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 125.0,
+      "description": "RC32 high strength structural concrete"
+    },
+    {
+      "id": "mat-020",
+      "name": "Concrete C40/50 poured in-situ",
+      "category": "concrete",
+      "unit": "m3",
+      "density": 2.5,
+      "defaultRate": 140.0,
+      "description": "RC40 high strength concrete"
+    },
+    {
+      "id": "mat-021",
+      "name": "Lean mix concrete (C10/15)",
+      "category": "concrete",
+      "unit": "m3",
+      "density": 2.3,
+      "defaultRate": 85.0,
+      "description": "Gen 1 blinding concrete"
+    },
+    {
+      "id": "mat-022",
+      "name": "Ready-mix screed (C15/20)",
+      "category": "concrete",
+      "unit": "m3",
+      "density": 2.2,
+      "defaultRate": 95.0,
+      "description": "Floor screed mix"
+    },
+    {
+      "id": "mat-023",
+      "name": "Bitmac (DBM) roadbase",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 95.0,
+      "description": "Dense bitumen macadam roadbase material"
+    },
+    {
+      "id": "mat-024",
+      "name": "Bitmac (DBM) binder course",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 95.0,
+      "description": "Dense bitumen macadam binder material"
+    },
+    {
+      "id": "mat-025",
+      "name": "Asphalt wearing course",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 92.0,
+      "description": "Standard asphalt surface course material"
+    },
+    {
+      "id": "mat-026",
+      "name": "SMA surface course",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 98.0,
+      "description": "Stone mastic asphalt surface material"
+    },
+    {
+      "id": "mat-027",
+      "name": "HRA surface course",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 96.0,
+      "description": "Hot rolled asphalt surface material"
+    },
+    {
+      "id": "mat-028",
+      "name": "Tarmac cold lay patching",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 120.0,
+      "description": "Cold lay asphalt for repairs"
+    },
+    {
+      "id": "mat-029",
+      "name": "Tack coat emulsion K1-40",
+      "category": "asphalt",
+      "unit": "litre",
+      "defaultRate": 2.0,
+      "description": "Bitumen tack coat for asphalt bonding"
+    },
+    {
+      "id": "mat-030",
+      "name": "Kerb (HB2) precast concrete",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 18.0,
+      "description": "Half-batter kerb 125x255mm"
+    },
+    {
+      "id": "mat-031",
+      "name": "Kerb (BN) bullnose precast",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 20.0,
+      "description": "Bullnose kerb 125x150mm"
+    },
+    {
+      "id": "mat-032",
+      "name": "Edging (EF) flat top precast",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 12.5,
+      "description": "Flat top edging 50x150mm"
+    },
+    {
+      "id": "mat-033",
+      "name": "Drainage channel (ACO type)",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 45.0,
+      "description": "Linear drainage channel with grating"
+    },
+    {
+      "id": "mat-034",
+      "name": "Clay pipe 100mm perforated",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 8.5,
+      "description": "100mm clay land drain pipe"
+    },
+    {
+      "id": "mat-035",
+      "name": "Clay pipe 150mm perforated",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 12.0,
+      "description": "150mm clay land drain pipe"
+    },
+    {
+      "id": "mat-036",
+      "name": "uPVC pipe 110mm solid wall",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 6.5,
+      "description": "110mm uPVC drainage pipe"
+    },
+    {
+      "id": "mat-037",
+      "name": "uPVC pipe 160mm solid wall",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 11.0,
+      "description": "160mm uPVC drainage pipe"
+    },
+    {
+      "id": "mat-038",
+      "name": "uPVC pipe 225mm solid wall",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 18.5,
+      "description": "225mm uPVC drainage pipe"
+    },
+    {
+      "id": "mat-039",
+      "name": "Twin-wall pipe 225mm",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 16.0,
+      "description": "225mm twin-wall corrugated drainage pipe"
+    },
+    {
+      "id": "mat-040",
+      "name": "Twin-wall pipe 300mm",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 22.0,
+      "description": "300mm twin-wall corrugated drainage pipe"
+    },
+    {
+      "id": "mat-041",
+      "name": "Twin-wall pipe 375mm",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 32.0,
+      "description": "375mm twin-wall corrugated drainage pipe"
+    },
+    {
+      "id": "mat-042",
+      "name": "Twin-wall pipe 450mm",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 45.0,
+      "description": "450mm twin-wall corrugated drainage pipe"
+    },
+    {
+      "id": "mat-043",
+      "name": "Manhole cover Class B125 600x600",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 85.0,
+      "description": "Medium duty manhole cover and frame"
+    },
+    {
+      "id": "mat-044",
+      "name": "Manhole cover Class D400 600x600",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 165.0,
+      "description": "Heavy duty highway manhole cover"
+    },
+    {
+      "id": "mat-045",
+      "name": "Gully pot 450mm diameter",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 55.0,
+      "description": "Precast concrete gully pot"
+    },
+    {
+      "id": "mat-046",
+      "name": "Gully grating 340x340mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Cast iron gully grating"
+    },
+    {
+      "id": "mat-047",
+      "name": "Catchpit 900mm diameter",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 280.0,
+      "description": "Precast concrete catchpit chamber"
+    },
+    {
+      "id": "mat-048",
+      "name": "Inspection chamber polyprop 450mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "Plastic inspection chamber base unit"
+    },
+    {
+      "id": "mat-049",
+      "name": "Pea gravel for French drain",
+      "category": "drainage",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 38.0,
+      "description": "Clean gravel for drainage"
+    },
+    {
+      "id": "mat-050",
+      "name": "Geotextile membrane 150gsm",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 1.2,
+      "description": "Non-woven geotextile fabric"
+    },
+    {
+      "id": "mat-051",
+      "name": "Geotextile membrane 250gsm",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 1.8,
+      "description": "Heavy duty geotextile for separation"
+    },
+    {
+      "id": "mat-052",
+      "name": "Terram 1000 geotextile",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 2.2,
+      "description": "Terram separation and filter fabric"
+    },
+    {
+      "id": "mat-053",
+      "name": "Visqueen DPM 300mu",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 0.8,
+      "description": "Damp proof membrane 300 micron"
+    },
+    {
+      "id": "mat-054",
+      "name": "Reinforced DPM 1200 gauge",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 2.5,
+      "description": "Heavy duty reinforced damp proof membrane"
+    },
+    {
+      "id": "mat-055",
+      "name": "Turf (seeded 12 months)",
+      "category": "landscaping",
+      "unit": "m2",
+      "defaultRate": 4.5,
+      "description": "Cultivated turf for landscaping"
+    },
+    {
+      "id": "mat-056",
+      "name": "Grass seed (amenity mix)",
+      "category": "landscaping",
+      "unit": "kg",
+      "defaultRate": 8.0,
+      "description": "General purpose grass seed"
+    },
+    {
+      "id": "mat-057",
+      "name": "Bark mulch 50-80mm",
+      "category": "landscaping",
+      "unit": "m3",
+      "density": 0.35,
+      "defaultRate": 65.0,
+      "description": "Decorative bark chippings"
+    },
+    {
+      "id": "mat-058",
+      "name": "Decorative gravel 20mm",
+      "category": "landscaping",
+      "unit": "tonne",
+      "density": 1.5,
+      "defaultRate": 55.0,
+      "description": "Decorative stone chippings"
+    },
+    {
+      "id": "mat-059",
+      "name": "Weed control fabric 100gsm",
+      "category": "landscaping",
+      "unit": "m2",
+      "defaultRate": 0.85,
+      "description": "Weed suppression membrane"
+    },
+    {
+      "id": "mat-060",
+      "name": "Paving slab 600x600x50mm",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 8.5,
+      "description": "Concrete paving slab"
+    },
+    {
+      "id": "mat-061",
+      "name": "Paving slab 450x450x50mm",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 5.5,
+      "description": "Concrete paving slab"
+    },
+    {
+      "id": "mat-062",
+      "name": "Block paving 200x100x80mm",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 26.0,
+      "description": "Concrete block paving"
+    },
+    {
+      "id": "mat-063",
+      "name": "Permeable block paving 200x100x80mm",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 32.0,
+      "description": "Permeable concrete block paving"
+    },
+    {
+      "id": "mat-064",
+      "name": "Tactile paving slab 400x400mm",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 12.0,
+      "description": "Blister tactile crossing slab"
+    },
+    {
+      "id": "mat-065",
+      "name": "Cement (25kg bags)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 5.5,
+      "description": "Portland cement bagged"
+    },
+    {
+      "id": "mat-066",
+      "name": "Lime (25kg bags)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 7.0,
+      "description": "Hydrated lime for mortar"
+    },
+    {
+      "id": "mat-067",
+      "name": "Rapid hardening cement (25kg)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 8.5,
+      "description": "Fast-set cement"
+    },
+    {
+      "id": "mat-068",
+      "name": "High tensile reinforcement mesh A142",
+      "category": "reinforcement",
+      "unit": "m2",
+      "defaultRate": 4.2,
+      "description": "6mm mesh at 200mm centres"
+    },
+    {
+      "id": "mat-069",
+      "name": "High tensile reinforcement mesh A193",
+      "category": "reinforcement",
+      "unit": "m2",
+      "defaultRate": 5.5,
+      "description": "7mm mesh at 200mm centres"
+    },
+    {
+      "id": "mat-070",
+      "name": "High tensile reinforcement mesh A252",
+      "category": "reinforcement",
+      "unit": "m2",
+      "defaultRate": 6.8,
+      "description": "8mm mesh at 200mm centres"
+    },
+    {
+      "id": "mat-071",
+      "name": "Rebar T10 (10mm deformed bar)",
+      "category": "reinforcement",
+      "unit": "tonne",
+      "density": 7.85,
+      "defaultRate": 750.0,
+      "description": "10mm reinforcement bar"
+    },
+    {
+      "id": "mat-072",
+      "name": "Rebar T12 (12mm deformed bar)",
+      "category": "reinforcement",
+      "unit": "tonne",
+      "density": 7.85,
+      "defaultRate": 740.0,
+      "description": "12mm reinforcement bar"
+    },
+    {
+      "id": "mat-073",
+      "name": "Rebar T16 (16mm deformed bar)",
+      "category": "reinforcement",
+      "unit": "tonne",
+      "density": 7.85,
+      "defaultRate": 730.0,
+      "description": "16mm reinforcement bar"
+    },
+    {
+      "id": "mat-074",
+      "name": "Rebar T20 (20mm deformed bar)",
+      "category": "reinforcement",
+      "unit": "tonne",
+      "density": 7.85,
+      "defaultRate": 720.0,
+      "description": "20mm reinforcement bar"
+    },
+    {
+      "id": "mat-075",
+      "name": "Rebar T25 (25mm deformed bar)",
+      "category": "reinforcement",
+      "unit": "tonne",
+      "density": 7.85,
+      "defaultRate": 720.0,
+      "description": "25mm reinforcement bar"
+    },
+    {
+      "id": "mat-076",
+      "name": "Rebar spacers/chairs (20mm cover)",
+      "category": "reinforcement",
+      "unit": "nr",
+      "defaultRate": 0.15,
+      "description": "Plastic rebar spacers"
+    },
+    {
+      "id": "mat-077",
+      "name": "Rebar tie wire",
+      "category": "reinforcement",
+      "unit": "kg",
+      "defaultRate": 2.5,
+      "description": "Galvanised binding wire"
+    },
+    {
+      "id": "mat-078",
+      "name": "Waterproof tanking membrane",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 12.5,
+      "description": "Bitumen waterproofing membrane"
+    },
+    {
+      "id": "mat-079",
+      "name": "Cavity drain membrane 8mm studded",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 8.0,
+      "description": "Basement cavity drainage membrane"
+    },
+    {
+      "id": "mat-080",
+      "name": "Insulation XPS 50mm (perimeter)",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 9.5,
+      "description": "Extruded polystyrene insulation"
+    },
+    {
+      "id": "mat-081",
+      "name": "Recycled planings (for temporary roads)",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.2,
+      "defaultRate": 12.0,
+      "description": "Recycled asphalt planings"
+    },
+    {
+      "id": "mat-082",
+      "name": "Road grit/salt (winter maintenance)",
+      "category": "surfacing",
+      "unit": "tonne",
+      "density": 1.2,
+      "defaultRate": 65.0,
+      "description": "De-icing salt and grit"
+    },
+    {
+      "id": "mat-083",
+      "name": "Gravel 10mm angular",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.6,
+      "defaultRate": 32.0,
+      "description": "10mm crushed angular gravel"
+    },
+    {
+      "id": "mat-084",
+      "name": "Granite chippings 14mm",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 48.0,
+      "description": "Granite decorative aggregate"
+    },
+    {
+      "id": "mat-085",
+      "name": "Hoggin (self-binding gravel)",
+      "category": "surfacing",
+      "unit": "tonne",
+      "density": 1.9,
+      "defaultRate": 38.0,
+      "description": "Natural self-binding gravel path material"
+    },
+    {
+      "id": "mat-086",
+      "name": "Breedon gravel (golden amber)",
+      "category": "surfacing",
+      "unit": "tonne",
+      "density": 1.75,
+      "defaultRate": 72.0,
+      "description": "Decorative self-binding gravel"
+    },
+    {
+      "id": "mat-087",
+      "name": "Anti-skid surfacing (resin bonded)",
+      "category": "surfacing",
+      "unit": "m2",
+      "defaultRate": 45.0,
+      "description": "High-friction anti-skid surface treatment"
+    },
+    {
+      "id": "mat-088",
+      "name": "Coloured asphalt (red)",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 105.0,
+      "description": "Coloured asphalt material red"
+    },
+    {
+      "id": "mat-089",
+      "name": "Coloured asphalt (green)",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 105.0,
+      "description": "Coloured asphalt material green"
+    },
+    {
+      "id": "mat-090",
+      "name": "Road marking paint (white)",
+      "category": "surfacing",
+      "unit": "litre",
+      "defaultRate": 12.5,
+      "description": "Road marking chlorinated rubber paint"
+    },
+    {
+      "id": "mat-091",
+      "name": "Road marking paint (yellow)",
+      "category": "surfacing",
+      "unit": "litre",
+      "defaultRate": 13.0,
+      "description": "Road marking chlorinated rubber paint"
+    },
+    {
+      "id": "mat-092",
+      "name": "Thermoplastic road marking (white)",
+      "category": "surfacing",
+      "unit": "m",
+      "defaultRate": 1.25,
+      "description": "100mm width thermoplastic line marking"
+    },
+    {
+      "id": "mat-093",
+      "name": "Preformed thermoplastic symbol",
+      "category": "surfacing",
+      "unit": "nr",
+      "defaultRate": 85.0,
+      "description": "Road marking symbol (arrow, text, etc.)"
+    },
+    {
+      "id": "mat-094",
+      "name": "Road stud (reflective cat's eye)",
+      "category": "surfacing",
+      "unit": "nr",
+      "defaultRate": 12.5,
+      "description": "Solar or reflective road stud"
+    },
+    {
+      "id": "mat-095",
+      "name": "Bitumen paint/primer",
+      "category": "asphalt",
+      "unit": "litre",
+      "defaultRate": 6.5,
+      "description": "Bitumen primer for waterproofing"
+    },
+    {
+      "id": "mat-096",
+      "name": "Street nameplate post (steel)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 45.0,
+      "description": "Galvanised steel signage post"
+    },
+    {
+      "id": "mat-097",
+      "name": "Bollard (fixed steel 100mm)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 75.0,
+      "description": "Fixed steel security bollard"
+    },
+    {
+      "id": "mat-098",
+      "name": "Bollard (removable locking)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Removable locking bollard with key"
+    },
+    {
+      "id": "mat-099",
+      "name": "Rubber parking stop (1.65m)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 42.0,
+      "description": "Recycled rubber wheel stop"
+    },
+    {
+      "id": "mat-100",
+      "name": "Concrete parking stop (1.65m)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Precast concrete wheel stop"
+    },
+    {
+      "id": "mat-101",
+      "name": "Post and rail fencing (timber)",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 32.0,
+      "description": "2-rail timber post and rail fence"
+    },
+    {
+      "id": "mat-102",
+      "name": "Chestnut paling fence 1.2m",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 18.5,
+      "description": "Cleft chestnut temporary fencing"
+    },
+    {
+      "id": "mat-103",
+      "name": "Palisade security fencing 2.4m",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 125.0,
+      "description": "Steel palisade security fence"
+    },
+    {
+      "id": "mat-104",
+      "name": "Mesh fencing 1.8m (weldmesh)",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 45.0,
+      "description": "Weldmesh panel fence and posts"
+    },
+    {
+      "id": "mat-105",
+      "name": "Railings (vertical bar) 1.1m",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "Steel vertical bar railings"
+    },
+    {
+      "id": "mat-106",
+      "name": "MDPE water pipe 63mm",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 8.5,
+      "description": "Blue MDPE water main 63mm"
+    },
+    {
+      "id": "mat-107",
+      "name": "MDPE water pipe 90mm",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 14.0,
+      "description": "Blue MDPE water main 90mm"
+    },
+    {
+      "id": "mat-108",
+      "name": "Gas pipe PE100 90mm SDR11",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 18.5,
+      "description": "Yellow PE gas main 90mm"
+    },
+    {
+      "id": "mat-109",
+      "name": "Electric cable ducting 110mm",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 12.0,
+      "description": "Electric cable duct 110mm"
+    },
+    {
+      "id": "mat-110",
+      "name": "BT/Telecom ducting 94/110mm",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 10.5,
+      "description": "Telecommunications cable duct"
+    },
+    {
+      "id": "mat-111",
+      "name": "Concrete pad foundation 600x600x150",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 35.0,
+      "description": "Precast concrete pad for lamp post, sign, etc."
+    },
+    {
+      "id": "mat-112",
+      "name": "Concrete slab 100mm (C20/25)",
+      "category": "concrete",
+      "unit": "m2",
+      "defaultRate": 32.0,
+      "description": "Floor slab or hardstanding 100mm thick"
+    },
+    {
+      "id": "mat-113",
+      "name": "Concrete slab 150mm (C20/25)",
+      "category": "concrete",
+      "unit": "m2",
+      "defaultRate": 42.0,
+      "description": "Floor slab or hardstanding 150mm thick"
+    },
+    {
+      "id": "mat-114",
+      "name": "Concrete slab 200mm (C25/30)",
+      "category": "concrete",
+      "unit": "m2",
+      "defaultRate": 55.0,
+      "description": "Heavy duty slab 200mm thick"
+    },
+    {
+      "id": "mat-115",
+      "name": "Concrete strip footing 600x300 (C20/25)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 28.0,
+      "description": "Strip foundation 600mm wide x 300mm deep"
+    },
+    {
+      "id": "mat-116",
+      "name": "Concrete strip footing 900x450 (C25/30)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 52.0,
+      "description": "Strip foundation 900mm wide x 450mm deep"
+    },
+    {
+      "id": "mat-117",
+      "name": "Concrete trench fill (C10/15)",
+      "category": "foundations",
+      "unit": "m3",
+      "density": 2.3,
+      "defaultRate": 88.0,
+      "description": "Mass fill trench foundation"
+    },
+    {
+      "id": "mat-118",
+      "name": "Formwork plywood 18mm",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "Plywood formwork for concrete"
+    },
+    {
+      "id": "mat-119",
+      "name": "Timber formwork (reusable)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 5.5,
+      "description": "Timber edge formwork"
+    },
+    {
+      "id": "mat-120",
+      "name": "Concrete vibrator hire (per day)",
+      "category": "concrete",
+      "unit": "day",
+      "defaultRate": 35.0,
+      "description": "Poker vibrator hire"
+    },
+    {
+      "id": "mat-121",
+      "name": "Expansion joint filler 10mm",
+      "category": "concrete",
+      "unit": "m",
+      "defaultRate": 2.8,
+      "description": "Expansion joint board for slabs"
+    },
+    {
+      "id": "mat-122",
+      "name": "Floor hardener (dry shake)",
+      "category": "concrete",
+      "unit": "kg",
+      "defaultRate": 1.25,
+      "description": "Concrete floor hardening compound"
+    },
+    {
+      "id": "mat-123",
+      "name": "Concrete release agent",
+      "category": "concrete",
+      "unit": "litre",
+      "defaultRate": 8.5,
+      "description": "Formwork release oil"
+    },
+    {
+      "id": "mat-124",
+      "name": "Steel lintel 1200mm",
+      "category": "reinforcement",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Galvanised steel lintel"
+    },
+    {
+      "id": "mat-125",
+      "name": "Steel lintel 1800mm",
+      "category": "reinforcement",
+      "unit": "nr",
+      "defaultRate": 42.0,
+      "description": "Galvanised steel lintel"
+    },
+    {
+      "id": "mat-126",
+      "name": "Precast concrete lintel 1200mm",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 22.0,
+      "description": "Precast concrete lintel"
+    },
+    {
+      "id": "mat-127",
+      "name": "Drain rodding eye (access point)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 18.5,
+      "description": "Drainage rodding access"
+    },
+    {
+      "id": "mat-128",
+      "name": "Manhole step irons (galvanised)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 6.5,
+      "description": "Cast iron manhole steps"
+    },
+    {
+      "id": "mat-129",
+      "name": "Benching (concrete in manhole)",
+      "category": "drainage",
+      "unit": "m2",
+      "defaultRate": 45.0,
+      "description": "Concrete benching in chamber"
+    },
+    {
+      "id": "mat-130",
+      "name": "Channel (half-round) in manhole",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 22.0,
+      "description": "Precast concrete drainage channel"
+    },
+    {
+      "id": "mat-131",
+      "name": "Precast manhole ring 1050mm x 500mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "Concrete manhole chamber ring"
+    },
+    {
+      "id": "mat-132",
+      "name": "Precast manhole ring 1200mm x 500mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 125.0,
+      "description": "Concrete manhole chamber ring"
+    },
+    {
+      "id": "mat-133",
+      "name": "Precast manhole base 1050mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 165.0,
+      "description": "Concrete manhole base unit"
+    },
+    {
+      "id": "mat-134",
+      "name": "Precast reducing slab 1050mm to 675mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 85.0,
+      "description": "Manhole reducing slab"
+    },
+    {
+      "id": "mat-135",
+      "name": "Aco HexDrain units (driveway)",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 38.0,
+      "description": "Plastic modular driveway drainage"
+    },
+    {
+      "id": "mat-136",
+      "name": "Soakaway crates (modular)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 65.0,
+      "description": "Polypropylene soakaway crate"
+    },
+    {
+      "id": "mat-137",
+      "name": "Concrete bin store slab 3x2m",
+      "category": "concrete",
+      "unit": "m2",
+      "defaultRate": 28.0,
+      "description": "Concrete slab for bin store"
+    },
+    {
+      "id": "mat-138",
+      "name": "Retaining wall block (large format)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 18.5,
+      "description": "Interlocking retaining wall block"
+    },
+    {
+      "id": "mat-139",
+      "name": "Gabion basket 2m x 1m x 0.5m",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 45.0,
+      "description": "Wire mesh gabion basket"
+    },
+    {
+      "id": "mat-140",
+      "name": "Gabion fill stone (100-200mm)",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 38.0,
+      "description": "Gabion basket fill stone"
+    },
+    {
+      "id": "mat-141",
+      "name": "CBR improvement capping 6F2",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 2.0,
+      "defaultRate": 19.5,
+      "description": "Capping layer to improve subgrade"
+    },
+    {
+      "id": "mat-142",
+      "name": "Granular sub-base Type 1",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 2.1,
+      "defaultRate": 22.0,
+      "description": "GSB Type 1 sub-base material"
+    },
+    {
+      "id": "mat-143",
+      "name": "Granular sub-base Type 3",
+      "category": "subbase",
+      "unit": "tonne",
+      "density": 2.0,
+      "defaultRate": 24.0,
+      "description": "GSB Type 3 sub-base material"
+    },
+    {
+      "id": "mat-144",
+      "name": "Bituminous binder course AC20",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 95.0,
+      "description": "Highways binder course AC20 material"
+    },
+    {
+      "id": "mat-145",
+      "name": "Bituminous base course AC32",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 92.0,
+      "description": "Highways base course AC32 material"
+    },
+    {
+      "id": "mat-146",
+      "name": "HRA surface course (PSV 60)",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 98.0,
+      "description": "HRA surface course with PSV 60 aggregate"
+    },
+    {
+      "id": "mat-147",
+      "name": "SMA surface course (PSV 65)",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 102.0,
+      "description": "SMA surface course PSV 65"
+    },
+    {
+      "id": "mat-148",
+      "name": "Road marking thermoplastic (2mm)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 1.25,
+      "description": "Thermoplastic line marking 2mm"
+    },
+    {
+      "id": "mat-149",
+      "name": "Estate road pavement 5.5m wide",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 320.0,
+      "description": "Full pavement build-up for housing estate"
+    },
+    {
+      "id": "mat-150",
+      "name": "Heavy duty HGV yard pavement",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 85.0,
+      "description": "Commercial yard or loading bay pavement"
+    },
+    {
+      "id": "mat-151",
+      "name": "Drainage pipe 300mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 35.0,
+      "description": "300mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-152",
+      "name": "Drainage pipe 375mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 48.0,
+      "description": "375mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-153",
+      "name": "Drainage pipe 450mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 65.0,
+      "description": "450mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-154",
+      "name": "Drainage pipe 600mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "600mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-155",
+      "name": "Drainage pipe 750mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 140.0,
+      "description": "750mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-156",
+      "name": "Drainage pipe 900mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 185.0,
+      "description": "900mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-157",
+      "name": "Drainage pipe 1050mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 240.0,
+      "description": "1050mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-158",
+      "name": "Drainage pipe 1200mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 295.0,
+      "description": "1200mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-159",
+      "name": "Drainage pipe 1350mm concrete",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 360.0,
+      "description": "1350mm concrete drainage pipe"
+    },
+    {
+      "id": "mat-160",
+      "name": "Precast drainage chamber 1050mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 420.0,
+      "description": "Large precast chamber unit"
+    },
+    {
+      "id": "mat-161",
+      "name": "Precast drainage chamber 1200mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 520.0,
+      "description": "Large precast chamber unit"
+    },
+    {
+      "id": "mat-162",
+      "name": "Precast drainage chamber 1500mm",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 680.0,
+      "description": "Large precast chamber unit"
+    },
+    {
+      "id": "mat-163",
+      "name": "Attenuation tank modular (1m3 capacity)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Modular attenuation storage cell"
+    },
+    {
+      "id": "mat-164",
+      "name": "Geocellular soakaway crate",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 72.0,
+      "description": "Polypropylene attenuation crate"
+    },
+    {
+      "id": "mat-165",
+      "name": "Oil interceptor/separator 5l/s",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 1200.0,
+      "description": "Full retention oil separator"
+    },
+    {
+      "id": "mat-166",
+      "name": "Petrol interceptor Class 1",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 1850.0,
+      "description": "Class 1 forecourt interceptor"
+    },
+    {
+      "id": "mat-167",
+      "name": "Filter drain trench (French drain)",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 45.0,
+      "description": "Linear filter drain with pipe and gravel"
+    },
+    {
+      "id": "mat-168",
+      "name": "Permeable paving sub-base 350mm",
+      "category": "drainage",
+      "unit": "m2",
+      "defaultRate": 22.0,
+      "description": "Open-graded sub-base for permeable paving"
+    },
+    {
+      "id": "mat-169",
+      "name": "Water main connection 63mm",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 850.0,
+      "description": "New water main connection to network"
+    },
+    {
+      "id": "mat-170",
+      "name": "Water main connection 90mm",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 1100.0,
+      "description": "New water main connection to network"
+    },
+    {
+      "id": "mat-171",
+      "name": "Gas main connection (up to 90mm)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 1200.0,
+      "description": "New gas main connection"
+    },
+    {
+      "id": "mat-172",
+      "name": "Electric cable 3-core 95mm",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 42.0,
+      "description": "Underground electric cable"
+    },
+    {
+      "id": "mat-173",
+      "name": "Electric cable 4-core 185mm",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 85.0,
+      "description": "Underground electric cable"
+    },
+    {
+      "id": "mat-174",
+      "name": "BT cable duct 94/110mm twin-wall",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 11.5,
+      "description": "BT/telecom twin-wall duct"
+    },
+    {
+      "id": "mat-175",
+      "name": "Virgin Media duct 50/63mm",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 8.5,
+      "description": "Virgin Media cable duct"
+    },
+    {
+      "id": "mat-176",
+      "name": "Street lighting column 6m",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 850.0,
+      "description": "Galvanised steel lighting column"
+    },
+    {
+      "id": "mat-177",
+      "name": "Street lighting column 8m",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 1100.0,
+      "description": "Galvanised steel lighting column"
+    },
+    {
+      "id": "mat-178",
+      "name": "LED street light head (60W)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 320.0,
+      "description": "LED lantern for street lighting"
+    },
+    {
+      "id": "mat-179",
+      "name": "Feeder pillar (electrical)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 650.0,
+      "description": "Street electrical feeder pillar"
+    },
+    {
+      "id": "mat-180",
+      "name": "BT chamber (footway box)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "BT underground chamber"
+    },
+    {
+      "id": "mat-181",
+      "name": "BT chamber cover & frame",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 45.0,
+      "description": "Cast iron BT chamber cover"
+    },
+    {
+      "id": "mat-182",
+      "name": "Water stopcock chamber & frame",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 42.0,
+      "description": "Plastic stopcock chamber"
+    },
+    {
+      "id": "mat-183",
+      "name": "Gas valve chamber & cover",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 55.0,
+      "description": "Gas service valve chamber"
+    },
+    {
+      "id": "mat-184",
+      "name": "Hydrant marker post",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 35.0,
+      "description": "Fire hydrant marker post"
+    },
+    {
+      "id": "mat-185",
+      "name": "Concrete HB2 kerb (125x255mm)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 18.0,
+      "description": "Half-batter kerb to BS 7263"
+    },
+    {
+      "id": "mat-186",
+      "name": "Granite kerb (150x300mm)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 48.0,
+      "description": "Natural granite kerb"
+    },
+    {
+      "id": "mat-187",
+      "name": "Concrete BN bullnose kerb",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 19.5,
+      "description": "Bullnose kerb to BS 7263"
+    },
+    {
+      "id": "mat-188",
+      "name": "Concrete SP splayed kerb",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 17.5,
+      "description": "Splayed/chamfered kerb"
+    },
+    {
+      "id": "mat-189",
+      "name": "Concrete EF edging (50x150mm)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 12.0,
+      "description": "Flat top edging to BS 7263"
+    },
+    {
+      "id": "mat-190",
+      "name": "Tactile paving (buff blister)",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 65.0,
+      "description": "Blister tactiles for controlled crossing"
+    },
+    {
+      "id": "mat-191",
+      "name": "Tactile paving (red blister)",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 65.0,
+      "description": "Blister tactiles for uncontrolled crossing"
+    },
+    {
+      "id": "mat-192",
+      "name": "Tactile paving (buff corduroy)",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 62.0,
+      "description": "Corduroy tactiles for platform edge"
+    },
+    {
+      "id": "mat-193",
+      "name": "Concrete foundation C10/15 mass fill",
+      "category": "foundations",
+      "unit": "m3",
+      "density": 2.3,
+      "defaultRate": 88.0,
+      "description": "Mass concrete for foundations"
+    },
+    {
+      "id": "mat-194",
+      "name": "Concrete foundation C20/25 (Gen 3)",
+      "category": "foundations",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 105.0,
+      "description": "General purpose foundation concrete"
+    },
+    {
+      "id": "mat-195",
+      "name": "Concrete foundation C25/30 (RC25)",
+      "category": "foundations",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 115.0,
+      "description": "Reinforced concrete foundation"
+    },
+    {
+      "id": "mat-196",
+      "name": "Concrete foundation C32/40 (RC32)",
+      "category": "foundations",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 125.0,
+      "description": "High strength foundation concrete"
+    },
+    {
+      "id": "mat-197",
+      "name": "DPC (damp proof course) 300mm",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 2.8,
+      "description": "Bitumen DPC for walls"
+    },
+    {
+      "id": "mat-198",
+      "name": "DPM (damp proof membrane) 1200g",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 2.2,
+      "description": "Heavy duty DPM for ground floors"
+    },
+    {
+      "id": "mat-199",
+      "name": "Radon barrier DPM",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 4.5,
+      "description": "Gas-resistant DPM for radon areas"
+    },
+    {
+      "id": "mat-200",
+      "name": "Formwork plywood (reusable)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 6.5,
+      "description": "Formwork for concrete pours"
+    },
+    {
+      "id": "mat-201",
+      "name": "Foundation trench reinforcement A142",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 4.5,
+      "description": "A142 mesh for strip footings"
+    },
+    {
+      "id": "mat-202",
+      "name": "Foundation trench reinforcement A193",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 5.8,
+      "description": "A193 mesh for strip footings"
+    },
+    {
+      "id": "mat-203",
+      "name": "Ground beam reinforcement cage",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 35.0,
+      "description": "Pre-fabricated rebar cage for ground beams"
+    },
+    {
+      "id": "mat-204",
+      "name": "Pile cap rebar T16 (fabricated)",
+      "category": "foundations",
+      "unit": "tonne",
+      "density": 7.85,
+      "defaultRate": 850.0,
+      "description": "Fabricated rebar for pile caps"
+    },
+    {
+      "id": "mat-205",
+      "name": "Pile cap rebar T20 (fabricated)",
+      "category": "foundations",
+      "unit": "tonne",
+      "density": 7.85,
+      "defaultRate": 840.0,
+      "description": "Fabricated rebar for pile caps"
+    },
+    {
+      "id": "mat-206",
+      "name": "Starter bars T16 (for walls)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 4.5,
+      "description": "Starter bars from foundation"
+    },
+    {
+      "id": "mat-207",
+      "name": "Rebar spacer/chair 25mm cover",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 0.18,
+      "description": "Plastic rebar spacers for slabs"
+    },
+    {
+      "id": "mat-208",
+      "name": "Rebar spacer/chair 50mm cover",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 0.22,
+      "description": "Plastic rebar spacers for foundations"
+    },
+    {
+      "id": "mat-209",
+      "name": "Concrete vibrator (poker)",
+      "category": "foundations",
+      "unit": "day",
+      "defaultRate": 38.0,
+      "description": "Vibrator hire per day"
+    },
+    {
+      "id": "mat-210",
+      "name": "Concrete pump (line pump)",
+      "category": "foundations",
+      "unit": "day",
+      "defaultRate": 450.0,
+      "description": "Concrete pump and operator per day"
+    },
+    {
+      "id": "mat-211",
+      "name": "Curing compound for concrete",
+      "category": "foundations",
+      "unit": "litre",
+      "defaultRate": 12.5,
+      "description": "Concrete curing membrane spray"
+    },
+    {
+      "id": "mat-212",
+      "name": "Concrete slab A252 mesh reinforcement",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 7.2,
+      "description": "Heavy mesh for ground slabs"
+    },
+    {
+      "id": "mat-213",
+      "name": "Insulation EPS70 100mm (under slab)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "Expanded polystyrene slab insulation"
+    },
+    {
+      "id": "mat-214",
+      "name": "Insulation EPS100 150mm (under slab)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 14.0,
+      "description": "High density EPS slab insulation"
+    },
+    {
+      "id": "mat-215",
+      "name": "Cement (Mastercrete 25kg)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 5.5,
+      "description": "Cement 25kg bag"
+    },
+    {
+      "id": "mat-216",
+      "name": "Sand (sharp/concreting 1 tonne bag)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 65.0,
+      "description": "Bulk bag sharp sand"
+    },
+    {
+      "id": "mat-217",
+      "name": "Ballast (all-in 1 tonne bag)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 70.0,
+      "description": "Bulk bag ballast"
+    },
+    {
+      "id": "mat-218",
+      "name": "Admixture (waterproofer 5L)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 22.0,
+      "description": "Concrete waterproofing additive"
+    },
+    {
+      "id": "mat-219",
+      "name": "Admixture (frost proofer 5L)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 24.0,
+      "description": "Winter concrete additive"
+    },
+    {
+      "id": "mat-220",
+      "name": "Expansion joint 20mm (compressible)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 4.2,
+      "description": "Expansion joint filler board"
+    },
+    {
+      "id": "mat-221",
+      "name": "Proprietary drainage channel (linear)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 52.0,
+      "description": "Highway linear drainage system"
+    },
+    {
+      "id": "mat-222",
+      "name": "Ductile iron gully grating D400",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "Heavy duty highway gully grating"
+    },
+    {
+      "id": "mat-223",
+      "name": "Ductile iron manhole cover D400 600x600",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Highway grade manhole cover"
+    },
+    {
+      "id": "mat-224",
+      "name": "Ductile iron manhole cover D400 750x750",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Large highway manhole cover"
+    },
+    {
+      "id": "mat-225",
+      "name": "Concrete gully surround 450mm",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "Precast gully surround unit"
+    },
+    {
+      "id": "mat-226",
+      "name": "Speed cushion (75mm raise)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 380.0,
+      "description": "Prefabricated rubber speed cushion"
+    },
+    {
+      "id": "mat-227",
+      "name": "Speed table (full width)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 1200.0,
+      "description": "Asphalt speed table raised junction"
+    },
+    {
+      "id": "mat-228",
+      "name": "Traffic sign post (76mm galv)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 42.0,
+      "description": "Galvanised steel sign post"
+    },
+    {
+      "id": "mat-229",
+      "name": "Traffic sign (600mm triangle)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 85.0,
+      "description": "Regulatory road sign"
+    },
+    {
+      "id": "mat-230",
+      "name": "Traffic sign (900mm circle)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 125.0,
+      "description": "Regulatory road sign"
+    },
+    {
+      "id": "mat-231",
+      "name": "Street nameplate (aluminium)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 65.0,
+      "description": "Street name sign plate"
+    },
+    {
+      "id": "mat-232",
+      "name": "Asphalt binder AC20",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 94.0,
+      "description": "Asphalt concrete binder course material"
+    },
+    {
+      "id": "mat-233",
+      "name": "Asphalt binder AC20",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 94.0,
+      "description": "Asphalt concrete binder course material"
+    },
+    {
+      "id": "mat-234",
+      "name": "Asphalt base AC32",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 91.0,
+      "description": "Asphalt concrete base course material"
+    },
+    {
+      "id": "mat-235",
+      "name": "Asphalt base AC32 heavy duty",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 91.0,
+      "description": "Asphalt concrete heavy duty base course material"
+    },
+    {
+      "id": "mat-236",
+      "name": "Asphalt surface AC10 (PSV 55)",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 97.0,
+      "description": "Thin asphalt surface course material PSV 55"
+    },
+    {
+      "id": "mat-237",
+      "name": "Asphalt surface AC10 (PSV 60)",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 99.0,
+      "description": "Standard asphalt surface course material PSV 60"
+    },
+    {
+      "id": "mat-238",
+      "name": "Estate road footway 2m wide",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "Full footway construction with paving slabs"
+    },
+    {
+      "id": "mat-239",
+      "name": "Estate road private drive crossover",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 850.0,
+      "description": "Residential drive entrance kerb drop"
+    },
+    {
+      "id": "mat-240",
+      "name": "Highway verge topsoil 150mm",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "Topsoil and seed for highway verge"
+    },
+    {
+      "id": "mat-241",
+      "name": "Service trench reinstatement (Type 1)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 85.0,
+      "description": "Permanent reinstatement of utility trench"
+    },
+    {
+      "id": "mat-242",
+      "name": "Service trench reinstatement (Type 2)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "Permanent reinstatement with asphalt"
+    },
+    {
+      "id": "mat-243",
+      "name": "Footway flag 600x600x50mm (hydraulic)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 9.5,
+      "description": "Hydraulically pressed concrete flag"
+    },
+    {
+      "id": "mat-244",
+      "name": "Footway flag 600x450x50mm (hydraulic)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 7.5,
+      "description": "Hydraulically pressed concrete flag"
+    },
+    {
+      "id": "mat-245",
+      "name": "Paving flag 400x400x50mm (buff)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 4.8,
+      "description": "Buff concrete paving flag"
+    },
+    {
+      "id": "mat-246",
+      "name": "Paving flag 400x400x50mm (charcoal)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 5.2,
+      "description": "Charcoal concrete paving flag"
+    },
+    {
+      "id": "mat-247",
+      "name": "Dropped kerb transition unit (HB/BN)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 22.0,
+      "description": "Taper/transition kerb unit"
+    },
+    {
+      "id": "mat-248",
+      "name": "Quadrant kerb (internal radius)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Curved/radius kerb unit"
+    },
+    {
+      "id": "mat-249",
+      "name": "Quadrant kerb (external radius)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Curved/radius kerb unit"
+    },
+    {
+      "id": "mat-250",
+      "name": "Kerb drainage unit (KD channel)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 35.0,
+      "description": "Combined kerb and drainage channel"
+    },
+    {
+      "id": "mat-251",
+      "name": "Road stud (active LED solar)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Solar powered LED road stud"
+    },
+    {
+      "id": "mat-252",
+      "name": "Bollard (illuminated LED)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Illuminated steel bollard"
+    },
+    {
+      "id": "mat-253",
+      "name": "Heritage street light column (cast)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 1850.0,
+      "description": "Decorative cast metal column"
+    },
+    {
+      "id": "mat-254",
+      "name": "Concrete barrier (safety vehicle)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "Precast concrete safety barrier"
+    },
+    {
+      "id": "mat-255",
+      "name": "Beam guard (tensioned wire rope)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 125.0,
+      "description": "Wire rope vehicle restraint system"
+    },
+    {
+      "id": "mat-256",
+      "name": "Guardrail (steel corrugated)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 85.0,
+      "description": "Corrugated steel highway guardrail"
+    },
+    {
+      "id": "mat-257",
+      "name": "Anti-ram bollard (fixed steel)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 650.0,
+      "description": "Security rated anti-ram bollard"
+    },
+    {
+      "id": "mat-258",
+      "name": "Anti-ram bollard (automatic rising)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 4500.0,
+      "description": "Electric rising security bollard"
+    },
+    {
+      "id": "mat-259",
+      "name": "Cycle parking stand (Sheffield)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "Galvanised steel cycle stand"
+    },
+    {
+      "id": "mat-260",
+      "name": "Litter bin (street furniture 90L)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 450.0,
+      "description": "Powder coated steel bin with liner"
+    },
+    {
+      "id": "mat-261",
+      "name": "Bench (timber slat 1.8m)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 650.0,
+      "description": "Hardwood street bench"
+    },
+    {
+      "id": "mat-262",
+      "name": "Bench (recycled plastic 1.8m)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 550.0,
+      "description": "Recycled plastic street bench"
+    },
+    {
+      "id": "mat-263",
+      "name": "Tree grille (cast iron)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Cast iron tree protection grille"
+    },
+    {
+      "id": "mat-264",
+      "name": "Tree pit (modular cell system)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 850.0,
+      "description": "Load-bearing tree pit system"
+    },
+    {
+      "id": "mat-265",
+      "name": "Tree planting (semi-mature 3-4m)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 350.0,
+      "description": "Semi-mature street tree supply only"
+    },
+    {
+      "id": "mat-266",
+      "name": "Tree stake and tie kit",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Tree support system"
+    },
+    {
+      "id": "mat-267",
+      "name": "Topsoil (tree pit BS3882)",
+      "category": "highways",
+      "unit": "m3",
+      "density": 1.3,
+      "defaultRate": 45.0,
+      "description": "BS3882 compliant tree planting topsoil"
+    },
+    {
+      "id": "mat-268",
+      "name": "Rootball irrigation bag (75L)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 18.0,
+      "description": "Slow release tree irrigation bag"
+    },
+    {
+      "id": "mat-269",
+      "name": "Foundation pile cap rebar",
+      "category": "foundations",
+      "unit": "tonne",
+      "density": 7.85,
+      "defaultRate": 900.0,
+      "description": "Rebar for pile caps"
+    },
+    {
+      "id": "mat-270",
+      "name": "Starter bar couplers",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 4.0,
+      "description": "Rebar couplers"
+    },
+    {
+      "id": "mat-271",
+      "name": "MCHW Clause 803 HRA 55/10 PSV 60",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 96.0,
+      "description": "Hot Rolled Asphalt material with 10mm chippings PSV 60"
+    },
+    {
+      "id": "mat-272",
+      "name": "MCHW Clause 803 HRA 55/10 PSV 65",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 98.0,
+      "description": "Hot Rolled Asphalt material with 10mm chippings PSV 65"
+    },
+    {
+      "id": "mat-273",
+      "name": "MCHW Clause 942 SMA 14mm PSV 60",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 100.0,
+      "description": "Stone Mastic Asphalt 14mm material PSV 60"
+    },
+    {
+      "id": "mat-274",
+      "name": "MCHW Clause 942 SMA 10mm PSV 68",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 105.0,
+      "description": "Stone Mastic Asphalt 10mm material PSV 68"
+    },
+    {
+      "id": "mat-275",
+      "name": "MCHW Clause 910 AC10 surf PSV 55",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 97.0,
+      "description": "Asphalt Concrete surface 10mm agg material PSV 55"
+    },
+    {
+      "id": "mat-276",
+      "name": "MCHW Clause 910 AC6 surf PSV 60",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 99.0,
+      "description": "Thin surface course AC6 material PSV 60"
+    },
+    {
+      "id": "mat-277",
+      "name": "MCHW Clause 909 AC20 binder",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 95.0,
+      "description": "Asphalt Concrete binder course AC20 material"
+    },
+    {
+      "id": "mat-278",
+      "name": "MCHW Clause 909 AC20 binder heavy duty",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 95.0,
+      "description": "Asphalt Concrete binder course AC20 heavy duty material"
+    },
+    {
+      "id": "mat-279",
+      "name": "MCHW Clause 909 AC32 base",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 91.0,
+      "description": "Asphalt Concrete base course AC32 material"
+    },
+    {
+      "id": "mat-280",
+      "name": "MCHW Clause 909 AC32 base heavy duty",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.4,
+      "defaultRate": 91.0,
+      "description": "Asphalt Concrete base course AC32 heavy duty material"
+    },
+    {
+      "id": "mat-281",
+      "name": "MCHW Clause 808 DBM125 roadbase",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 90.0,
+      "description": "Dense Bitumen Macadam roadbase material"
+    },
+    {
+      "id": "mat-282",
+      "name": "MCHW Clause 808 DBM125 roadbase heavy duty",
+      "category": "asphalt",
+      "unit": "tonne",
+      "density": 2.3,
+      "defaultRate": 90.0,
+      "description": "Dense Bitumen Macadam roadbase heavy duty material"
+    },
+    {
+      "id": "mat-283",
+      "name": "MCHW Clause 806 Sub-base Type 1 150mm",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 11.5,
+      "description": "Granular sub-base Type 1 to Clause 806"
+    },
+    {
+      "id": "mat-284",
+      "name": "MCHW Clause 806 Sub-base Type 1 225mm",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 16.5,
+      "description": "Granular sub-base Type 1 to Clause 806"
+    },
+    {
+      "id": "mat-285",
+      "name": "MCHW Clause 806 Sub-base Type 1 300mm",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 21.5,
+      "description": "Granular sub-base Type 1 to Clause 806"
+    },
+    {
+      "id": "mat-286",
+      "name": "MCHW Clause 803 Capping 6F2 350mm",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 10.5,
+      "description": "Capping layer 6F2 to improve CBR to min 15%"
+    },
+    {
+      "id": "mat-287",
+      "name": "MCHW Clause 803 Capping 6F5 350mm",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 9.0,
+      "description": "Selected granular fill capping layer"
+    },
+    {
+      "id": "mat-288",
+      "name": "Adoptable road build-up Class A (trunk)",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 95.0,
+      "description": "Full pavement for trunk roads 350mm+ capping, 300mm GSB, 250mm bituminous"
+    },
+    {
+      "id": "mat-289",
+      "name": "Adoptable road build-up Class B (main)",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 78.0,
+      "description": "Main distributor road 300mm capping, 225mm GSB, 210mm bituminous"
+    },
+    {
+      "id": "mat-290",
+      "name": "Adoptable road build-up Class C (local)",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 62.0,
+      "description": "Local distributor road 300mm capping, 150mm GSB, 160mm bituminous"
+    },
+    {
+      "id": "mat-291",
+      "name": "Adoptable road build-up Class D (access)",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 52.0,
+      "description": "Access road/estate road 250mm capping, 150mm GSB, 140mm bituminous"
+    },
+    {
+      "id": "mat-292",
+      "name": "Adoptable footway build-up (2m width)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 110.0,
+      "description": "Standard footway with GSB and paving flags"
+    },
+    {
+      "id": "mat-293",
+      "name": "Adoptable cycleway build-up (3m width)",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 185.0,
+      "description": "Shared use path/cycleway with asphalt surface"
+    },
+    {
+      "id": "mat-294",
+      "name": "Adoptable private drive (standard)",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 48.0,
+      "description": "Private driveway build-up with block paving"
+    },
+    {
+      "id": "mat-295",
+      "name": "Adoptable parking bay (on-street)",
+      "category": "highways",
+      "unit": "m2",
+      "defaultRate": 55.0,
+      "description": "On-street parking bay construction"
+    },
+    {
+      "id": "mat-296",
+      "name": "Adoptable bus stop layby (full construction)",
+      "category": "highways",
+      "unit": "nr",
+      "defaultRate": 4800.0,
+      "description": "Bus stop layby with raised kerb boarder"
+    },
+    {
+      "id": "mat-297",
+      "name": "Manhole cover Class A15 (pedestrian)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 45.0,
+      "description": "Light duty cover for pedestrian areas only"
+    },
+    {
+      "id": "mat-298",
+      "name": "Manhole cover Class B125 (light traffic)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 85.0,
+      "description": "Medium duty cover for footways and car parks"
+    },
+    {
+      "id": "mat-299",
+      "name": "Manhole cover Class C250 (kerbside)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 125.0,
+      "description": "Kerbside duty cover 600x600mm"
+    },
+    {
+      "id": "mat-300",
+      "name": "Manhole cover Class D400 (carriageway)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 165.0,
+      "description": "Highway duty cover 600x600mm"
+    },
+    {
+      "id": "mat-301",
+      "name": "Manhole cover Class E600 (heavy duty)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Heavy commercial/loading area cover"
+    },
+    {
+      "id": "mat-302",
+      "name": "Manhole cover Class F900 (extreme duty)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 420.0,
+      "description": "Extreme load cover for ports/airfields"
+    },
+    {
+      "id": "mat-303",
+      "name": "Recessed manhole cover D400 (block infill)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Recessed tray cover for block paving infill"
+    },
+    {
+      "id": "mat-304",
+      "name": "Recessed manhole cover D400 (slab infill)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 265.0,
+      "description": "Recessed tray cover for paving slab infill"
+    },
+    {
+      "id": "mat-305",
+      "name": "Double-seal manhole cover D400 600x600",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 245.0,
+      "description": "Double triangular double-seal cover odour sealed"
+    },
+    {
+      "id": "mat-306",
+      "name": "Electric manhole cover D400 762x610",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 195.0,
+      "description": "Ductile iron electric chamber cover"
+    },
+    {
+      "id": "mat-307",
+      "name": "Water manhole cover C250 (stopcock)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 55.0,
+      "description": "Blue water stopcock cover small"
+    },
+    {
+      "id": "mat-308",
+      "name": "Water manhole cover D400 (hydrant/main)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 145.0,
+      "description": "Blue water chamber cover large"
+    },
+    {
+      "id": "mat-309",
+      "name": "Gas manhole cover D400 (service valve)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 165.0,
+      "description": "Yellow gas valve chamber cover"
+    },
+    {
+      "id": "mat-310",
+      "name": "BT manhole cover D400 (footway box)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "BT telecom footway chamber cover"
+    },
+    {
+      "id": "mat-311",
+      "name": "BT manhole cover D400 (street cabinet)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Large BT chamber cover for cabinet"
+    },
+    {
+      "id": "mat-312",
+      "name": "Electric chamber precast (600x450x600)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 145.0,
+      "description": "Precast concrete electric chamber"
+    },
+    {
+      "id": "mat-313",
+      "name": "Electric chamber precast (900x750x900)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 385.0,
+      "description": "Large precast electric chamber"
+    },
+    {
+      "id": "mat-314",
+      "name": "Water chamber precast (750mm dia)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Circular precast water chamber"
+    },
+    {
+      "id": "mat-315",
+      "name": "Water chamber precast (1050mm dia)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 420.0,
+      "description": "Large circular water chamber"
+    },
+    {
+      "id": "mat-316",
+      "name": "Gas valve chamber GRP (small)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 165.0,
+      "description": "GRP gas service valve chamber"
+    },
+    {
+      "id": "mat-317",
+      "name": "Gas valve chamber GRP (large)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Large GRP gas main valve chamber"
+    },
+    {
+      "id": "mat-318",
+      "name": "BT chamber precast (600x450x600)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 125.0,
+      "description": "Footway BT chamber"
+    },
+    {
+      "id": "mat-319",
+      "name": "BT chamber precast (1200x750x900)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 485.0,
+      "description": "Large street BT chamber"
+    },
+    {
+      "id": "mat-320",
+      "name": "Virgin Media chamber (jointing)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 165.0,
+      "description": "Virgin cable jointing chamber"
+    },
+    {
+      "id": "mat-321",
+      "name": "Marshalls Perfecta paving 600x600x50",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 9.8,
+      "description": "Marshalls hydraulic pressed paving buff"
+    },
+    {
+      "id": "mat-322",
+      "name": "Marshalls Perfecta paving 600x600x50 charcoal",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 10.2,
+      "description": "Marshalls hydraulic pressed paving charcoal"
+    },
+    {
+      "id": "mat-323",
+      "name": "Marshalls Saxon paving 600x600x50",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 11.5,
+      "description": "Marshalls textured paving buff"
+    },
+    {
+      "id": "mat-324",
+      "name": "Marshalls Textured flag 600x450x50",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 7.8,
+      "description": "Marshalls textured paving 600x450"
+    },
+    {
+      "id": "mat-325",
+      "name": "Marshalls Rivendale paving 450x450x32",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 6.5,
+      "description": "Decorative pressed paving riven finish"
+    },
+    {
+      "id": "mat-326",
+      "name": "Marshalls Keyblok block paving 200x100x80",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 28.0,
+      "description": "Marshalls concrete block paving charcoal"
+    },
+    {
+      "id": "mat-327",
+      "name": "Marshalls Driveline block paving 200x100x50",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 24.5,
+      "description": "Marshalls domestic block paving"
+    },
+    {
+      "id": "mat-328",
+      "name": "Marshalls Priora permeable block 200x100x60",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 34.0,
+      "description": "Marshalls permeable block paving"
+    },
+    {
+      "id": "mat-329",
+      "name": "Marshalls HB2 kerb (125x255mm)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 18.5,
+      "description": "Marshalls half-batter kerb natural"
+    },
+    {
+      "id": "mat-330",
+      "name": "Marshalls KS kerb (150x305mm)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 24.0,
+      "description": "Marshalls large British Standard kerb"
+    },
+    {
+      "id": "mat-331",
+      "name": "Marshalls Conservation kerb granite",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 52.0,
+      "description": "Marshalls reconstituted granite kerb"
+    },
+    {
+      "id": "mat-332",
+      "name": "Brett Alpha antique tumbled paving",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 42.0,
+      "description": "Brett decorative tumbled paving"
+    },
+    {
+      "id": "mat-333",
+      "name": "Brett Omega block paving 200x100x60",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 26.5,
+      "description": "Brett concrete block paving"
+    },
+    {
+      "id": "mat-334",
+      "name": "Brett Regatta weatherpoint paving 600x600",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 14.5,
+      "description": "Brett weatherpoint jointing paving"
+    },
+    {
+      "id": "mat-335",
+      "name": "Tobermore Fusion flag 800x266x50",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 8.5,
+      "description": "Tobermore large format paving"
+    },
+    {
+      "id": "mat-336",
+      "name": "Tobermore Sienna block 200x100x60",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 29.0,
+      "description": "Tobermore decorative block paving"
+    },
+    {
+      "id": "mat-337",
+      "name": "Tobermore Hydropave Tegula 160x160x80",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 36.0,
+      "description": "Tobermore permeable tumbled block"
+    },
+    {
+      "id": "mat-338",
+      "name": "Tobermore Shannon kerb (125x255mm)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 19.5,
+      "description": "Tobermore half-batter kerb buff"
+    },
+    {
+      "id": "mat-339",
+      "name": "Bradstone Carpet stone paving 600x300",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 38.0,
+      "description": "Bradstone natural stone paving"
+    },
+    {
+      "id": "mat-340",
+      "name": "Bradstone Textured paving 450x450x35",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 6.2,
+      "description": "Bradstone textured concrete flag"
+    },
+    {
+      "id": "mat-341",
+      "name": "Indian sandstone paving 600x900x22mm",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 28.0,
+      "description": "Natural sandstone riven paving"
+    },
+    {
+      "id": "mat-342",
+      "name": "Indian sandstone paving mixed size pack",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 26.5,
+      "description": "Natural sandstone mixed project pack"
+    },
+    {
+      "id": "mat-343",
+      "name": "Granite setts 100x100x100mm",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 68.0,
+      "description": "Natural granite cobbles/setts"
+    },
+    {
+      "id": "mat-344",
+      "name": "Granite setts 200x100x100mm",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 72.0,
+      "description": "Natural granite linear setts"
+    },
+    {
+      "id": "mat-345",
+      "name": "Porcelain paving 600x600x20mm",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 48.0,
+      "description": "Outdoor porcelain paving tiles"
+    },
+    {
+      "id": "mat-346",
+      "name": "Porcelain paving 900x600x20mm",
+      "category": "paving",
+      "unit": "m2",
+      "defaultRate": 54.0,
+      "description": "Large format porcelain paving"
+    },
+    {
+      "id": "mat-347",
+      "name": "Resin bound gravel 15mm (Golden)",
+      "category": "surfacing",
+      "unit": "m2",
+      "defaultRate": 55.0,
+      "description": "UV stable resin bound paving system"
+    },
+    {
+      "id": "mat-348",
+      "name": "Resin bound gravel 15mm (Silver)",
+      "category": "surfacing",
+      "unit": "m2",
+      "defaultRate": 58.0,
+      "description": "UV stable resin bound paving system"
+    },
+    {
+      "id": "mat-349",
+      "name": "Tar & chip dressing (single surface)",
+      "category": "surfacing",
+      "unit": "m2",
+      "defaultRate": 12.5,
+      "description": "Surface dressing spray and chip"
+    },
+    {
+      "id": "mat-350",
+      "name": "Micro-asphalt surface treatment",
+      "category": "surfacing",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "Thin surfacing micro-asphalt"
+    },
+    {
+      "id": "mat-351",
+      "name": "Plot foul drainage connection (complete)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 850.0,
+      "description": "Foul connection from plot to main sewer including chamber"
+    },
+    {
+      "id": "mat-352",
+      "name": "Plot surface water connection (complete)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 650.0,
+      "description": "Surface water connection from plot to main drain"
+    },
+    {
+      "id": "mat-353",
+      "name": "Plot service trench (all utilities)",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 125.0,
+      "description": "Combined service trench with marker tape for all services"
+    },
+    {
+      "id": "mat-354",
+      "name": "Electric meter box (surface mounted)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 85.0,
+      "description": "External electric meter cabinet"
+    },
+    {
+      "id": "mat-355",
+      "name": "Electric meter box (semi-recessed)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 125.0,
+      "description": "Semi-recessed electric meter box"
+    },
+    {
+      "id": "mat-356",
+      "name": "Gas meter box (surface mounted)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "External gas meter cabinet"
+    },
+    {
+      "id": "mat-357",
+      "name": "Gas meter box (semi-recessed)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 135.0,
+      "description": "Semi-recessed gas meter box"
+    },
+    {
+      "id": "mat-358",
+      "name": "Water meter chamber (boundary box)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "External water meter boundary box complete"
+    },
+    {
+      "id": "mat-359",
+      "name": "Service entry duct (100mm multi-utility)",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 15.0,
+      "description": "Multi-utility service entry duct through wall"
+    },
+    {
+      "id": "mat-360",
+      "name": "Service duct seal (fire rated)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Fire-rated service penetration seal"
+    },
+    {
+      "id": "mat-361",
+      "name": "Plot boundary peg/marker",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 12.0,
+      "description": "Concrete boundary marker peg"
+    },
+    {
+      "id": "mat-362",
+      "name": "Service marker tape (electric yellow)",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 0.35,
+      "description": "Underground electric cable warning tape"
+    },
+    {
+      "id": "mat-363",
+      "name": "Service marker tape (water blue)",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 0.35,
+      "description": "Underground water pipe warning tape"
+    },
+    {
+      "id": "mat-364",
+      "name": "Service marker tape (gas yellow)",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 0.35,
+      "description": "Underground gas pipe warning tape"
+    },
+    {
+      "id": "mat-365",
+      "name": "Service marker tape (telecoms green)",
+      "category": "utilities",
+      "unit": "m",
+      "defaultRate": 0.35,
+      "description": "Underground telecoms cable warning tape"
+    },
+    {
+      "id": "mat-366",
+      "name": "Front garden path (flagged 1m wide)",
+      "category": "paving",
+      "unit": "m",
+      "defaultRate": 65.0,
+      "description": "Paved path from plot boundary to front door"
+    },
+    {
+      "id": "mat-367",
+      "name": "Rear garden patio base 15m2",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 450.0,
+      "description": "Concrete base for patio including sub-base"
+    },
+    {
+      "id": "mat-368",
+      "name": "Shed base 3x2m concrete 100mm",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Concrete shed base with DPM"
+    },
+    {
+      "id": "mat-369",
+      "name": "Bin store base 2x1m",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "Concrete base for wheelie bin store"
+    },
+    {
+      "id": "mat-370",
+      "name": "Garden topsoil (BS3882 compliant)",
+      "category": "landscaping",
+      "unit": "m3",
+      "density": 1.3,
+      "defaultRate": 32.0,
+      "description": "Quality topsoil for garden areas"
+    },
+    {
+      "id": "mat-371",
+      "name": "Garden subsoil (selected fill)",
+      "category": "landscaping",
+      "unit": "m3",
+      "density": 1.8,
+      "defaultRate": 12.0,
+      "description": "Selected subsoil for garden build-up"
+    },
+    {
+      "id": "mat-372",
+      "name": "Rear garden turf (per plot avg 60m2)",
+      "category": "landscaping",
+      "unit": "nr",
+      "defaultRate": 280.0,
+      "description": "Turf supply and lay for rear garden"
+    },
+    {
+      "id": "mat-373",
+      "name": "Front garden turf (per plot avg 25m2)",
+      "category": "landscaping",
+      "unit": "nr",
+      "defaultRate": 125.0,
+      "description": "Turf supply and lay for front garden"
+    },
+    {
+      "id": "mat-374",
+      "name": "Timber fence panel 1.8m high x 1.83m",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 42.0,
+      "description": "Feather edge fence panel"
+    },
+    {
+      "id": "mat-375",
+      "name": "Timber fence post 100x100x2400mm",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 18.5,
+      "description": "Pressure treated fence post"
+    },
+    {
+      "id": "mat-376",
+      "name": "Concrete fence post 100x100x2400mm",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 22.0,
+      "description": "Concrete slotted fence post"
+    },
+    {
+      "id": "mat-377",
+      "name": "Fence gravel board 150x1830mm",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 12.5,
+      "description": "Timber or concrete gravel board"
+    },
+    {
+      "id": "mat-378",
+      "name": "Fence post concrete 25kg bag (ready mix)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 4.5,
+      "description": "Post fix concrete"
+    },
+    {
+      "id": "mat-379",
+      "name": "Garden gate 900mm timber",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 85.0,
+      "description": "Timber side gate with ironmongery"
+    },
+    {
+      "id": "mat-380",
+      "name": "Driveway gate 3m double timber",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 450.0,
+      "description": "Double driveway gates with posts"
+    },
+    {
+      "id": "mat-381",
+      "name": "Retaining wall block (Keystone)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 22.0,
+      "description": "Interlocking retaining wall block"
+    },
+    {
+      "id": "mat-382",
+      "name": "Retaining wall geogrid reinforcement",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "Geogrid for retaining wall stabilization"
+    },
+    {
+      "id": "mat-383",
+      "name": "Retaining wall drainage pipe (perforated)",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 12.0,
+      "description": "100mm perforated pipe for wall drainage"
+    },
+    {
+      "id": "mat-384",
+      "name": "Retaining wall drainage aggregate",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 35.0,
+      "description": "Free-draining aggregate for retaining walls"
+    },
+    {
+      "id": "mat-385",
+      "name": "Soakaway crate system (1m3 capacity)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 72.0,
+      "description": "Modular soakaway storage crate"
+    },
+    {
+      "id": "mat-386",
+      "name": "Soakaway geotextile wrap",
+      "category": "drainage",
+      "unit": "m2",
+      "defaultRate": 2.5,
+      "description": "Heavy duty geotextile for soakaway"
+    },
+    {
+      "id": "mat-387",
+      "name": "Inspection chamber 450mm (plastic)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 95.0,
+      "description": "Polypropylene inspection chamber"
+    },
+    {
+      "id": "mat-388",
+      "name": "Inspection chamber 600mm (plastic)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 145.0,
+      "description": "Large polypropylene chamber"
+    },
+    {
+      "id": "mat-389",
+      "name": "Rodding eye 110mm (access point)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 22.0,
+      "description": "Drainage rodding point"
+    },
+    {
+      "id": "mat-390",
+      "name": "Gully trap (plastic bottle) P-trap",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Bottle gully with P-trap seal"
+    },
+    {
+      "id": "mat-391",
+      "name": "Rainwater downpipe underground connector",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 18.5,
+      "description": "RWP to drainage connection"
+    },
+    {
+      "id": "mat-392",
+      "name": "ACO drain 1m length (driveway)",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 48.0,
+      "description": "Linear drainage for driveway threshold"
+    },
+    {
+      "id": "mat-393",
+      "name": "Channel drain grating (galvanised)",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 32.0,
+      "description": "Galvanised steel channel grating"
+    },
+    {
+      "id": "mat-394",
+      "name": "Driveway edging (concrete 125x150mm)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 10.5,
+      "description": "Driveway path edging kerb"
+    },
+    {
+      "id": "mat-395",
+      "name": "Path edging (Victorian rope top)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 14.0,
+      "description": "Decorative rope top edging"
+    },
+    {
+      "id": "mat-396",
+      "name": "Sleeper (railway new oak 200x100x2400)",
+      "category": "landscaping",
+      "unit": "nr",
+      "defaultRate": 45.0,
+      "description": "New oak sleeper for landscaping"
+    },
+    {
+      "id": "mat-397",
+      "name": "Sleeper (railway reclaimed)",
+      "category": "landscaping",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Reclaimed railway sleeper"
+    },
+    {
+      "id": "mat-398",
+      "name": "Sleeper (softwood treated 200x100x2400)",
+      "category": "landscaping",
+      "unit": "nr",
+      "defaultRate": 22.0,
+      "description": "Treated softwood sleeper"
+    },
+    {
+      "id": "mat-399",
+      "name": "Septic tank (6 person 2800L)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 1200.0,
+      "description": "GRP septic tank for off-mains drainage"
+    },
+    {
+      "id": "mat-400",
+      "name": "Sewage treatment plant (6 person)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 2800.0,
+      "description": "Package sewage treatment plant"
+    },
+    {
+      "id": "mat-401",
+      "name": "Percolation area pipework (per plot)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 850.0,
+      "description": "Percolation drainage field for septic"
+    },
+    {
+      "id": "mat-402",
+      "name": "Gravel for drainage (20mm)",
+      "category": "aggregates",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 36.0,
+      "description": "Clean aggregate for drainage"
+    },
+    {
+      "id": "mat-403",
+      "name": "Builder's sand bulk bag (850kg)",
+      "category": "aggregates",
+      "unit": "nr",
+      "defaultRate": 55.0,
+      "description": "Building/soft sand bulk bag"
+    },
+    {
+      "id": "mat-404",
+      "name": "Sharp sand bulk bag (850kg)",
+      "category": "aggregates",
+      "unit": "nr",
+      "defaultRate": 58.0,
+      "description": "Sharp sand bulk bag"
+    },
+    {
+      "id": "mat-405",
+      "name": "Ballast bulk bag (850kg)",
+      "category": "aggregates",
+      "unit": "nr",
+      "defaultRate": 62.0,
+      "description": "All-in ballast bulk bag"
+    },
+    {
+      "id": "mat-406",
+      "name": "MOT Type 1 bulk bag (850kg)",
+      "category": "subbase",
+      "unit": "nr",
+      "defaultRate": 68.0,
+      "description": "Type 1 sub-base bulk bag"
+    },
+    {
+      "id": "mat-407",
+      "name": "Stepping stones (natural slate)",
+      "category": "paving",
+      "unit": "nr",
+      "defaultRate": 18.0,
+      "description": "Natural slate stepping stone"
+    },
+    {
+      "id": "mat-408",
+      "name": "Decorative gravel (Cotswold buff 20mm)",
+      "category": "landscaping",
+      "unit": "tonne",
+      "density": 1.6,
+      "defaultRate": 68.0,
+      "description": "Decorative garden gravel"
+    },
+    {
+      "id": "mat-409",
+      "name": "Decorative slate (blue 40mm)",
+      "category": "landscaping",
+      "unit": "tonne",
+      "density": 1.4,
+      "defaultRate": 95.0,
+      "description": "Blue slate decorative chippings"
+    },
+    {
+      "id": "mat-410",
+      "name": "Play bark (certified safe 25-40mm)",
+      "category": "landscaping",
+      "unit": "m3",
+      "density": 0.35,
+      "defaultRate": 85.0,
+      "description": "Certified play area bark"
+    },
+    {
+      "id": "mat-411",
+      "name": "Artificial grass (25mm pile)",
+      "category": "landscaping",
+      "unit": "m2",
+      "defaultRate": 28.0,
+      "description": "Synthetic grass turf"
+    },
+    {
+      "id": "mat-412",
+      "name": "Artificial grass sub-base (shock pad)",
+      "category": "landscaping",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "Foam shock pad for artificial grass"
+    },
+    {
+      "id": "mat-413",
+      "name": "Edging restraint (plastic lawn)",
+      "category": "landscaping",
+      "unit": "m",
+      "defaultRate": 4.2,
+      "description": "Plastic flexible lawn edging"
+    },
+    {
+      "id": "mat-414",
+      "name": "Edging restraint (steel galvanised)",
+      "category": "landscaping",
+      "unit": "m",
+      "defaultRate": 8.5,
+      "description": "Steel lawn/path edging"
+    },
+    {
+      "id": "mat-415",
+      "name": "Manhole raising piece (225mm)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 45.0,
+      "description": "Concrete raising piece for cover"
+    },
+    {
+      "id": "mat-416",
+      "name": "Manhole frame extension (brick)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 85.0,
+      "description": "Engineering brick manhole extension"
+    },
+    {
+      "id": "mat-417",
+      "name": "Engineering brick Class B (per 1000)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 550.0,
+      "description": "Engineering bricks for manholes/walls"
+    },
+    {
+      "id": "mat-418",
+      "name": "Blue engineering brick (per 1000)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 650.0,
+      "description": "Blue engineering bricks"
+    },
+    {
+      "id": "mat-419",
+      "name": "Mortar (ready-mix tub 25kg)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 8.5,
+      "description": "Pre-mixed mortar tub"
+    },
+    {
+      "id": "mat-420",
+      "name": "Concrete (ready-mix 25kg bag)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 5.5,
+      "description": "Dry-mix concrete bag"
+    },
+    {
+      "id": "mat-421",
+      "name": "Postcrete (20kg bag fast-set)",
+      "category": "concrete",
+      "unit": "nr",
+      "defaultRate": 6.5,
+      "description": "Fast-setting post concrete"
+    },
+    {
+      "id": "mat-422",
+      "name": "Plot temporary road (recycled planings)",
+      "category": "asphalt",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "Temporary access road to plots"
+    },
+    {
+      "id": "mat-423",
+      "name": "Site compound hardcore base",
+      "category": "subbase",
+      "unit": "m2",
+      "defaultRate": 12.0,
+      "description": "Hardcore base for site compound"
+    },
+    {
+      "id": "mat-424",
+      "name": "Wheel wash system (mobile)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 850.0,
+      "description": "Mobile construction wheel wash hire per month"
+    },
+    {
+      "id": "mat-425",
+      "name": "Dust suppression water bowser",
+      "category": "utilities",
+      "unit": "day",
+      "defaultRate": 85.0,
+      "description": "Water bowser hire for dust suppression"
+    },
+    {
+      "id": "mat-426",
+      "name": "Land drain (perforated 80mm)",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 4.5,
+      "description": "80mm perforated land drain pipe"
+    },
+    {
+      "id": "mat-427",
+      "name": "Land drain (perforated 100mm)",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 6.5,
+      "description": "100mm perforated land drain pipe"
+    },
+    {
+      "id": "mat-428",
+      "name": "French drain gravel (20-40mm)",
+      "category": "drainage",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 42.0,
+      "description": "Clean gravel for French drains"
+    },
+    {
+      "id": "mat-429",
+      "name": "Drainage shingle (10-20mm)",
+      "category": "drainage",
+      "unit": "tonne",
+      "density": 1.65,
+      "defaultRate": 45.0,
+      "description": "Fine gravel for drainage"
+    },
+    {
+      "id": "mat-430",
+      "name": "Plot connection pack (all services)",
+      "category": "utilities",
+      "unit": "nr",
+      "defaultRate": 2200.0,
+      "description": "Complete utility connection package per plot (water, gas, electric, telecoms, foul, surface)"
+    },
+    {
+      "id": "mat-431",
+      "name": "Ring beam concrete (300x300mm C25/30)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 45.0,
+      "description": "Ring beam perimeter beam on piles"
+    },
+    {
+      "id": "mat-432",
+      "name": "Ring beam concrete (400x400mm C25/30)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 72.0,
+      "description": "Large ring beam perimeter beam"
+    },
+    {
+      "id": "mat-433",
+      "name": "Ring beam concrete (500x500mm C32/40)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "Heavy duty ring beam"
+    },
+    {
+      "id": "mat-434",
+      "name": "Ring beam rebar cage (300x300mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 28.0,
+      "description": "Prefabricated rebar cage for ring beam"
+    },
+    {
+      "id": "mat-435",
+      "name": "Ring beam rebar cage (400x400mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 42.0,
+      "description": "Prefabricated rebar cage for ring beam"
+    },
+    {
+      "id": "mat-436",
+      "name": "Ring beam formwork (reusable)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 18.5,
+      "description": "Formwork for ring beam construction"
+    },
+    {
+      "id": "mat-437",
+      "name": "Ground beam concrete (300x450mm C25/30)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 52.0,
+      "description": "Ground beam between pile caps"
+    },
+    {
+      "id": "mat-438",
+      "name": "Ground beam concrete (400x600mm C25/30)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 85.0,
+      "description": "Large ground beam between pile caps"
+    },
+    {
+      "id": "mat-439",
+      "name": "Ground beam concrete (500x750mm C32/40)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 125.0,
+      "description": "Heavy duty ground beam"
+    },
+    {
+      "id": "mat-440",
+      "name": "Ground beam rebar cage (300x450mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 32.0,
+      "description": "Prefabricated rebar cage for ground beam"
+    },
+    {
+      "id": "mat-441",
+      "name": "Ground beam rebar cage (400x600mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 48.0,
+      "description": "Large prefabricated rebar cage"
+    },
+    {
+      "id": "mat-442",
+      "name": "Ground beam formwork (timber)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 15.0,
+      "description": "Timber formwork for ground beams"
+    },
+    {
+      "id": "mat-443",
+      "name": "Pile cap concrete (1200x1200x600 C32/40)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Single pile cap concrete"
+    },
+    {
+      "id": "mat-444",
+      "name": "Pile cap concrete (1500x1500x750 C32/40)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 450.0,
+      "description": "Two-pile cap concrete"
+    },
+    {
+      "id": "mat-445",
+      "name": "Pile cap concrete (2000x1200x800 C32/40)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 580.0,
+      "description": "Three-pile cap concrete"
+    },
+    {
+      "id": "mat-446",
+      "name": "Pile cap concrete (2400x2400x900 C32/40)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 950.0,
+      "description": "Four-pile cap concrete"
+    },
+    {
+      "id": "mat-447",
+      "name": "Pile cap rebar cage (1200x1200x600)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Fabricated rebar cage for single pile cap"
+    },
+    {
+      "id": "mat-448",
+      "name": "Pile cap rebar cage (1500x1500x750)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Fabricated rebar cage for two-pile cap"
+    },
+    {
+      "id": "mat-449",
+      "name": "Pile cap formwork (plywood)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 12.5,
+      "description": "Formwork for pile cap construction"
+    },
+    {
+      "id": "mat-450",
+      "name": "Driven precast pile 250x250mm (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 85.0,
+      "description": "Precast concrete driven pile per meter"
+    },
+    {
+      "id": "mat-451",
+      "name": "Driven precast pile 300x300mm (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 105.0,
+      "description": "Large precast driven pile per meter"
+    },
+    {
+      "id": "mat-452",
+      "name": "Driven precast pile 350x350mm (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 135.0,
+      "description": "Heavy duty precast pile per meter"
+    },
+    {
+      "id": "mat-453",
+      "name": "CFA pile 450mm diameter (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "Continuous Flight Auger pile 450mm per meter"
+    },
+    {
+      "id": "mat-454",
+      "name": "CFA pile 600mm diameter (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 145.0,
+      "description": "CFA pile 600mm per meter"
+    },
+    {
+      "id": "mat-455",
+      "name": "CFA pile 750mm diameter (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 195.0,
+      "description": "Large CFA pile 750mm per meter"
+    },
+    {
+      "id": "mat-456",
+      "name": "CFA pile 900mm diameter (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 265.0,
+      "description": "Heavy duty CFA pile 900mm per meter"
+    },
+    {
+      "id": "mat-457",
+      "name": "Bored pile 600mm diameter (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 165.0,
+      "description": "Rotary bored pile 600mm per meter"
+    },
+    {
+      "id": "mat-458",
+      "name": "Bored pile 750mm diameter (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 225.0,
+      "description": "Rotary bored pile 750mm per meter"
+    },
+    {
+      "id": "mat-459",
+      "name": "Bored pile 900mm diameter (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 295.0,
+      "description": "Large rotary bored pile 900mm per meter"
+    },
+    {
+      "id": "mat-460",
+      "name": "Bored pile 1200mm diameter (per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 425.0,
+      "description": "Heavy duty bored pile 1200mm per meter"
+    },
+    {
+      "id": "mat-461",
+      "name": "Pile rebar cage (450mm dia)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 48.0,
+      "description": "Spiral rebar cage for 450mm pile"
+    },
+    {
+      "id": "mat-462",
+      "name": "Pile rebar cage (600mm dia)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 72.0,
+      "description": "Spiral rebar cage for 600mm pile"
+    },
+    {
+      "id": "mat-463",
+      "name": "Pile rebar cage (900mm dia)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 125.0,
+      "description": "Spiral rebar cage for 900mm pile"
+    },
+    {
+      "id": "mat-464",
+      "name": "Steel H-pile (305x305mm UC per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 185.0,
+      "description": "Steel universal column pile per meter"
+    },
+    {
+      "id": "mat-465",
+      "name": "Steel tube pile (323.9mm OD per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 165.0,
+      "description": "Steel circular hollow section pile"
+    },
+    {
+      "id": "mat-466",
+      "name": "Pile testing (static load test)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 8500.0,
+      "description": "Static load test for pile verification"
+    },
+    {
+      "id": "mat-467",
+      "name": "Pile integrity testing (sonic)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Sonic integrity test per pile"
+    },
+    {
+      "id": "mat-468",
+      "name": "Pile trimming/cropping",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 45.0,
+      "description": "Trim pile head to formation level"
+    },
+    {
+      "id": "mat-469",
+      "name": "Raft foundation concrete (C32/40)",
+      "category": "foundations",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 130.0,
+      "description": "Structural concrete for raft foundation"
+    },
+    {
+      "id": "mat-470",
+      "name": "Raft foundation mesh A393 (top)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "10mm mesh top layer for raft slab"
+    },
+    {
+      "id": "mat-471",
+      "name": "Raft foundation mesh A393 (bottom)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 8.5,
+      "description": "10mm mesh bottom layer for raft slab"
+    },
+    {
+      "id": "mat-472",
+      "name": "Raft edge thickening rebar",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 32.0,
+      "description": "Additional rebar for raft edge beam"
+    },
+    {
+      "id": "mat-473",
+      "name": "Raft foundation insulation EPS300 (100mm)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 18.5,
+      "description": "High compression EPS under raft"
+    },
+    {
+      "id": "mat-474",
+      "name": "Raft foundation insulation EPS500 (150mm)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 28.0,
+      "description": "Very high compression EPS under raft"
+    },
+    {
+      "id": "mat-475",
+      "name": "Raft slip membrane/DPM 1200g",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 2.8,
+      "description": "Slip membrane under raft slab"
+    },
+    {
+      "id": "mat-476",
+      "name": "Pad foundation 1500x1500x600 (C25/30)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Pad base for single column"
+    },
+    {
+      "id": "mat-477",
+      "name": "Pad foundation 2000x2000x750 (C25/30)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 485.0,
+      "description": "Large pad base for column"
+    },
+    {
+      "id": "mat-478",
+      "name": "Pad foundation 2500x2500x900 (C32/40)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 750.0,
+      "description": "Heavy duty pad base"
+    },
+    {
+      "id": "mat-479",
+      "name": "Pad foundation rebar cage",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Prefabricated cage for pad base"
+    },
+    {
+      "id": "mat-480",
+      "name": "Column starter bars (4nr T20)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 28.0,
+      "description": "Starter bars from pad foundation"
+    },
+    {
+      "id": "mat-481",
+      "name": "Foundation waterproofing (bitumen)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 15.0,
+      "description": "Bitumen membrane foundation waterproofing"
+    },
+    {
+      "id": "mat-482",
+      "name": "Foundation waterproofing (liquid applied)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 22.0,
+      "description": "Liquid tanking membrane"
+    },
+    {
+      "id": "mat-483",
+      "name": "Foundation waterproofing (Grade 3)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 35.0,
+      "description": "Grade 3 structural waterproofing system"
+    },
+    {
+      "id": "mat-484",
+      "name": "Drainage cavity membrane (8mm studded)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 9.5,
+      "description": "Cavity drain membrane for basements"
+    },
+    {
+      "id": "mat-485",
+      "name": "Drainage cavity membrane (20mm studded)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 14.0,
+      "description": "Heavy duty cavity membrane"
+    },
+    {
+      "id": "mat-486",
+      "name": "Sump pump chamber (plastic 400mm)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 185.0,
+      "description": "Sump chamber for basement drainage"
+    },
+    {
+      "id": "mat-487",
+      "name": "Sump pump (automatic submersible)",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 285.0,
+      "description": "Automatic sump pump with float"
+    },
+    {
+      "id": "mat-488",
+      "name": "Underpinning concrete (C32/40)",
+      "category": "foundations",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 185.0,
+      "description": "Concrete for underpinning works"
+    },
+    {
+      "id": "mat-489",
+      "name": "Underpinning (traditional per leg 1m deep)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 850.0,
+      "description": "Traditional underpinning leg excavate and concrete"
+    },
+    {
+      "id": "mat-490",
+      "name": "Underpinning (traditional per leg 2m deep)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 1450.0,
+      "description": "Deep traditional underpinning leg"
+    },
+    {
+      "id": "mat-491",
+      "name": "Mini-pile underpinning (150mm per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 165.0,
+      "description": "Mini-piled underpinning per meter depth"
+    },
+    {
+      "id": "mat-492",
+      "name": "Ground improvement (vibro-compaction)",
+      "category": "foundations",
+      "unit": "m3",
+      "defaultRate": 45.0,
+      "description": "Vibro-compaction ground treatment"
+    },
+    {
+      "id": "mat-493",
+      "name": "Ground improvement (dynamic compaction)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 28.0,
+      "description": "Dynamic compaction per square meter"
+    },
+    {
+      "id": "mat-494",
+      "name": "Stone columns (vibro-replacement)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 85.0,
+      "description": "Stone column ground improvement per meter"
+    },
+    {
+      "id": "mat-495",
+      "name": "Soil nails (25mm bar per m)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 55.0,
+      "description": "Grouted soil nail per meter"
+    },
+    {
+      "id": "mat-496",
+      "name": "Geogrid reinforcement (biaxial 40kN)",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 6.5,
+      "description": "Biaxial geogrid for soil reinforcement"
+    },
+    {
+      "id": "mat-497",
+      "name": "Geogrid reinforcement (biaxial 80kN)",
+      "category": "geosynthetics",
+      "unit": "m2",
+      "defaultRate": 12.0,
+      "description": "Heavy duty biaxial geogrid"
+    },
+    {
+      "id": "mat-498",
+      "name": "Foundation concrete test cubes (set of 3)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 45.0,
+      "description": "Concrete cube testing for quality control"
+    },
+    {
+      "id": "mat-499",
+      "name": "Bentonite slurry (piling per m3)",
+      "category": "foundations",
+      "unit": "m3",
+      "defaultRate": 85.0,
+      "description": "Bentonite support fluid for bored piles"
+    },
+    {
+      "id": "mat-500",
+      "name": "Tremie pipe concrete pour (underwater)",
+      "category": "foundations",
+      "unit": "m3",
+      "density": 2.4,
+      "defaultRate": 145.0,
+      "description": "Tremie concrete pour for piles"
+    },
+    {
+      "id": "mat-501",
+      "name": "ICF blocks (Insulated Concrete Forms)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 45.0,
+      "description": "EPS permanent formwork for walls/foundations"
+    },
+    {
+      "id": "mat-502",
+      "name": "ICF corner blocks",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 12.5,
+      "description": "ICF corner formwork blocks"
+    },
+    {
+      "id": "mat-503",
+      "name": "ICF bracing system (per wall)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 8.5,
+      "description": "Temporary bracing for ICF wall"
+    },
+    {
+      "id": "mat-504",
+      "name": "EPS permanent formwork (foundation walls)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 38.0,
+      "description": "EPS stay-in-place formwork for basement walls"
+    },
+    {
+      "id": "mat-505",
+      "name": "EPS permanent formwork (ground beams)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 28.0,
+      "description": "EPS permanent shuttering for ground beams"
+    },
+    {
+      "id": "mat-506",
+      "name": "EPS permanent formwork (ring beams)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 32.0,
+      "description": "EPS permanent formwork for ring beams"
+    },
+    {
+      "id": "mat-507",
+      "name": "Composite metal deck (0.9mm Multideck)",
+      "category": "reinforcement",
+      "unit": "m2",
+      "defaultRate": 28.0,
+      "description": "Permanent formwork metal deck for floors"
+    },
+    {
+      "id": "mat-508",
+      "name": "Composite metal deck (1.2mm Multideck)",
+      "category": "reinforcement",
+      "unit": "m2",
+      "defaultRate": 35.0,
+      "description": "Heavy duty permanent metal deck"
+    },
+    {
+      "id": "mat-509",
+      "name": "Metal deck stud shear connectors",
+      "category": "reinforcement",
+      "unit": "nr",
+      "defaultRate": 2.8,
+      "description": "Shear studs for composite deck"
+    },
+    {
+      "id": "mat-510",
+      "name": "Metal deck edge trim/closure",
+      "category": "reinforcement",
+      "unit": "m",
+      "defaultRate": 12.0,
+      "description": "Edge closure for metal deck"
+    },
+    {
+      "id": "mat-511",
+      "name": "GRP permanent formwork (columns)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "Glass reinforced plastic permanent column formwork"
+    },
+    {
+      "id": "mat-512",
+      "name": "GRP permanent formwork (circular 300mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 55.0,
+      "description": "Circular GRP column form 300mm diameter"
+    },
+    {
+      "id": "mat-513",
+      "name": "GRP permanent formwork (circular 450mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 75.0,
+      "description": "Circular GRP column form 450mm diameter"
+    },
+    {
+      "id": "mat-514",
+      "name": "GRP permanent formwork (circular 600mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 95.0,
+      "description": "Circular GRP column form 600mm diameter"
+    },
+    {
+      "id": "mat-515",
+      "name": "Cardboard tube formwork (Sonotube 300mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 18.5,
+      "description": "Disposable cardboard column form 300mm"
+    },
+    {
+      "id": "mat-516",
+      "name": "Cardboard tube formwork (Sonotube 450mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 28.0,
+      "description": "Cardboard column form 450mm diameter"
+    },
+    {
+      "id": "mat-517",
+      "name": "Cardboard tube formwork (Sonotube 600mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 42.0,
+      "description": "Large cardboard column form 600mm"
+    },
+    {
+      "id": "mat-518",
+      "name": "Plastic permanent formwork (Geoplast void)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 45.0,
+      "description": "Plastic void former for raft slabs"
+    },
+    {
+      "id": "mat-519",
+      "name": "Plastic bubble deck void formers",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 52.0,
+      "description": "Spherical void formers for two-way slabs"
+    },
+    {
+      "id": "mat-520",
+      "name": "Cobiax void formers (recycled plastic)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 58.0,
+      "description": "Recycled plastic void formers for slabs"
+    },
+    {
+      "id": "mat-521",
+      "name": "Permanent precast concrete soffit",
+      "category": "concrete",
+      "unit": "m2",
+      "defaultRate": 65.0,
+      "description": "Precast permanent soffit formwork"
+    },
+    {
+      "id": "mat-522",
+      "name": "Permanent GRC formwork (architectural)",
+      "category": "concrete",
+      "unit": "m2",
+      "defaultRate": 85.0,
+      "description": "Glass reinforced concrete permanent form"
+    },
+    {
+      "id": "mat-523",
+      "name": "Permanent timber formwork (fair-faced)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 45.0,
+      "description": "Timber board-marked permanent formwork"
+    },
+    {
+      "id": "mat-524",
+      "name": "Permanent plywood formwork liner",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 28.0,
+      "description": "Plywood liner for permanent formwork"
+    },
+    {
+      "id": "mat-525",
+      "name": "Permanent formwork ties (plastic)",
+      "category": "foundations",
+      "unit": "nr",
+      "defaultRate": 1.8,
+      "description": "Plastic snap-off formwork ties"
+    },
+    {
+      "id": "mat-526",
+      "name": "Movement joint former (Cellcore 10mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 8.5,
+      "description": "Permanent movement joint former"
+    },
+    {
+      "id": "mat-527",
+      "name": "Movement joint former (Cellcore 20mm)",
+      "category": "foundations",
+      "unit": "m",
+      "defaultRate": 12.0,
+      "description": "Wide permanent joint former"
+    },
+    {
+      "id": "mat-528",
+      "name": "Permanent formwork insulation (PIR 100mm)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 32.0,
+      "description": "PIR insulated permanent formwork"
+    },
+    {
+      "id": "mat-529",
+      "name": "Permanent formwork insulation (PIR 150mm)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 42.0,
+      "description": "Thick PIR insulated permanent formwork"
+    },
+    {
+      "id": "mat-530",
+      "name": "Self-climbing formwork system (hire per m2)",
+      "category": "foundations",
+      "unit": "m2",
+      "defaultRate": 18.5,
+      "description": "Climbing formwork system hire per month"
+    },
+    {
+      "id": "mat-531",
+      "name": "Kiln dried sand",
+      "category": "paving",
+      "unit": "m3",
+      "density": 1.6,
+      "defaultRate": 55.0,
+      "description": "Kiln dried jointing sand for block paving"
+    },
+    {
+      "id": "mat-540",
+      "name": "Precast kerb unit (standard)",
+      "category": "kerbs",
+      "unit": "m",
+      "defaultRate": 7.5,
+      "description": "Standard precast concrete kerb unit"
+    },
+    {
+      "id": "mat-550",
+      "name": "Road marking paint (thermoplastic)",
+      "category": "highways",
+      "unit": "litre",
+      "defaultRate": 6.0,
+      "description": "Thermoplastic road marking paint"
+    },
+    {
+      "id": "mat-560",
+      "name": "Vehicle restraint barrier",
+      "category": "highways",
+      "unit": "m",
+      "defaultRate": 26.0,
+      "description": "Steel vehicle restraint barrier system"
+    },
+    {
+      "id": "mat-570",
+      "name": "Topsoil (landscaping grade)",
+      "category": "landscaping",
+      "unit": "m3",
+      "density": 1.3,
+      "defaultRate": 25.0,
+      "description": "Premium landscaping grade topsoil"
+    },
+    {
+      "id": "mat-600",
+      "name": "Precast concrete culvert pipe",
+      "category": "drainage",
+      "unit": "m",
+      "defaultRate": 140.0,
+      "description": "Large diameter precast concrete culvert pipe"
+    },
+    {
+      "id": "mat-610",
+      "name": "Attenuation tank system",
+      "category": "drainage",
+      "unit": "nr",
+      "defaultRate": 2500.0,
+      "description": "Modular attenuation tank system"
+    }
+  ]
+}

@@ -27,9 +27,19 @@ export type Enquiry = {
   anticipatedAwardDate?: string;
   anticipatedSosDate?: string;
   documents?: EnquiryDocument[];
+  drawingFiles?: DrawingFile[]; // Associated drawing files for measurements
   status: "new" | "under-review" | "accepted" | "declined" | "sent-to-estimating";
   reviewedBy?: string;
   notes?: string;
+};
+
+export type DrawingFile = {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  uploadedAt: string;
+  dataUrl: string; // Base64 encoded file data
 };
 
 export type EstimateJob = {
@@ -46,8 +56,17 @@ export type EstimateJob = {
   progress?: number;
   quoteRef?: string;
   submittedDate?: string;
+  dueDate?: string; // Manual override for due date (defaults to enquiry returnDate)
+  quoteTotal?: number; // Calculated total from BOQ when quote is submitted
+  boqItems?: BOQItem[]; // Bill of quantities items for this estimate
+  marginPercent?: number; // Combined margin percentage (overhead + profit)
   outcome?: string;
   notes?: string;
+  orderNumber?: string;
+  contractFileName?: string;
+  invoiceAddress?: string;
+  paymentTerms?: string;
+  drawingFiles?: DrawingFile[]; // Associated drawing files for measurements
 };
 
 export type RateComponent = {
@@ -70,6 +89,9 @@ export type BOQItem = {
   baseRate: number;
   total: number;
   components?: RateComponent[];
+  measurementId?: string; // Link to measurement from drawing tool
+  drawingFileId?: string; // Which drawing file to use
+  measuredQuantity?: number; // Quantity from measurement tool
 };
 
 /**
@@ -206,6 +228,7 @@ export const createEstimateJobFromEnquiry = (enquiry: Enquiry): EstimateJob => {
     projectAddress: enquiry.projectAddress,
     value: enquiry.value,
     receivedDate: enquiry.receivedDate,
+    drawingFiles: enquiry.drawingFiles, // Pass through drawing files
     status: "new-assignment",
   };
 };
@@ -377,4 +400,33 @@ export const getFileIcon = (fileType: string): string => {
   if (fileType.includes("image")) return "🖼️";
   if (fileType.includes("zip") || fileType.includes("rar")) return "📦";
   return "📎";
+};
+
+/**
+ * Convert File objects to Drawing Files for estimates
+ */
+export const convertFilesToDrawings = async (
+  files: File[]
+): Promise<DrawingFile[]> => {
+  return Promise.all(
+    files.map(
+      (file) =>
+        new Promise<DrawingFile>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const dataUrl = event.target?.result as string;
+            resolve({
+              id: `DRW-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+              uploadedAt: new Date().toISOString(),
+              dataUrl,
+            });
+          };
+          reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+          reader.readAsDataURL(file);
+        })
+    )
+  );
 };

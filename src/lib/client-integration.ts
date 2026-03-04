@@ -8,7 +8,7 @@ export type ProjectStatus =
   | "Opportunity"      // Initial enquiry/lead
   | "Estimating"       // Currently being estimated
   | "Submitted"        // Quote submitted, awaiting decision
-  | "Won"              // Project won, moving to mobilization
+  | "Won"              // Project won, moving to mobilisation
   | "Lost"             // Project lost to competitor
   | "Active"           // Project in progress
   | "On Hold"          // Temporarily paused

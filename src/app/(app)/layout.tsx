@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import MobileNav from "@/components/MobileNav";
 import { useAuth } from "@/lib/auth-context";
+import { NotificationsProvider } from "@/lib/notifications-context";
 
 type AppLayoutProps = {
   children: ReactNode;
@@ -41,7 +42,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <>
       <MobileNav />
-      <AppShell>{children}</AppShell>
+      <NotificationsProvider>
+        <AppShell>{children}</AppShell>
+      </NotificationsProvider>
     </>
   );
 }

@@ -233,7 +233,7 @@ Before submitting your BoQ:
 ### Quick Entry
 - Copy similar items and modify
 - Use rate calculator for complex items
-- Set up favorite rate libraries
+- Set up favourite rate libraries
 
 ### Organization
 - Use section headings consistently

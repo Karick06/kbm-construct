@@ -25,7 +25,7 @@ const taskData: Task[] = [
   { id: "TSK-006", title: "Insurance Review", description: "Annual insurance policy review and renewal", project: "General", assignee: "Linda Foster", priority: "Medium", dueDate: "2026-03-05", status: "backlog", tags: ["Admin", "Compliance"] },
   { id: "TSK-007", title: "Client Presentation Prep", description: "Prepare Q1 progress presentation for Bellway", project: "North District Complex", assignee: "Mark Thompson", priority: "Low", dueDate: "2026-03-08", status: "backlog", tags: ["Client Relations"] },
   { id: "TSK-008", title: "Equipment Calibration", description: "Schedule calibration for surveying equipment", project: "General", assignee: "Peter Grant", priority: "Low", dueDate: "2026-03-10", status: "backlog", tags: ["Equipment", "Maintenance"] },
-  { id: "TSK-009", title: "Training Session - CSCS", description: "Organize CSCS training for 12 new operatives", project: "General", assignee: "Rachel Moore", priority: "Medium", dueDate: "2026-03-12", status: "backlog", tags: ["Training", "H&S"] },
+  { id: "TSK-009", title: "Training Session - CSCS", description: "Organise CSCS training for 12 new operatives", project: "General", assignee: "Rachel Moore", priority: "Medium", dueDate: "2026-03-12", status: "backlog", tags: ["Training", "H&S"] },
   { id: "TSK-010", title: "Site Welfare Setup", description: "Install welfare facilities at Shopping District site", project: "Shopping District", assignee: "Andrew Clark", priority: "High", dueDate: "2026-02-26", status: "backlog", tags: ["Site Setup", "Welfare"] },
   { id: "TSK-011", title: "Design Coordination", description: "Review architectural drawings with design team", project: "Tech Campus", assignee: "Sophie Anderson", priority: "Medium", dueDate: "2026-03-03", status: "backlog", tags: ["Design", "Coordination"] },
   { id: "TSK-012", title: "Invoice Processing", description: "Process outstanding supplier invoices for January", project: "General", assignee: "Karen White", priority: "Medium", dueDate: "2026-02-18", status: "backlog", tags: ["Finance", "Admin"] },
@@ -52,7 +52,7 @@ const taskData: Task[] = [
   { id: "TSK-029", title: "Handover Documentation", description: "Prepare handover pack for Market Square completion", project: "Market Square", assignee: "Mark Thompson", priority: "High", dueDate: "2026-02-11", status: "done", tags: ["Handover", "Documentation"] },
   { id: "TSK-030", title: "IT Support Request", description: "Resolve site office network connectivity issue", project: "General", assignee: "Andrew Clark", priority: "Low", dueDate: "2026-02-13", status: "done", tags: ["IT", "Support"] },
   { id: "TSK-031", title: "Monthly Plant Maintenance", description: "Complete monthly maintenance on 4 excavators", project: "General", assignee: "David Brown", priority: "Medium", dueDate: "2026-02-14", status: "done", tags: ["Plant", "Maintenance"] },
-  { id: "TSK-032", title: "Budget Variance Report", description: "Analyze budget variance for January actuals", project: "General", assignee: "Karen White", priority: "Low", dueDate: "2026-02-15", status: "done", tags: ["Finance", "Reporting"] },
+  { id: "TSK-032", title: "Budget Variance Report", description: "Analyse budget variance for January actuals", project: "General", assignee: "Karen White", priority: "Low", dueDate: "2026-02-15", status: "done", tags: ["Finance", "Reporting"] },
   { id: "TSK-033", title: "Subcontractor Performance Review", description: "Review M&E subcontractor performance on Office Complex", project: "Office Complex Tower B", assignee: "Emma Davis", priority: "Medium", dueDate: "2026-02-13", status: "done", tags: ["Subcontractors", "Review"] },
   { id: "TSK-034", title: "Risk Register Update", description: "Update project risk register for Premier Mixed Use", project: "Premier Mixed Use", assignee: "Sarah Chen", priority: "Medium", dueDate: "2026-02-12", status: "done", tags: ["Risk", "Documentation"] },
   { id: "TSK-035", title: "New Starter Onboarding", description: "Complete onboarding for 3 new site operatives", project: "General", assignee: "Linda Foster", priority: "High", dueDate: "2026-02-14", status: "done", tags: ["HR", "Onboarding"] },
@@ -87,11 +87,7 @@ export default function TasksPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Tasks</h1>
-          <p className="text-gray-400 mt-1">Task queue & assignments</p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex gap-3">
           <button
             onClick={() => setView("board")}

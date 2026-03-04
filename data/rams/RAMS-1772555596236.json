@@ -1,0 +1,335 @@
+{
+  "id": "RAMS-1772555596236",
+  "title": "surf",
+  "projectId": "Arbor Park build",
+  "projectName": "Arbor Park build",
+  "projectManager": "Theo Grant",
+  "projectPhase": "Framing",
+  "location": "there",
+  "sitePostcode": "S73 8AZ",
+  "siteLat": 53.530068,
+  "siteLon": -1.386376,
+  "nearestHospitalName": "Barnsley Hospital A&E",
+  "nearestHospitalAddress": "Gawber Road, Barnsley, S75 2EP",
+  "nearestHospitalDistanceKm": 6,
+  "nearestHospitalPhone": "01226 730000",
+  "hospitalLat": 53.5512,
+  "hospitalLon": -1.4694,
+  "workType": "Civils & Infrastructure Works",
+  "workTypes": [
+    "Civils & Infrastructure Works",
+    "Road Planing / Milling",
+    "Binder Course Surfacing",
+    "Surface Course Surfacing",
+    "Ironwork Raise & Reset",
+    "Road Markings & Street Furniture",
+    "Traffic Management & Roadworks",
+    "Tarmac / Asphalt Surfacing"
+  ],
+  "author": "Site Manager",
+  "approver": "Compliance Lead",
+  "issueDate": "2026-03-03",
+  "tier1Profile": "Standard",
+  "revision": 1,
+  "approvalStatus": "Draft",
+  "ppeRequired": [
+    "Hard hat",
+    "Hi-vis (Class 2 minimum)",
+    "Safety boots",
+    "Gloves",
+    "Eye protection",
+    "Hearing protection",
+    "Task-specific RPE",
+    "Hi-vis (Class 3)",
+    "RPE",
+    "Heat-resistant gloves",
+    "RPE where required",
+    "Weather PPE",
+    "Hi-vis (Class 3 for road works)",
+    "RPE where fumes/dust require"
+  ],
+  "plantEquipment": [
+    "Excavator",
+    "Dumper",
+    "Compaction roller",
+    "Cut-off saw",
+    "Lifting accessories and chains",
+    "Survey and setting-out instruments",
+    "Road planer",
+    "Sweeper",
+    "Water suppression",
+    "HGV wagons",
+    "Asphalt paver",
+    "Rollers",
+    "Bitumen sprayer",
+    "Temperature probe",
+    "Steel/drum rollers",
+    "Joint heaters",
+    "Line and level tools",
+    "Lifting keys",
+    "Cutting tools",
+    "Rapid-set materials",
+    "Compaction tools",
+    "Line marking machine",
+    "Thermoplastic kettle",
+    "Core drill",
+    "Fixing tools",
+    "Chapter 8 signage",
+    "Barriers/cones",
+    "Traffic lights",
+    "Impact protection vehicles",
+    "Tandem roller",
+    "Bomag/compaction roller",
+    "Road saw/cutter",
+    "Thermal lance/hand tools"
+  ],
+  "riskAssessment": [
+    {
+      "hazard": "Public interface and unauthorised access",
+      "initialRisk": "High",
+      "controls": "Secure hoarding, signage, marshals, controlled gates, monitored exclusion zones",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Working adjacent to live traffic",
+      "initialRisk": "High",
+      "controls": "Approved traffic management plan, temporary barriers, speed controls, competent TM operatives",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Lifting operations failure",
+      "initialRisk": "High",
+      "controls": "Lift plan, appointed person, LOLER compliant equipment, pre-use checks, exclusion zone",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Uncontrolled service isolation",
+      "initialRisk": "High",
+      "controls": "Permit system, lock-off/tag-out, verification testing, authorised persons only",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Temporary works instability",
+      "initialRisk": "High",
+      "controls": "Design checks, TW coordinator approval, staged loading, routine inspections",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Noise/vibration impact",
+      "initialRisk": "Medium",
+      "controls": "Monitoring, low-vibration methods, restricted hours, hearing protection",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Traffic interface during live carriageway works",
+      "initialRisk": "High",
+      "controls": "Approved TM plan, lane closures, advance signing and lookout",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "High dust/noise and flying debris",
+      "initialRisk": "High",
+      "controls": "Water suppression, guarded equipment, PPE and exclusion zones",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Burns from hot asphalt",
+      "initialRisk": "High",
+      "controls": "Thermal PPE, controlled work zones and burn response kits",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Poor compaction due to temperature loss",
+      "initialRisk": "Medium",
+      "controls": "Delivery timing, rolling pattern and continuous temperature checks",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Traffic interface at final surfacing stage",
+      "initialRisk": "High",
+      "controls": "Strict closures, marshals and controlled reopening criteria",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Inadequate skid resistance due to workmanship",
+      "initialRisk": "Medium",
+      "controls": "Approved mix, laying temperature checks and QA sign-off",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Manual handling injuries when moving covers/frames",
+      "initialRisk": "Medium",
+      "controls": "Mechanical lifting keys and team lifts where required",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Trips/open chamber risk during reset",
+      "initialRisk": "High",
+      "controls": "Immediate guarding, barrier controls and supervised access",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Vehicle strike during short-duration lane closures",
+      "initialRisk": "High",
+      "controls": "Mobile lane closure setup, lookout and compliant signing",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Burns from thermoplastic materials",
+      "initialRisk": "Medium",
+      "controls": "Heat-resistant PPE and controlled application zones",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Vehicle strike from live traffic",
+      "initialRisk": "High",
+      "controls": "Approved TM plan, advance signing, taper setup and competent operatives",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Public/pedestrian conflict",
+      "initialRisk": "High",
+      "controls": "Safe pedestrian diversions, marshals and clear information signage",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Burns from hot bitumen/asphalt",
+      "initialRisk": "High",
+      "controls": "Heat PPE, controlled discharge zones, no standing behind paver screed, burn kits available",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Plant movement and reversing",
+      "initialRisk": "High",
+      "controls": "Segregation, banksman, reverse alarms/cameras, one-way plan",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Traffic incursion",
+      "initialRisk": "High",
+      "controls": "Approved traffic management, lane closures, barriers, lookout/marshal",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Fume inhalation",
+      "initialRisk": "Medium",
+      "controls": "Ventilation/working position controls, RPE where assessed, exposure minimisation",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Manual handling of kerbs/ironwork",
+      "initialRisk": "Medium",
+      "controls": "Lifting aids, team lift, training and task rotation",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Weather impact on compaction quality and safety",
+      "initialRisk": "Medium",
+      "controls": "Weather checks, revised laying plan, stop-work criteria for rain/low temperature",
+      "residualRisk": "Low"
+    }
+  ],
+  "methodStatementSteps": [
+    "Review IFC drawings, utility constraints, temporary works and ITP hold points.",
+    "Deliver site induction and activity brief with competency verification.",
+    "Implement traffic and pedestrian management controls before workface opening.",
+    "Set out works, verify levels and tolerances, complete permit checks.",
+    "Execute works in approved sequence with quality checkpoints and sign-offs.",
+    "Complete testing/commissioning, snag close-out and as-built record updates.",
+    "Implement traffic management and confirm milling extents.",
+    "Plane carriageway to specified depth and profile.",
+    "Sweep and inspect milled surface for defects.",
+    "Dispose/recycle arisings in accordance with waste controls.",
+    "Prepare substrate and apply tack coat.",
+    "Lay binder course to specified thickness and crossfall.",
+    "Compact to density requirements using agreed rolling sequence.",
+    "Record quality checks and release for surface course.",
+    "Verify binder readiness and weather window.",
+    "Lay surface course with controlled joints and finish.",
+    "Complete rolling sequence and texture compliance checks.",
+    "Open to traffic only after release criteria are met.",
+    "Set local traffic management and isolate work area.",
+    "Remove and prepare existing frame and surrounding surfacing.",
+    "Raise/reset frame to finished level and reinstate surround.",
+    "Verify level tolerance and reopen on cure completion.",
+    "Set traffic management and clean application surfaces.",
+    "Apply road markings to layout drawings and standards.",
+    "Install studs/signage/furniture with compliant fixings.",
+    "Inspect visibility, alignment and retroreflectivity where required.",
+    "Brief team on approved traffic management layout and sequence.",
+    "Deploy signs, cones and barriers from safe zones.",
+    "Monitor traffic flow and maintain controls throughout shift.",
+    "Dismantle traffic management in reverse safe sequence.",
+    "Confirm approved mix design, delivery plan, weather window and target layer thickness.",
+    "Implement traffic management and workface segregation before surfacing starts.",
+    "Prepare substrate (clean, dry, to level) and apply tack coat to specification.",
+    "Lay asphalt using paver in controlled passes with joint management plan.",
+    "Roll and compact to target density/voids with documented rolling pattern.",
+    "Carry out temperature, level and compaction quality checks and record results.",
+    "Reinstate road markings/signage and reopen area only after release criteria met."
+  ],
+  "emergencyProcedures": [
+    "Stop works and make area safe",
+    "Escalate via site emergency matrix",
+    "Use project-specific rescue and first aid response",
+    "Notify client/Tier 1 representative as required",
+    "Stop milling and secure lane",
+    "Escalate incidents via TM supervisor",
+    "Isolate hot zone",
+    "Provide first aid for burns",
+    "Escalate major incidents",
+    "Stop paving activity",
+    "Secure carriageway and incident area",
+    "Contact emergency services as required",
+    "Secure open chamber immediately",
+    "Stop traffic interface works and escalate incidents",
+    "Stop operations and secure live lane interface",
+    "Call emergency services for significant incidents",
+    "Stop roadworks and protect incident scene",
+    "Contact emergency services and traffic authority",
+    "Isolate hot material/plant area",
+    "Cool burns with clean water and seek urgent first aid",
+    "Escalate major incident via emergency chain",
+    "Secure traffic interface and prevent secondary incidents"
+  ],
+  "environmentalControls": [
+    "Noise and vibration monitoring",
+    "Surface water and contamination controls",
+    "Waste segregation and transfer notes",
+    "Fuel and chemical bunding",
+    "Dust suppression",
+    "Noise controls",
+    "Recycling of planings",
+    "Fume minimisation",
+    "Bitumen spill prevention",
+    "Asphalt waste recycling",
+    "Noise and fume management",
+    "Prevent runoff contamination",
+    "Material waste control",
+    "Waste asphalt/concrete segregation",
+    "Spill control",
+    "Material spill control",
+    "Packaging and cartridge waste segregation",
+    "Noise minimisation",
+    "Minimise idling and emissions",
+    "Control debris onto carriageway",
+    "Night noise controls",
+    "Fume and dust minimisation",
+    "Spill control for bitumen/fuels",
+    "Noise control and restricted working windows",
+    "Waste asphalt recycling and transfer documentation"
+  ],
+  "permitsRequired": [
+    "Permit to Work",
+    "Permit to Dig",
+    "Lifting Permit",
+    "Road Space / Traffic Management Permit",
+    "Road Space / Occupation Permit",
+    "Traffic Management Permit",
+    "Road Space Permit",
+    "Road Opening / Occupation Permit",
+    "Hot Works Permit (where applicable)"
+  ],
+  "createdDate": "2026-03-03T16:33:16.236Z",
+  "lastModifiedDate": "2026-03-03T16:33:16.236Z"
+}

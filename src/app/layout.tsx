@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Sora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { FloatingChatProvider } from "@/lib/floating-chat-context";
 import RegisterServiceWorker from "./register-sw";
 
 const sora = Sora({
@@ -46,8 +47,10 @@ export default function RootLayout({
       </head>
       <body className={`${sora.variable} antialiased h-full`}>
         <AuthProvider>
-          <RegisterServiceWorker />
-          {children}
+          <FloatingChatProvider>
+            <RegisterServiceWorker />
+            {children}
+          </FloatingChatProvider>
         </AuthProvider>
       </body>
     </html>

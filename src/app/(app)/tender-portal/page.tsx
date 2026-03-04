@@ -201,11 +201,6 @@ export default function TenderPortalPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Tender Portal</h1>
-        <p className="mt-2 text-gray-300">UK-only tender discovery with saved filters</p>
-      </div>
-
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">

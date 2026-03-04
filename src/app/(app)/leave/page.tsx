@@ -126,6 +126,13 @@ export default function LeavePage() {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalComments, setApprovalComments] = useState("");
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  
+  // Request Leave Modal State
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [leaveType, setLeaveType] = useState<LeaveType>('Annual');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [reason, setReason] = useState('');
 
   // Get requests where user needs to take action
   const myActionItems = requests.filter(req => {
@@ -150,6 +157,51 @@ export default function LeavePage() {
     setSelectedRequest(request);
     setApprovalComments("");
     setShowApprovalModal(true);
+  };
+
+  const calculateDays = (start: string, end: string): number => {
+    if (!start || !end) return 0;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1; // Include both start and end dates
+  };
+
+  const handleSubmitLeaveRequest = () => {
+    if (!user || !startDate || !endDate || !reason.trim()) return;
+
+    const days = calculateDays(startDate, endDate);
+    const newRequest: LeaveRequest = {
+      id: Date.now().toString(),
+      employeeId: user.id,
+      employeeName: user.name,
+      employeeEmail: user.email,
+      department: user.role === 'admin' ? 'HR' : 'Operations',
+      leaveType,
+      startDate,
+      endDate,
+      days,
+      reason,
+      status: 'pending_line_manager',
+      lineManagerId: user.role === 'admin' ? undefined : '1', // Admin as line manager for demo
+      lineManagerName: user.role === 'admin' ? undefined : 'Admin User',
+      deptHeadId: '1',
+      deptHeadName: 'Admin User',
+      approvalChain: initializeApprovalChain(leaveType),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      submittedAt: new Date().toISOString(),
+    };
+
+    setRequests([newRequest, ...requests]);
+    
+    // Reset form
+    setLeaveType('Annual');
+    setStartDate('');
+    setEndDate('');
+    setReason('');
+    setShowRequestModal(false);
   };
 
   const submitApproval = (approved: boolean) => {
@@ -285,12 +337,11 @@ export default function LeavePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Leave Management</h1>
-          <p className="mt-1 text-sm text-gray-400">Hierarchical leave approval system</p>
-        </div>
-        <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+      <div className="flex items-center justify-end">
+        <button 
+          onClick={() => setShowRequestModal(true)}
+          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+        >
           + Request Leave
         </button>
       </div>
@@ -506,6 +557,105 @@ export default function LeavePage() {
                   setShowApprovalModal(false);
                   setSelectedRequest(null);
                   setApprovalComments("");
+                }}
+                className="rounded-lg bg-gray-700/50 px-4 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request Leave Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-lg border border-gray-700 bg-gray-800 p-6">
+            <h3 className="mb-4 text-xl font-bold text-white">Request Leave</h3>
+            
+            <div className="space-y-4">
+              {/* Leave Type */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-400">
+                  Leave Type *
+                </label>
+                <select
+                  value={leaveType}
+                  onChange={(e) => setLeaveType(e.target.value as LeaveType)}
+                  className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                >
+                  {Object.keys(LEAVE_TYPE_CONFIG).map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-400">
+                  Start Date *
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                />
+              </div>
+
+              {/* End Date */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-400">
+                  End Date *
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate}
+                  className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                />
+              </div>
+
+              {/* Days Calculation */}
+              {startDate && endDate && (
+                <div className="rounded-lg bg-gray-900 px-3 py-2">
+                  <p className="text-sm text-gray-400">
+                    Duration: <span className="font-semibold text-white">{calculateDays(startDate, endDate)} days</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Reason */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-400">
+                  Reason *
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Please provide a reason for your leave request..."
+                  className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  rows={4}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleSubmitLeaveRequest}
+                disabled={!startDate || !endDate || !reason.trim()}
+                className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Submit Request
+              </button>
+              <button
+                onClick={() => {
+                  setShowRequestModal(false);
+                  setLeaveType('Annual');
+                  setStartDate('');
+                  setEndDate('');
+                  setReason('');
                 }}
                 className="rounded-lg bg-gray-700/50 px-4 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-700"
               >
