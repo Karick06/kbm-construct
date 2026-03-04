@@ -40,6 +40,8 @@ const DEMO_USERS = [
   { id: "3", name: "Sarah Jones", email: "sarah@kbm.com", password: "password", role: "Commercial Manager" },
 ];
 
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,52 +63,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    
-    // Check if user has custom password saved
-    if (typeof window !== "undefined") {
-      const storedPasswords = localStorage.getItem("user_passwords");
-      if (storedPasswords) {
-        try {
-          const passwords = JSON.parse(storedPasswords);
-          if (passwords[email]) {
-            // User has changed their password
-            if (passwords[email] === password) {
-              const foundUser = DEMO_USERS.find((u) => u.email === email);
-              if (foundUser) {
-                console.log("Login successful with custom password for:", email);
-                const { password: _, ...userWithoutPassword } = foundUser;
-                setUser(userWithoutPassword);
-                localStorage.setItem("kbm_user", JSON.stringify(userWithoutPassword));
-                return true;
-              }
-            }
-            console.log("Custom password check failed");
-            return false;
-          }
-        } catch (error) {
-          console.error("Failed to parse passwords:", error);
-        }
+    if (typeof window === "undefined") return false;
+
+    const normalizedEmail = normalizeEmail(email);
+
+    let passwords: Record<string, string> = {};
+    const storedPasswords = localStorage.getItem("user_passwords");
+    if (storedPasswords) {
+      try {
+        passwords = JSON.parse(storedPasswords);
+      } catch (error) {
+        console.error("Failed to parse passwords:", error);
       }
     }
-    
-    // Check default password
-    // Simulate API call
-    console.log("Attempting login with:", email);
-    const foundUser = DEMO_USERS.find(
-      (u) => u.email === email && u.password === password
-    );
 
-    if (foundUser) {
-      console.log("Login successful for:", email);
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      if (typeof window !== "undefined") {
+    const allUsers = getAllUsers();
+    const foundStoredUser = allUsers.find((u) => normalizeEmail(u.email) === normalizedEmail);
+
+    if (foundStoredUser) {
+      const savedPassword = passwords[normalizedEmail] ?? passwords[foundStoredUser.email];
+      if (savedPassword && savedPassword === password) {
+        console.log("Login successful for stored user:", normalizedEmail);
+        setUser(foundStoredUser);
+        localStorage.setItem("kbm_user", JSON.stringify(foundStoredUser));
+        return true;
+      }
+
+      const demoUserMatch = DEMO_USERS.find(
+        (u) => normalizeEmail(u.email) === normalizedEmail && u.password === password,
+      );
+      if (demoUserMatch) {
+        const { password: _, ...userWithoutPassword } = demoUserMatch;
+        setUser(userWithoutPassword);
         localStorage.setItem("kbm_user", JSON.stringify(userWithoutPassword));
+        return true;
       }
-      return true;
+
+      console.log("Login failed - invalid credentials for existing user");
+      return false;
     }
 
-    console.log("Login failed - invalid credentials");
+    console.log("Login failed - user not found");
     return false;
   };
 
@@ -152,7 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Check current password
-    const savedPassword = passwords[user.email];
+    const normalizedEmail = normalizeEmail(user.email);
+    const savedPassword = passwords[normalizedEmail] ?? passwords[user.email];
     if (savedPassword && savedPassword !== currentPassword) {
       console.log("Current password is incorrect");
       return false;
@@ -168,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Save new password
-    passwords[user.email] = newPassword;
+    passwords[normalizedEmail] = newPassword;
     localStorage.setItem("user_passwords", JSON.stringify(passwords));
     console.log("Password changed successfully");
     return true;
@@ -210,9 +208,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
       const users = getAllUsers();
+      const normalizedEmail = normalizeEmail(userData.email);
       
       // Check if email already exists
-      if (users.some(u => u.email === userData.email)) {
+      if (users.some(u => normalizeEmail(u.email) === normalizedEmail)) {
         console.error("User with this email already exists");
         return false;
       }
@@ -221,7 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const newUser: User = {
         id: Date.now().toString(),
         name: userData.name,
-        email: userData.email,
+        email: normalizedEmail,
         role: userData.role,
       };
       
@@ -230,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Store password
       const passwords = JSON.parse(localStorage.getItem("user_passwords") || "{}");
-      passwords[userData.email] = userData.password;
+      passwords[normalizedEmail] = userData.password;
       localStorage.setItem("user_passwords", JSON.stringify(passwords));
       
       console.log("User created successfully:", newUser.email);
