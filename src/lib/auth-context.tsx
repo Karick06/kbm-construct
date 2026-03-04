@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -26,9 +25,9 @@ interface AuthContextType {
   isAdmin: () => boolean;
   hasPermission: (permission: string) => boolean;
   getAllUsers: () => User[];
-  createUser: (userData: Omit<User, 'id'> & { password: string }) => boolean;
-  updateUserPermissions: (userId: string, updates: Partial<User>) => boolean;
-  deleteUser: (userId: string) => boolean;
+  createUser: (userData: Omit<User, 'id'> & { password: string }) => Promise<boolean>;
+  updateUserPermissions: (userId: string, updates: Partial<User>) => Promise<boolean>;
+  deleteUser: (userId: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,10 +40,24 @@ const DEMO_USERS = [
 ];
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const REMOTE_AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_MODE === "supabase";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const syncUsersFromServer = async () => {
+    if (!REMOTE_AUTH_ENABLED || typeof window === "undefined") return;
+
+    try {
+      const response = await fetch("/api/auth/users", { cache: "no-store" });
+      if (!response.ok) return;
+      const users = (await response.json()) as User[];
+      localStorage.setItem("kbm_all_users", JSON.stringify(users));
+    } catch (error) {
+      console.warn("Remote user sync skipped:", error);
+    }
+  };
 
   useEffect(() => {
     // Check for existing session on mount (client-side only)
@@ -59,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     }
+    void syncUsersFromServer();
     setIsLoading(false);
   }, []);
 
@@ -66,6 +80,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return false;
 
     const normalizedEmail = normalizeEmail(email);
+
+    if (REMOTE_AUTH_ENABLED) {
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: normalizedEmail, password }),
+        });
+
+        if (response.ok) {
+          const remoteUser = (await response.json()) as User;
+          setUser(remoteUser);
+          localStorage.setItem("kbm_user", JSON.stringify(remoteUser));
+          await syncUsersFromServer();
+          return true;
+        }
+
+        if (response.status === 401) {
+          return false;
+        }
+      } catch (error) {
+        console.warn("Remote login unavailable, using local fallback:", error);
+      }
+    }
 
     let passwords: Record<string, string> = {};
     const storedPasswords = localStorage.getItem("user_passwords");
@@ -203,8 +241,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return users;
   };
 
-  const createUser = (userData: Omit<User, 'id'> & { password: string }): boolean => {
+  const createUser = async (userData: Omit<User, 'id'> & { password: string }): Promise<boolean> => {
     if (!isAdmin() || typeof window === "undefined") return false;
+
+    if (REMOTE_AUTH_ENABLED) {
+      try {
+        const response = await fetch("/api/auth/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userData),
+        });
+
+        if (!response.ok) {
+          return false;
+        }
+
+        await syncUsersFromServer();
+        return true;
+      } catch (error) {
+        console.warn("Remote create user unavailable, using local fallback:", error);
+      }
+    }
     
     try {
       const users = getAllUsers();
@@ -240,8 +297,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateUserPermissions = (userId: string, updates: Partial<User>): boolean => {
+  const updateUserPermissions = async (userId: string, updates: Partial<User>): Promise<boolean> => {
     if (!isAdmin() || typeof window === "undefined") return false;
+
+    if (REMOTE_AUTH_ENABLED) {
+      try {
+        const response = await fetch("/api/auth/users", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: userId, ...updates }),
+        });
+
+        if (!response.ok) {
+          return false;
+        }
+
+        const updatedRemoteUser = (await response.json()) as User;
+        await syncUsersFromServer();
+
+        if (user?.id === userId) {
+          setUser(updatedRemoteUser);
+          localStorage.setItem("kbm_user", JSON.stringify(updatedRemoteUser));
+        }
+
+        return true;
+      } catch (error) {
+        console.warn("Remote update user unavailable, using local fallback:", error);
+      }
+    }
     
     try {
       const users = getAllUsers();
@@ -269,8 +352,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const deleteUser = (userId: string): boolean => {
+  const deleteUser = async (userId: string): Promise<boolean> => {
     if (!isAdmin() || typeof window === "undefined") return false;
+
+    if (REMOTE_AUTH_ENABLED) {
+      try {
+        if (user?.id === userId) {
+          console.error("Cannot delete your own account");
+          return false;
+        }
+
+        const response = await fetch("/api/auth/users", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: userId }),
+        });
+
+        if (!response.ok) {
+          return false;
+        }
+
+        await syncUsersFromServer();
+        return true;
+      } catch (error) {
+        console.warn("Remote delete user unavailable, using local fallback:", error);
+      }
+    }
     
     try {
       const users = getAllUsers();

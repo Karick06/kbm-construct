@@ -85,14 +85,14 @@ export default function AdminPage() {
     setUsers(allUsers);
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!formData.name || !formData.email || !formData.password) {
       alert("Please fill in all fields");
       return;
     }
 
     const lineManager = users.find(u => u.id === formData.lineManagerId);
-    const success = createUser({
+    const success = await createUser({
       name: formData.name,
       email: formData.email,
       password: formData.password,
@@ -114,11 +114,11 @@ export default function AdminPage() {
     }
   };
 
-  const handleEditUser = () => {
+  const handleEditUser = async () => {
     if (!selectedUser) return;
 
     const lineManager = users.find(u => u.id === formData.lineManagerId);
-    const success = updateUserPermissions(selectedUser.id, {
+    const success = await updateUserPermissions(selectedUser.id, {
       name: formData.name,
       email: formData.email,
       role: formData.role,
@@ -139,10 +139,10 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (!selectedUser) return;
 
-    const success = deleteUser(selectedUser.id);
+    const success = await deleteUser(selectedUser.id);
 
     if (success) {
       setShowDeleteModal(false);
