@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { FloatingChatProvider } from "@/lib/floating-chat-context";
 import RegisterServiceWorker from "./register-sw";
+import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 
 const sora = Sora({
   variable: "--font-sans",
@@ -49,6 +50,7 @@ export default function RootLayout({
         <AuthProvider>
           <FloatingChatProvider>
             <RegisterServiceWorker />
+            <PushNotificationPrompt />
             {children}
           </FloatingChatProvider>
         </AuthProvider>

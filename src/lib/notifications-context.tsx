@@ -122,6 +122,26 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       read: false,
     };
     setNotifications((prev) => [newNotification, ...prev]);
+
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then((registration) => {
+          if (registration) {
+            registration.showNotification(newNotification.title, {
+              body: newNotification.message,
+              icon: '/icon-192.svg',
+              badge: '/icon-192.svg',
+              data: newNotification.actionUrl || '/',
+              tag: `notif-${newNotification.id}`,
+            });
+          } else {
+            new Notification(newNotification.title, { body: newNotification.message });
+          }
+        });
+      } else {
+        new Notification(newNotification.title, { body: newNotification.message });
+      }
+    }
   }, []);
 
   const markAsRead = useCallback((id: string) => {

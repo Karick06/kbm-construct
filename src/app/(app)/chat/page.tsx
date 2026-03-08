@@ -724,7 +724,7 @@ export default function ChatPage() {
     <div className="flex h-screen flex-col gap-6 overflow-hidden">
       <div className="flex flex-1 gap-0 overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm shadow-2xl">
         {/* Left Sidebar - Messages List */}
-        <div className="w-80 flex-shrink-0 border-r border-slate-700/50 bg-slate-900/80 backdrop-blur-md flex flex-col">
+        <div className={`${selectedChat ? "hidden lg:flex" : "flex"} w-full lg:w-80 flex-shrink-0 border-r border-slate-700/50 bg-slate-900/80 backdrop-blur-md flex-col`}>
           {/* Header */}
           <div className="border-b border-slate-700/50 p-5">
             <div className="mb-4 flex items-center justify-between">
@@ -999,6 +999,13 @@ export default function ChatPage() {
             {/* Chat Header */}
             <div className="border-b border-slate-700/50 p-5 flex items-center justify-between bg-slate-900/50">
               <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedChat(null)}
+                  className="lg:hidden rounded-lg border border-slate-600/50 px-2 py-1 text-slate-200 hover:bg-slate-800"
+                  title="Back to chats"
+                >
+                  ←
+                </button>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg">
                   {allChats.find(c => c.id === selectedChat)?.icon}
                 </div>

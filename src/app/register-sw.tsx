@@ -4,17 +4,29 @@ import { useEffect } from 'react';
 
 export default function RegisterServiceWorker() {
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+
     if ('serviceWorker' in navigator) {
       if (process.env.NODE_ENV === 'production') {
         navigator.serviceWorker
           .register('/sw.js')
           .then((registration) => {
             console.log('Service Worker registered:', registration);
-            
+
             // Check for updates periodically
-            setInterval(() => {
+            interval = setInterval(() => {
               registration.update();
             }, 60000); // Check every minute
+
+            registration.addEventListener('updatefound', () => {
+              const installing = registration.installing;
+              if (!installing) return;
+              installing.addEventListener('statechange', () => {
+                if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                  navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            });
           })
           .catch((error) => {
             console.error('Service Worker registration failed:', error);
@@ -25,6 +37,10 @@ export default function RegisterServiceWorker() {
         });
       }
     }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   return null;

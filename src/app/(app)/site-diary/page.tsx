@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
+import CameraCapture from "@/components/CameraCapture";
 import {
 	type SiteDiaryEntry,
 	createSiteDiaryEntry,
@@ -22,6 +23,8 @@ export default function SiteDiaryPage() {
 	const [selectedEntry, setSelectedEntry] = useState<SiteDiaryEntry | null>(
 		null
 	);
+	const [showCameraCapture, setShowCameraCapture] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		loadEntries();
@@ -178,6 +181,57 @@ export default function SiteDiaryPage() {
 				(_, i) => i !== index
 			),
 		});
+	}
+
+	function handleCapturedPhoto(imageDataUrl: string) {
+		if (!currentEntry) return;
+		updateEntry({ photos: [...currentEntry.photos, imageDataUrl] });
+		setShowCameraCapture(false);
+	}
+
+	function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+		const files = event.target.files;
+		if (!files?.length || !currentEntry) return;
+
+		const readers = Array.from(files).map(
+			(file) =>
+				new Promise<string>((resolve, reject) => {
+					const reader = new FileReader();
+					reader.onload = () => {
+						if (typeof reader.result === "string") {
+							resolve(reader.result);
+						} else {
+							reject(new Error("Invalid image data"));
+						}
+					};
+					reader.onerror = () => reject(new Error("Failed to read image"));
+					reader.readAsDataURL(file);
+				})
+		);
+
+		Promise.all(readers)
+			.then((images) => {
+				updateEntry({ photos: [...currentEntry.photos, ...images] });
+			})
+			.catch((error) => {
+				console.error("Photo upload failed", error);
+			});
+	}
+
+	function removePhoto(index: number) {
+		if (!currentEntry) return;
+		updateEntry({
+			photos: currentEntry.photos.filter((_, i) => i !== index),
+		});
+	}
+
+	if (showCameraCapture) {
+		return (
+			<CameraCapture
+				onCapture={handleCapturedPhoto}
+				onClose={() => setShowCameraCapture(false)}
+			/>
+		);
 	}
 
 	if (showForm && currentEntry) {
@@ -643,6 +697,56 @@ export default function SiteDiaryPage() {
 							</div>
 						</div>
 
+						{/* Photo Capture */}
+						<div>
+							<div className="flex items-center justify-between mb-4">
+								<h3 className="text-lg font-semibold text-[var(--ink)]">Site Photos</h3>
+								<div className="flex gap-2">
+									<button
+										type="button"
+										onClick={() => setShowCameraCapture(true)}
+										className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+									>
+										📷 Capture
+									</button>
+									<button
+										type="button"
+										onClick={() => fileInputRef.current?.click()}
+										className="rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)]"
+									>
+										Upload
+									</button>
+									<input
+										ref={fileInputRef}
+										type="file"
+										accept="image/*"
+										multiple
+										onChange={handlePhotoUpload}
+										className="hidden"
+									/>
+								</div>
+							</div>
+
+							{currentEntry.photos.length === 0 ? (
+								<p className="text-sm text-[var(--muted)] italic">No photos attached</p>
+							) : (
+								<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+									{currentEntry.photos.map((photo, idx) => (
+										<div key={`${photo.slice(0, 20)}-${idx}`} className="relative overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-2)]">
+											<img src={photo} alt={`Site photo ${idx + 1}`} className="h-36 w-full object-cover" />
+											<button
+												type="button"
+												onClick={() => removePhoto(idx)}
+												className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-1 text-xs font-semibold text-white"
+											>
+												Remove
+											</button>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+
 						{/* Work Completed */}
 						<div>
 							<label className="block text-sm font-semibold text-[var(--ink)] mb-2">
@@ -935,6 +1039,22 @@ export default function SiteDiaryPage() {
 							</div>
 						)}
 
+						{/* Photos */}
+						{selectedEntry.photos.length > 0 && (
+							<div>
+								<p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--muted)] mb-3">
+									Site Photos ({selectedEntry.photos.length})
+								</p>
+								<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+									{selectedEntry.photos.map((photo, idx) => (
+										<div key={`${photo.slice(0, 20)}-${idx}`} className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-2)]">
+											<img src={photo} alt={`Site photo ${idx + 1}`} className="h-40 w-full object-cover" />
+										</div>
+									))}
+								</div>
+							</div>
+						)}
+
 						{/* Work Completed */}
 						{selectedEntry.workCompleted && (
 							<div>
@@ -1057,6 +1177,9 @@ export default function SiteDiaryPage() {
 										<p className="text-sm text-[var(--ink)] mt-3 line-clamp-2">
 											{entry.workCompleted}
 										</p>
+									)}
+									{entry.photos.length > 0 && (
+										<p className="text-xs text-[var(--muted)] mt-2">📷 {entry.photos.length} photo(s)</p>
 									)}
 								</div>
 								<div className="text-right">

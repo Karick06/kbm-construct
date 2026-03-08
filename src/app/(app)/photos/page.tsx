@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import CameraCapture from "@/components/CameraCapture";
 import {
 	type Photo,
 	savePhoto,
@@ -26,6 +27,8 @@ export default function PhotosPage() {
 	const [filter, setFilter] = useState<string>("all");
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [deleteLoading, setDeleteLoading] = useState(false);
+	const [showCamera, setShowCamera] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		loadPhotos();
@@ -62,6 +65,24 @@ export default function PhotosPage() {
 		if (current) setCurrent({ ...current, ...updates });
 	}
 
+	function handleCapture(imageDataUrl: string) {
+		update({ url: imageDataUrl });
+		setShowCamera(false);
+	}
+
+	function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+		const file = event.target.files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			const result = reader.result;
+			if (typeof result === "string") {
+				update({ url: result });
+			}
+		};
+		reader.readAsDataURL(file);
+	}
+
 	async function handleDelete() {
 		if (!current?.id) return;
 		setDeleteLoading(true);
@@ -77,6 +98,10 @@ export default function PhotosPage() {
 		if (filter === "all") return true;
 		return photo.category === filter;
 	});
+
+	if (showCamera) {
+		return <CameraCapture onCapture={handleCapture} onClose={() => setShowCamera(false)} />;
+	}
 
 	if (showForm && current) {
 		return (
@@ -144,6 +169,29 @@ export default function PhotosPage() {
 							<label className="block text-sm font-semibold text-[var(--ink)] mb-2">
 								Photo URL
 							</label>
+							<div className="mb-3 flex flex-wrap gap-2">
+								<button
+									type="button"
+									onClick={() => setShowCamera(true)}
+									className="rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-white"
+								>
+									📷 Use Camera
+								</button>
+								<button
+									type="button"
+									onClick={() => fileInputRef.current?.click()}
+									className="rounded-lg border border-[var(--line)] px-4 py-2 text-xs font-semibold text-[var(--ink)]"
+								>
+									🖼️ Upload Photo
+								</button>
+								<input
+									ref={fileInputRef}
+									type="file"
+									accept="image/*"
+									onChange={handleFileUpload}
+									className="hidden"
+								/>
+							</div>
 							<input
 								type="url"
 								value={current.url}
@@ -151,6 +199,15 @@ export default function PhotosPage() {
 								placeholder="https://..."
 								className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-4 py-2 text-[var(--ink)]"
 							/>
+							{current.url ? (
+								<div className="mt-3 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-2)]">
+									<img
+										src={current.url}
+										alt="Photo preview"
+										className="h-48 w-full object-cover"
+									/>
+								</div>
+							) : null}
 						</div>
 
 						<div>
@@ -286,7 +343,11 @@ export default function PhotosPage() {
 							}}
 						>
 							<div className="aspect-video bg-[var(--surface-2)] flex items-center justify-center text-5xl">
-								📷
+								{photo.url ? (
+									<img src={photo.url} alt={`${photo.project} ${photo.location}`} className="h-full w-full object-cover" />
+								) : (
+									"📷"
+								)}
 							</div>
 							<div className="p-4">
 								<div className="flex items-center gap-2 mb-2">
