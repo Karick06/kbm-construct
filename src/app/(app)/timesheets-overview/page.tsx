@@ -95,7 +95,19 @@ export default function TimesheetsOverviewPage() {
         });
 
         if (!response.ok) {
-          throw new Error('Clock request failed');
+          const errorPayload = await response.json().catch(() => ({}));
+
+          if (response.status === 403 && errorPayload?.code === 'OUTSIDE_GEOFENCE') {
+            addNotification({
+              title: 'Outside geofence',
+              message: errorPayload?.error || 'Move closer to a configured site geofence to clock in.',
+              type: 'warning',
+              actionUrl: '/geofences',
+            });
+            return;
+          }
+
+          throw new Error(errorPayload?.error || 'Clock request failed');
         }
 
         const payload = await response.json();
@@ -112,7 +124,17 @@ export default function TimesheetsOverviewPage() {
           type: 'success',
           actionUrl: '/my-timesheets',
         });
-      } catch {
+      } catch (error) {
+        if (navigator.onLine) {
+          addNotification({
+            title: 'Clock action failed',
+            message: error instanceof Error ? error.message : 'Unable to process clock action right now.',
+            type: 'error',
+            actionUrl: '/timesheets-overview',
+          });
+          return;
+        }
+
         queueOfflineRequest({
           url: '/api/timesheets/clock',
           method: 'POST',

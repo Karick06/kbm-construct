@@ -3,6 +3,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { DEFAULT_GEOFENCES, getDistanceFromLatLonInMeters, getGeofencesAtLocation } from '@/lib/geofence';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +18,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (action !== 'clock-in' && action !== 'clock-out') {
+      return NextResponse.json(
+        { success: false, error: 'Invalid action. Use clock-in or clock-out.' },
+        { status: 400 }
+      );
+    }
+
+    const numericLatitude = Number(latitude);
+    const numericLongitude = Number(longitude);
+
+    if (Number.isNaN(numericLatitude) || Number.isNaN(numericLongitude)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid coordinates' },
+        { status: 400 }
+      );
+    }
+
+    const activeGeofences = DEFAULT_GEOFENCES.filter((geofence) => geofence.active);
+    const matchingGeofences = getGeofencesAtLocation(numericLatitude, numericLongitude, activeGeofences);
+
+    const nearestGeofence = activeGeofences
+      .map((geofence) => ({
+        geofence,
+        distanceMeters: Math.round(
+          getDistanceFromLatLonInMeters(
+            numericLatitude,
+            numericLongitude,
+            geofence.latitude,
+            geofence.longitude
+          )
+        ),
+      }))
+      .sort((a, b) => a.distanceMeters - b.distanceMeters)[0];
+
+    // Enforce geofence for clock-in. Clock-out is allowed to support end-of-shift outside site.
+    if (action === 'clock-in' && matchingGeofences.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: 'OUTSIDE_GEOFENCE',
+          error: nearestGeofence
+            ? `You are outside all geofences. Nearest site is ${nearestGeofence.geofence.name} (${nearestGeofence.distanceMeters}m away).`
+            : 'You are outside all configured geofences.',
+          nearestGeofence: nearestGeofence
+            ? {
+                id: nearestGeofence.geofence.id,
+                name: nearestGeofence.geofence.name,
+                distanceMeters: nearestGeofence.distanceMeters,
+              }
+            : null,
+        },
+        { status: 403 }
+      );
+    }
+
+    const currentGeofence = matchingGeofences[0] || nearestGeofence?.geofence;
+
     // In production: Store in database and check geofences
     const mockResponse = {
       success: true,
@@ -26,13 +84,18 @@ export async function POST(request: NextRequest) {
         employeeName: 'John Smith',
         action,
         timestamp: new Date().toISOString(),
-        latitude,
-        longitude,
-        geofenceName: 'London Construction Site',
+        latitude: numericLatitude,
+        longitude: numericLongitude,
+        geofenceId: currentGeofence?.id || null,
+        geofenceName: currentGeofence?.name || 'Outside configured geofences',
+        withinGeofence: matchingGeofences.length > 0,
+        nearestDistanceMeters: nearestGeofence?.distanceMeters ?? null,
         message:
           action === 'clock-in'
-            ? 'Clocked in successfully'
-            : 'Clocked out successfully',
+            ? `Clocked in at ${currentGeofence?.name || 'site'} successfully`
+            : matchingGeofences.length > 0
+            ? `Clocked out at ${currentGeofence?.name || 'site'} successfully`
+            : 'Clocked out successfully (outside geofence)',
       },
     };
 
