@@ -11,26 +11,114 @@ import MobileCard from '@/components/MobileCard';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import PullToRefresh from '@/components/PullToRefresh';
 import PageHeader from '@/components/PageHeader';
+import MobileDrawer from '@/components/MobileDrawer';
+
+const LOCAL_TIMESHEETS_KEY = 'kbm_user_timesheets';
+const DEFAULT_EMPLOYEE_ID = 'emp-001';
+const DEFAULT_EMPLOYEE_NAME = 'John Smith';
+
+type TimesheetFormState = {
+  date: string;
+  geofenceName: string;
+  checkInTime: string;
+  checkOutTime: string;
+  notes: string;
+};
 
 export default function MyTimesheetsPage() {
   const [timesheets, setTimesheets] = useState<DailyTimesheet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTimesheet, setSelectedTimesheet] = useState<DailyTimesheet | null>(null);
+  const [showFormDrawer, setShowFormDrawer] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<{ timesheetId: string; entryId: string } | null>(null);
+  const [formState, setFormState] = useState<TimesheetFormState>({
+    date: new Date().toISOString().split('T')[0],
+    geofenceName: '',
+    checkInTime: '08:00',
+    checkOutTime: '17:00',
+    notes: '',
+  });
 
   useEffect(() => {
     fetchTimesheets();
   }, []);
+
+  const getLocalTimesheets = (): DailyTimesheet[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(LOCAL_TIMESHEETS_KEY);
+      return raw ? (JSON.parse(raw) as DailyTimesheet[]) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveLocalTimesheets = (next: DailyTimesheet[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(LOCAL_TIMESHEETS_KEY, JSON.stringify(next));
+  };
+
+  const mergeTimesheets = (serverTimesheets: DailyTimesheet[], localTimesheets: DailyTimesheet[]) => {
+    const merged = new Map<string, DailyTimesheet>();
+    for (const timesheet of serverTimesheets) merged.set(timesheet.id, timesheet);
+    for (const timesheet of localTimesheets) merged.set(timesheet.id, timesheet);
+
+    return Array.from(merged.values()).sort((a, b) => b.date.localeCompare(a.date));
+  };
+
+  const computeDurationMinutes = (checkInTime: string, checkOutTime: string) => {
+    const [inHour, inMin] = checkInTime.split(':').map((value) => Number(value));
+    const [outHour, outMin] = checkOutTime.split(':').map((value) => Number(value));
+    const startMinutes = inHour * 60 + inMin;
+    const endMinutes = outHour * 60 + outMin;
+    if (Number.isNaN(startMinutes) || Number.isNaN(endMinutes)) return 0;
+    return Math.max(0, endMinutes - startMinutes);
+  };
+
+  const buildEntryFromForm = (entryId?: string): TimesheetEntry => {
+    const duration = computeDurationMinutes(formState.checkInTime, formState.checkOutTime);
+    const geofenceId = formState.geofenceName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'manual-entry';
+
+    return {
+      id: entryId || `entry-${Date.now()}`,
+      employeeId: DEFAULT_EMPLOYEE_ID,
+      employeeName: DEFAULT_EMPLOYEE_NAME,
+      date: formState.date,
+      checkInTime: formState.checkInTime,
+      checkOutTime: formState.checkOutTime || null,
+      geofenceId,
+      geofenceName: formState.geofenceName || 'Manual Entry',
+      duration,
+      status: 'manual',
+      notes: formState.notes.trim() || undefined,
+    };
+  };
+
+  const resetForm = () => {
+    setFormState({
+      date: new Date().toISOString().split('T')[0],
+      geofenceName: '',
+      checkInTime: '08:00',
+      checkOutTime: '17:00',
+      notes: '',
+    });
+    setEditingEntry(null);
+  };
 
   const fetchTimesheets = async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/timesheets');
       const data = await response.json();
-      if (data.success) {
-        setTimesheets(data.data);
-      }
+      const serverTimesheets = data.success ? (data.data as DailyTimesheet[]) : [];
+      const localTimesheets = getLocalTimesheets();
+      const merged = mergeTimesheets(serverTimesheets, localTimesheets);
+      setTimesheets(merged);
     } catch (error) {
       console.error('Error fetching timesheets:', error);
+      setTimesheets(getLocalTimesheets());
     } finally {
       setLoading(false);
     }
@@ -41,8 +129,76 @@ export default function MyTimesheetsPage() {
   };
 
   const handleCreateNew = () => {
-    // TODO: Navigate to timesheet creation
-    console.log('Create new timesheet');
+    resetForm();
+    setShowFormDrawer(true);
+  };
+
+  const handleEditExisting = (timesheetId: string, entry: TimesheetEntry) => {
+    setEditingEntry({ timesheetId, entryId: entry.id });
+    setFormState({
+      date: entry.date,
+      geofenceName: entry.geofenceName,
+      checkInTime: entry.checkInTime,
+      checkOutTime: entry.checkOutTime || '17:00',
+      notes: entry.notes || '',
+    });
+    setShowFormDrawer(true);
+  };
+
+  const handleSaveTimesheet = () => {
+    if (!formState.date || !formState.geofenceName || !formState.checkInTime || !formState.checkOutTime) {
+      return;
+    }
+
+    const nextTimesheets = [...timesheets];
+
+    if (editingEntry) {
+      const timesheetIndex = nextTimesheets.findIndex((item) => item.id === editingEntry.timesheetId);
+      if (timesheetIndex >= 0) {
+        const updatedEntry = buildEntryFromForm(editingEntry.entryId);
+        const updatedEntries = nextTimesheets[timesheetIndex].entries.map((entry) =>
+          entry.id === editingEntry.entryId ? updatedEntry : entry
+        );
+        const totalMinutes = updatedEntries.reduce((sum, entry) => sum + entry.duration, 0);
+        nextTimesheets[timesheetIndex] = {
+          ...nextTimesheets[timesheetIndex],
+          date: formState.date,
+          entries: updatedEntries,
+          totalHours: Number((totalMinutes / 60).toFixed(2)),
+          submissionStatus: 'draft',
+        };
+      }
+    } else {
+      const newEntry = buildEntryFromForm();
+      const existingIndex = nextTimesheets.findIndex((item) => item.date === formState.date);
+
+      if (existingIndex >= 0) {
+        const updatedEntries = [...nextTimesheets[existingIndex].entries, newEntry];
+        const totalMinutes = updatedEntries.reduce((sum, entry) => sum + entry.duration, 0);
+        nextTimesheets[existingIndex] = {
+          ...nextTimesheets[existingIndex],
+          entries: updatedEntries,
+          totalHours: Number((totalMinutes / 60).toFixed(2)),
+          submissionStatus: 'draft',
+        };
+      } else {
+        nextTimesheets.push({
+          id: `ts-${Date.now()}`,
+          employeeId: DEFAULT_EMPLOYEE_ID,
+          employeeName: DEFAULT_EMPLOYEE_NAME,
+          date: formState.date,
+          entries: [newEntry],
+          totalHours: Number((newEntry.duration / 60).toFixed(2)),
+          submissionStatus: 'draft',
+        });
+      }
+    }
+
+    const sorted = nextTimesheets.sort((a, b) => b.date.localeCompare(a.date));
+    setTimesheets(sorted);
+    saveLocalTimesheets(sorted);
+    setShowFormDrawer(false);
+    resetForm();
   };
 
   if (loading) {
@@ -90,7 +246,6 @@ export default function MyTimesheetsPage() {
             timesheets.map((timesheet) => (
               <MobileCard 
                 key={timesheet.id}
-                onClick={() => setSelectedTimesheet(timesheet)}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -140,6 +295,12 @@ export default function MyTimesheetsPage() {
                       <p className="text-base font-bold text-[var(--accent)] ml-3">
                         {(entry.duration / 60).toFixed(1)}h
                       </p>
+                      <button
+                        onClick={() => handleEditExisting(timesheet.id, entry)}
+                        className="ml-3 rounded-md border border-[var(--line)] px-2 py-1 text-xs font-semibold text-[var(--sidebar-text)] hover:bg-[var(--surface-2)]"
+                      >
+                        Edit
+                      </button>
                     </div>
                   ))}
                   {timesheet.entries.length > 3 && (
@@ -160,6 +321,88 @@ export default function MyTimesheetsPage() {
         label="New Entry"
         icon="+"
       />
+
+      <MobileDrawer
+        isOpen={showFormDrawer}
+        onClose={() => {
+          setShowFormDrawer(false);
+          resetForm();
+        }}
+        title={editingEntry ? 'Edit Timesheet Entry' : 'Add Timesheet Entry'}
+        footer={
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setShowFormDrawer(false);
+                resetForm();
+              }}
+              className="flex-1 rounded-lg border border-[var(--line)] px-4 py-3 text-sm font-semibold text-[var(--sidebar-text)]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveTimesheet}
+              className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white"
+            >
+              Save
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[var(--sidebar-text)]">Date</label>
+            <input
+              type="date"
+              value={formState.date}
+              onChange={(event) => setFormState((prev) => ({ ...prev, date: event.target.value }))}
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--sidebar-text)]"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[var(--sidebar-text)]">Site / Geofence</label>
+            <input
+              type="text"
+              value={formState.geofenceName}
+              onChange={(event) => setFormState((prev) => ({ ...prev, geofenceName: event.target.value }))}
+              placeholder="e.g. London Construction Site"
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--sidebar-text)]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-[var(--sidebar-text)]">Check-in</label>
+              <input
+                type="time"
+                value={formState.checkInTime}
+                onChange={(event) => setFormState((prev) => ({ ...prev, checkInTime: event.target.value }))}
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--sidebar-text)]"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-[var(--sidebar-text)]">Check-out</label>
+              <input
+                type="time"
+                value={formState.checkOutTime}
+                onChange={(event) => setFormState((prev) => ({ ...prev, checkOutTime: event.target.value }))}
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--sidebar-text)]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[var(--sidebar-text)]">Notes (optional)</label>
+            <textarea
+              value={formState.notes}
+              onChange={(event) => setFormState((prev) => ({ ...prev, notes: event.target.value }))}
+              rows={3}
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--sidebar-text)]"
+            />
+          </div>
+        </div>
+      </MobileDrawer>
     </>
   );
 }
