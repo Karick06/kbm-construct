@@ -7,7 +7,8 @@ import { getAuthorizationUrl } from "@/lib/microsoft-auth";
  */
 export async function GET(request: NextRequest) {
 	try {
-		const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/microsoft/callback`;
+		const appOrigin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+		const redirectUri = `${appOrigin}/api/auth/microsoft/callback`;
 		
 		const authUrl = await getAuthorizationUrl(redirectUri);
 
