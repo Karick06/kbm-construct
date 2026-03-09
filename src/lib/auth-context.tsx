@@ -18,6 +18,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithMicrosoft: () => Promise<void>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
@@ -41,6 +42,7 @@ const DEMO_USERS = [
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 const REMOTE_AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_MODE === "supabase";
+const MICROSOFT_AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_MODE === "microsoft";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -69,6 +71,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           console.error("Failed to parse stored user:", error);
           localStorage.removeItem("kbm_user");
+        }
+      } else if (MICROSOFT_AUTH_ENABLED) {
+        // Check for Microsoft session via cookies
+        const userEmail = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("user_email="))
+          ?.split("=")[1];
+        const userName = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("user_name="))
+          ?.split("=")[1];
+
+        if (userEmail && userName) {
+          // Validate session with server
+          fetch("/api/auth/microsoft/me")
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.id) {
+                setUser(data);
+                localStorage.setItem("kbm_user", JSON.stringify(data));
+              }
+            })
+            .catch((error) => {
+              console.error("Failed to validate Microsoft session:", error);
+            });
         }
       }
     }
@@ -145,10 +172,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const logout = () => {
+  const loginWithMicrosoft = async (): Promise<void> => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const response = await fetch("/api/auth/microsoft/login");
+      const data = await response.json();
+
+      if (data.authUrl) {
+        // Redirect to Microsoft login
+        window.location.href = data.authUrl;
+      }
+    } catch (error) {
+      console.error("Microsoft login failed:", error);
+      throw new Error("Failed to initiate Microsoft login");
+    }
+  };
+
+  const logout = async () => {
     setUser(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem("kbm_user");
+
+      // Clear Microsoft session if enabled
+      if (MICROSOFT_AUTH_ENABLED) {
+        try {
+          await fetch("/api/auth/microsoft/logout", { method: "POST" });
+        } catch (error) {
+          console.error("Failed to clear Microsoft session:", error);
+        }
+      }
     }
   };
 
@@ -406,7 +459,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{ 
       user, 
-      login, 
+      login,
+      loginWithMicrosoft, 
       logout, 
       updateUser, 
       changePassword, 

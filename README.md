@@ -25,6 +25,7 @@ A comprehensive construction business management system with specialized modules
 - **[BOQ System Guide](BOQ_SYSTEM.md)** - Bill of Quantities features and usage
 - **[BOQ Quick Start](BOQ_QUICK_START.md)** - Getting started with BOQ
 - **[Materials Database](MATERIALS_DATABASE.md)** - Centralized materials management ⭐ NEW
+- **[SharePoint Integration](SHAREPOINT_INTEGRATION.md)** - Microsoft SharePoint file storage ⭐ NEW
 - **[Sage Integration](SAGE_INTEGRATION.md)** - Accounting integration
 - **[Timesheet Geofencing](TIMESHEET_GEOFENCING.md)** - Location tracking
 

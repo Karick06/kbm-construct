@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
 import CameraCapture from "@/components/CameraCapture";
+import { useSharePointUpload } from "@/lib/use-sharepoint-upload";
 import {
 	type SiteDiaryEntry,
 	createSiteDiaryEntry,
@@ -25,6 +26,7 @@ export default function SiteDiaryPage() {
 	);
 	const [showCameraCapture, setShowCameraCapture] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const { uploadFile, isUploading } = useSharePointUpload();
 
 	useEffect(() => {
 		loadEntries();
@@ -183,23 +185,36 @@ export default function SiteDiaryPage() {
 		});
 	}
 
-	function handleCapturedPhoto(imageDataUrl: string) {
+	async function handleCapturedPhoto(imageDataUrl: string) {
 		if (!currentEntry) return;
-		updateEntry({ photos: [...currentEntry.photos, imageDataUrl] });
+
+		// Generate file name based on entry date and timestamp
+		const timestamp = Date.now();
+		const fileName = `site-photo-${currentEntry.date}-${timestamp}.jpg`;
+		const folderPath = `Site Diary/${currentEntry.project}/${currentEntry.date}`;
+
+		// Upload to SharePoint (or fall back to base64)
+		const uploadedFile = await uploadFile(imageDataUrl, fileName, folderPath);
+
+		if (uploadedFile) {
+			// Store the downloadUrl (SharePoint) or base64 (fallback)
+			updateEntry({ photos: [...currentEntry.photos, uploadedFile.downloadUrl] });
+		}
+
 		setShowCameraCapture(false);
 	}
 
-	function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+	async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
 		const files = event.target.files;
 		if (!files?.length || !currentEntry) return;
 
 		const readers = Array.from(files).map(
 			(file) =>
-				new Promise<string>((resolve, reject) => {
+				new Promise<{ data: string; name: string }>((resolve, reject) => {
 					const reader = new FileReader();
 					reader.onload = () => {
 						if (typeof reader.result === "string") {
-							resolve(reader.result);
+							resolve({ data: reader.result, name: file.name });
 						} else {
 							reject(new Error("Invalid image data"));
 						}
@@ -209,13 +224,26 @@ export default function SiteDiaryPage() {
 				})
 		);
 
-		Promise.all(readers)
-			.then((images) => {
-				updateEntry({ photos: [...currentEntry.photos, ...images] });
-			})
-			.catch((error) => {
-				console.error("Photo upload failed", error);
+		try {
+			const images = await Promise.all(readers);
+			const folderPath = `Site Diary/${currentEntry.project}/${currentEntry.date}`;
+
+			// Upload each image to SharePoint
+			const uploadPromises = images.map(({ data, name }) => {
+				const timestamp = Date.now();
+				const fileName = `${name.replace(/\.[^/.]+$/, "")}-${timestamp}${name.match(/\.[^/.]+$/)?.[0] || ".jpg"}`;
+				return uploadFile(data, fileName, folderPath);
 			});
+
+			const uploadedFiles = await Promise.all(uploadPromises);
+			const photoUrls = uploadedFiles
+				.filter((file) => file !== null)
+				.map((file) => file!.downloadUrl);
+
+			updateEntry({ photos: [...currentEntry.photos, ...photoUrls] });
+		} catch (error) {
+			console.error("Photo upload failed", error);
+		}
 	}
 
 	function removePhoto(index: number) {
