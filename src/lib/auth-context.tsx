@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .then((data) => {
               if (data.id) {
                 // Load user's permissions from localStorage if they exist
-                const usersData = localStorage.getItem("kbm_users");
+                const usersData = localStorage.getItem("kbm_all_users");
                 if (usersData) {
                   const users = JSON.parse(usersData);
                   const existingUser = users.find((u: any) => u.email.toLowerCase() === data.email.toLowerCase());
