@@ -179,10 +179,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch("/api/auth/microsoft/login");
       const data = await response.json();
 
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to initiate Microsoft login");
+      }
+
       if (data.authUrl) {
         // Redirect to Microsoft login
         window.location.href = data.authUrl;
+        return;
       }
+
+      throw new Error("No Microsoft authorization URL returned");
     } catch (error) {
       console.error("Microsoft login failed:", error);
       throw new Error("Failed to initiate Microsoft login");

@@ -23,6 +23,25 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const microsoftError = params.get("ms_error");
+    if (!microsoftError) return;
+
+    if (microsoftError === "auth_failed") {
+      setError("Sign-in failed. Please try again or contact your administrator.");
+      return;
+    }
+
+    if (microsoftError === "no_code") {
+      setError("Sign-in was cancelled or did not complete. Please try again.");
+      return;
+    }
+
+    setError("Sign-in failed. Please try again.");
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");

@@ -106,7 +106,20 @@ export async function getTokenFromCode(
 		};
 	} catch (error) {
 		console.error("Token exchange failed:", error);
-		throw new Error("Failed to authenticate with Microsoft");
+		const errorCode =
+			typeof error === "object" && error !== null && "errorCode" in error
+				? String((error as Record<string, unknown>).errorCode)
+				: undefined;
+		const message =
+			typeof error === "object" && error !== null && "message" in error
+				? String((error as Record<string, unknown>).message)
+				: "Failed to authenticate with Microsoft";
+
+		if (errorCode) {
+			throw new Error(`${errorCode}: ${message}`);
+		}
+
+		throw new Error(message);
 	}
 }
 

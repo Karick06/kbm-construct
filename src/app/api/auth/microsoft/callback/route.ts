@@ -14,13 +14,13 @@ export async function GET(request: NextRequest) {
 	if (error) {
 		console.error("Microsoft auth error:", error);
 		return NextResponse.redirect(
-			new URL(`/?error=${encodeURIComponent(error)}`, request.url)
+			new URL(`/login?ms_error=${encodeURIComponent(error)}`, request.url)
 		);
 	}
 
 	if (!code) {
 		return NextResponse.redirect(
-			new URL("/?error=no_code", request.url)
+			new URL("/login?ms_error=no_code", request.url)
 		);
 	}
 
@@ -77,9 +77,11 @@ export async function GET(request: NextRequest) {
 		// Redirect to dashboard
 		return NextResponse.redirect(new URL("/", request.url));
 	} catch (error) {
-		console.error("Microsoft callback error:", error);
+		// Log full error server-side only — never expose Azure internals to users
+		const message = error instanceof Error ? error.message : "Unknown callback error";
+		console.error("Microsoft callback error:", message, error);
 		return NextResponse.redirect(
-			new URL("/?error=auth_failed", request.url)
+			new URL("/login?ms_error=auth_failed", request.url)
 		);
 	}
 }
