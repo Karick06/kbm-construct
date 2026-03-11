@@ -30,7 +30,12 @@ export default function LoginPage() {
     if (!microsoftError) return;
 
     if (microsoftError === "auth_failed") {
-      setError("Sign-in failed. Please try again or contact your administrator.");
+      const code = params.get("ms_code");
+      setError(
+        code
+          ? `Sign-in failed (${code}). Please contact your administrator.`
+          : "Sign-in failed. Please try again or contact your administrator."
+      );
       return;
     }
 

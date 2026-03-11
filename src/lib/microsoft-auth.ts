@@ -21,21 +21,34 @@ export interface UserInfo {
 }
 
 let msalInstance: ConfidentialClientApplication | null = null;
+let cachedClientId: string | undefined;
+let cachedClientSecret: string | undefined;
+let cachedTenantId: string | undefined;
 
 /**
  * Initialize MSAL (Microsoft Authentication Library)
  */
 export function getMsalInstance(): ConfidentialClientApplication {
-	if (msalInstance) {
-		return msalInstance;
-	}
-
 	const clientId = process.env.MICROSOFT_CLIENT_ID;
 	const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
 	const tenantId = process.env.MICROSOFT_TENANT_ID;
 
 	if (!clientId || !clientSecret || !tenantId) {
 		throw new Error("Microsoft auth environment variables not configured");
+	}
+
+	// Invalidate cached instance if credentials have changed (e.g. after .env.local update)
+	if (
+		msalInstance &&
+		(cachedClientId !== clientId ||
+			cachedClientSecret !== clientSecret ||
+			cachedTenantId !== tenantId)
+	) {
+		msalInstance = null;
+	}
+
+	if (msalInstance) {
+		return msalInstance;
 	}
 
 	const msalConfig = {
@@ -47,6 +60,9 @@ export function getMsalInstance(): ConfidentialClientApplication {
 	};
 
 	msalInstance = new ConfidentialClientApplication(msalConfig);
+	cachedClientId = clientId;
+	cachedClientSecret = clientSecret;
+	cachedTenantId = tenantId;
 	return msalInstance;
 }
 

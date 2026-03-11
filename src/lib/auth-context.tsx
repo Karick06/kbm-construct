@@ -89,6 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .then((res) => res.json())
             .then((data) => {
               if (data.id) {
+                // Load user's permissions from localStorage if they exist
+                const usersData = localStorage.getItem("kbm_users");
+                if (usersData) {
+                  const users = JSON.parse(usersData);
+                  const existingUser = users.find((u: any) => u.email.toLowerCase() === data.email.toLowerCase());
+                  if (existingUser && existingUser.permissions) {
+                    data.permissions = existingUser.permissions;
+                    data.role = existingUser.role || "User";
+                  }
+                }
                 setUser(data);
                 localStorage.setItem("kbm_user", JSON.stringify(data));
               }

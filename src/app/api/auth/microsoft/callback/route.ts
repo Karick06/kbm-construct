@@ -77,11 +77,21 @@ export async function GET(request: NextRequest) {
 		// Redirect to dashboard
 		return NextResponse.redirect(new URL("/", request.url));
 	} catch (error) {
-		// Log full error server-side only — never expose Azure internals to users
+		// Log full error server-side
 		const message = error instanceof Error ? error.message : "Unknown callback error";
 		console.error("Microsoft callback error:", message, error);
-		return NextResponse.redirect(
-			new URL("/login?ms_error=auth_failed", request.url)
-		);
+
+		// Extract Azure error code if available (safe to expose in URL — it's a diagnostic code, not a secret)
+		const errorCode =
+			typeof error === "object" && error !== null && "errorCode" in error
+				? String((error as Record<string, unknown>).errorCode)
+				: undefined;
+
+		const redirectUrl = new URL("/login", request.url);
+		redirectUrl.searchParams.set("ms_error", "auth_failed");
+		if (errorCode) {
+			redirectUrl.searchParams.set("ms_code", errorCode);
+		}
+		return NextResponse.redirect(redirectUrl);
 	}
 }
