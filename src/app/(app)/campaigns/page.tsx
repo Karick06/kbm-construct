@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 
 type CampaignStatus = "Planning" | "In Progress" | "Completed" | "Aborted";
@@ -440,6 +442,7 @@ export default function CampaignsPage() {
   };
 
   return (
+    <PermissionGuard permission="clients">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -1436,5 +1439,6 @@ export default function CampaignsPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

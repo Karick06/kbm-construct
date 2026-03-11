@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -1184,6 +1186,7 @@ function PhotoUploadModal({
   };
 
   return (
+    <PermissionGuard permission="projects">
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
@@ -1290,5 +1293,6 @@ function PhotoUploadModal({
         </div>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

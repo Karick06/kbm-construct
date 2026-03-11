@@ -24,147 +24,151 @@ const formatTime = (date: Date) => {
   return date.toLocaleDateString();
 };
 
+// Each item can have:
+//   permission  – user must have this permission (admins always pass)
+//   adminOnly   – visible only to Administrator role
+// If a section's visible item count drops to 0, the entire section is hidden.
 const navSections = [
-  { 
-    label: "Business Overview", 
+  {
+    label: "Business Overview",
     items: [
       { label: "Dashboard", href: "/" },
       { label: "Chat", href: "/chat" },
-    ] 
+    ],
   },
-  { 
-    label: "Business Development", 
+  {
+    label: "Business Development",
     items: [
-      { label: "CRM Dashboard", href: "/crm" },
-      { label: "Campaigns", href: "/campaigns" },
-      { label: "Clients", href: "/clients" },
-      { label: "Tender Portal", href: "/tender-portal" },
-    ] 
+      { label: "CRM Dashboard", href: "/crm", permission: "clients" },
+      { label: "Campaigns", href: "/campaigns", permission: "clients" },
+      { label: "Clients", href: "/clients", permission: "clients" },
+      { label: "Tender Portal", href: "/tender-portal", permission: "clients" },
+    ],
   },
-  { 
-    label: "Estimating", 
+  {
+    label: "Estimating",
     items: [
-      { label: "Estimating Overview", href: "/estimating-overview" },
-      { label: "Labour Rates", href: "/labour-rates" },
-      { label: "Plant Rates", href: "/plant-rates" },
-      { label: "Material Rates", href: "/material-rates" },
-      { label: "Archive", href: "/archive" },
-    ] 
+      { label: "Estimating Overview", href: "/estimating-overview", permission: "estimates" },
+      { label: "Labour Rates", href: "/labour-rates", permission: "estimates" },
+      { label: "Plant Rates", href: "/plant-rates", permission: "estimates" },
+      { label: "Material Rates", href: "/material-rates", permission: "estimates" },
+      { label: "Archive", href: "/archive", permission: "estimates" },
+    ],
   },
-  { 
-    label: "Operations", 
+  {
+    label: "Operations",
     items: [
-      { label: "Operations Overview", href: "/operations-overview" },
-      { label: "Projects", href: "/projects" },
-      { label: "Tasks", href: "/tasks" },
-      { label: "Schedule", href: "/schedule" },
-    ] 
+      { label: "Operations Overview", href: "/operations-overview", permission: "projects" },
+      { label: "Projects", href: "/projects", permission: "projects" },
+      { label: "Tasks", href: "/tasks", permission: "projects" },
+      { label: "Schedule", href: "/schedule", permission: "projects" },
+    ],
   },
-  { 
-    label: "Commercial", 
+  {
+    label: "Commercial",
     items: [
-      { label: "Commercial Overview", href: "/commercial-overview" },
-      { label: "Invoices", href: "/invoices" },
-      { label: "Payments", href: "/payments" },
-      { label: "Contracts", href: "/contracts" },
-    ] 
+      { label: "Commercial Overview", href: "/commercial-overview", permission: "invoices" },
+      { label: "Invoices", href: "/invoices", permission: "invoices" },
+      { label: "Payments", href: "/payments", permission: "payments" },
+      { label: "Contracts", href: "/contracts", permission: "contracts" },
+    ],
   },
-  { 
-    label: "Finance & QS", 
+  {
+    label: "Finance & QS",
     items: [
-      { label: "QS Overview", href: "/qs-overview" },
-      { label: "Payment Documents", href: "/payment-documents" },
-    ] 
+      { label: "QS Overview", href: "/qs-overview", permission: "invoices" },
+      { label: "Payment Documents", href: "/payment-documents", permission: "payments" },
+    ],
   },
-  { 
-    label: "Procurement", 
+  {
+    label: "Procurement",
     items: [
-      { label: "Procurement Overview", href: "/procurement-overview" },
-      { label: "Suppliers", href: "/suppliers" },
-      { label: "Purchase Orders", href: "/purchase-orders" },
-    ] 
+      { label: "Procurement Overview", href: "/procurement-overview", permission: "procurement" },
+      { label: "Suppliers", href: "/suppliers", permission: "procurement" },
+      { label: "Purchase Orders", href: "/purchase-orders", permission: "procurement" },
+    ],
   },
-  { 
-    label: "Resources", 
+  {
+    label: "Resources",
     items: [
-      { label: "Resources Overview", href: "/resources-overview" },
-      { label: "Staff", href: "/staff" },
-      { label: "Skills", href: "/skills" },
-      { label: "Allocation", href: "/allocation" },
-      { label: "Timesheets", href: "/timesheets-overview" },
+      { label: "Resources Overview", href: "/resources-overview", permission: "resources" },
+      { label: "Staff", href: "/staff", permission: "staff" },
+      { label: "Skills", href: "/skills", permission: "staff" },
+      { label: "Allocation", href: "/allocation", permission: "resources" },
+      { label: "Timesheets", href: "/timesheets-overview", permission: "timesheets" },
       { label: "My Timesheets", href: "/my-timesheets" },
-      { label: "Geofences", href: "/geofences" },
-    ] 
+      { label: "Geofences", href: "/geofences", permission: "timesheets" },
+    ],
   },
-  { 
-    label: "Project Management", 
+  {
+    label: "Project Management",
     items: [
-      { label: "Site Diary", href: "/site-diary" },
-      { label: "Quality Inspections", href: "/quality-inspections" },
-      { label: "Permits to Work", href: "/permits-to-work" },
-      { label: "Toolbox Talks", href: "/toolbox-talks" },
-      { label: "Variation Orders", href: "/variation-orders" },
-      { label: "RFIs", href: "/rfis" },
-      { label: "Defects/Snagging", href: "/defects" },
-      { label: "Photo Documentation", href: "/photos" },
-      { label: "As-Built Drawings", href: "/as-built-drawings" },
-      { label: "Handover Documentation", href: "/handover-documentation" },
-      { label: "Lessons Learned", href: "/lessons-learned" },
-      { label: "Plant Booking", href: "/plant-booking" },
-      { label: "Material Reconciliation", href: "/material-reconciliation" },
-      { label: "Weather Logging", href: "/weather-logging" },
-    ] 
+      { label: "Site Diary", href: "/site-diary", permission: "projects" },
+      { label: "Quality Inspections", href: "/quality-inspections", permission: "projects" },
+      { label: "Permits to Work", href: "/permits-to-work", permission: "projects" },
+      { label: "Toolbox Talks", href: "/toolbox-talks", permission: "projects" },
+      { label: "Variation Orders", href: "/variation-orders", permission: "projects" },
+      { label: "RFIs", href: "/rfis", permission: "projects" },
+      { label: "Defects/Snagging", href: "/defects", permission: "projects" },
+      { label: "Photo Documentation", href: "/photos", permission: "projects" },
+      { label: "As-Built Drawings", href: "/as-built-drawings", permission: "projects" },
+      { label: "Handover Documentation", href: "/handover-documentation", permission: "projects" },
+      { label: "Lessons Learned", href: "/lessons-learned", permission: "projects" },
+      { label: "Plant Booking", href: "/plant-booking", permission: "projects" },
+      { label: "Material Reconciliation", href: "/material-reconciliation", permission: "projects" },
+      { label: "Weather Logging", href: "/weather-logging", permission: "projects" },
+    ],
   },
-  { 
-    label: "H&S", 
+  {
+    label: "H&S",
     items: [
-      { label: "H&S Overview", href: "/hs-overview" },
-      { label: "Incidents", href: "/incidents" },
-      { label: "Compliance & RAMS", href: "/compliance" },
-      { label: "Training", href: "/training" },
-    ] 
+      { label: "H&S Overview", href: "/hs-overview", permission: "compliance" },
+      { label: "Incidents", href: "/incidents", permission: "compliance" },
+      { label: "Compliance & RAMS", href: "/compliance", permission: "compliance" },
+      { label: "Training", href: "/training", permission: "training" },
+    ],
   },
-  { 
-    label: "Vehicles/ Plant", 
+  {
+    label: "Vehicles / Plant",
     items: [
-      { label: "Fleet Overview", href: "/fleet-overview" },
-      { label: "Fleet", href: "/fleet" },
-      { label: "Maintenance", href: "/maintenance" },
-      { label: "Bookings", href: "/bookings" },
-    ] 
+      { label: "Fleet Overview", href: "/fleet-overview", permission: "fleet" },
+      { label: "Fleet", href: "/fleet", permission: "fleet" },
+      { label: "Maintenance", href: "/maintenance", permission: "fleet" },
+      { label: "Bookings", href: "/bookings", permission: "fleet" },
+    ],
   },
-  { 
-    label: "Libraries", 
+  {
+    label: "Libraries",
     items: [
-      { label: "Documents", href: "/documents" },
-      { label: "Templates", href: "/library-templates" },
-      { label: "Resources", href: "/library-resources" },
-    ] 
+      { label: "Documents", href: "/documents", permission: "documents" },
+      { label: "Templates", href: "/library-templates", permission: "documents" },
+      { label: "Resources", href: "/library-resources", permission: "documents" },
+    ],
   },
-  { 
-    label: "Tools", 
+  {
+    label: "Tools",
     items: [
       { label: "Drawing Measurement", href: "/drawing-measurement" },
       { label: "Materials Calculator", href: "/tools/materials-calculator" },
       { label: "Civils & Groundworks Rate Builder", href: "/tools/civils-rate-builder" },
-    ] 
+    ],
   },
-  { 
-    label: "HR", 
+  {
+    label: "HR",
     items: [
-      { label: "HR Overview", href: "/hr-overview" },
-      { label: "Team", href: "/team" },
-      { label: "Leave", href: "/leave" },
-      { label: "Payroll", href: "/payroll" },
-    ] 
+      { label: "HR Overview", href: "/hr-overview", permission: "leave" },
+      { label: "Team", href: "/team", permission: "staff" },
+      { label: "Leave", href: "/leave", permission: "leave" },
+      { label: "Payroll", href: "/payroll", permission: "payroll" },
+    ],
   },
-  { 
-    label: "Settings", 
+  {
+    label: "Settings",
     items: [
       { label: "User Settings", href: "/settings" },
       { label: "User Management", href: "/admin", adminOnly: true },
       { label: "Sage Integration", href: "/sage-settings" },
-    ] 
+    ],
   },
 ];
 
@@ -175,7 +179,7 @@ type AppShellProps = {
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, hasPermission } = useAuth();
   const { notifications, unreadCount, markAsRead, dismissNotification, markAllAsRead } = useNotifications();
   const { toggleChat } = useFloatingChat();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -355,15 +359,20 @@ export default function AppShell({ children }: AppShellProps) {
         {/* Sidebar - Hidden on mobile, visible on desktop */}
         <aside className="hidden lg:block w-64 border-r border-[var(--line)] bg-[var(--sidebar-bg)] overflow-y-auto">
           <nav className="space-y-4 p-4">
-            {navSections.map((section) => (
-              <div key={section.label}>
-                <p className="text-xs font-semibold uppercase tracking-widest text-[var(--sidebar-muted)] mb-2 border-l-2 border-[var(--accent)] pl-2">
-                  {section.label}
-                </p>
-                <div className="space-y-1 ml-2">
-                  {section.items
-                    .filter((item: any) => !item.adminOnly || isAdmin())
-                    .map((item: any) => {
+            {navSections.map((section) => {
+              const visibleItems = section.items.filter((item: any) => {
+                if (item.adminOnly && !isAdmin()) return false;
+                if (item.permission && !hasPermission(item.permission)) return false;
+                return true;
+              });
+              if (visibleItems.length === 0) return null;
+              return (
+                <div key={section.label}>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-[var(--sidebar-muted)] mb-2 border-l-2 border-[var(--accent)] pl-2">
+                    {section.label}
+                  </p>
+                  <div className="space-y-1 ml-2">
+                    {visibleItems.map((item: any) => {
                       const isActive = pathname === item.href;
                       return (
                         <Link
@@ -379,9 +388,10 @@ export default function AppShell({ children }: AppShellProps) {
                         </Link>
                       );
                     })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </nav>
         </aside>
 

@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import * as XLSX from "xlsx";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -2322,6 +2324,7 @@ export default function EstimatingOverviewPage() {
   const grandTotal = baseSubtotal + margin;
 
   return (
+    <PermissionGuard permission="estimates">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -5010,5 +5013,6 @@ export default function EstimatingOverviewPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

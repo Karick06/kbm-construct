@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { formatDate } from "@/lib/date-utils";
@@ -335,6 +337,7 @@ export default function LeavePage() {
   };
 
   return (
+    <PermissionGuard permission="leave">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -666,5 +669,6 @@ export default function LeavePage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

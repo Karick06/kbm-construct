@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 
 const fleetStats = [
@@ -49,6 +51,7 @@ export default function FleetPage() {
   const maxUtilization = Math.max(...utilizationData.map(d => d.value));
 
   return (
+    <PermissionGuard permission="fleet">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -247,5 +250,6 @@ export default function FleetPage() {
         </div>
       </section>
     </div>
+    </PermissionGuard>
   );
 }

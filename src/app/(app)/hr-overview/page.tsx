@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 
@@ -52,6 +54,7 @@ export default function HROverviewPage() {
   const maxStaff = Math.max(...staffData.map(d => d.value));
 
   return (
+    <PermissionGuard permission="leave">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -254,5 +257,6 @@ export default function HROverviewPage() {
         </div>
       </section>
     </div>
+    </PermissionGuard>
   );
 }

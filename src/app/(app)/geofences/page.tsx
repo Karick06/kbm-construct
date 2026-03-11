@@ -1,9 +1,11 @@
+'use client';
+import PermissionGuard from "@/components/PermissionGuard";
+
 /**
  * Geofences Management Page
  * Configure project sites and office locations
  */
 
-'use client';
 
 import { useEffect, useState } from 'react';
 import type { Geofence } from '@/lib/geofence';
@@ -38,6 +40,7 @@ export default function GeofencesPage() {
   const projectGeofences = geofences.filter((g) => g.type === 'project-site');
 
   return (
+    <PermissionGuard permission="timesheets">
     <div className="space-y-8">
       <div className="grid md:grid-cols-2 gap-6">
         <div>
@@ -114,5 +117,6 @@ export default function GeofencesPage() {
         </ul>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

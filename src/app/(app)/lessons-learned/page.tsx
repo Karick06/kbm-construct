@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -85,6 +87,7 @@ export default function LessonsLearnedPage() {
 
 	if (showForm && current) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Lessons Learned" subtitle="Knowledge management and continuous improvement" />
 
@@ -241,6 +244,7 @@ export default function LessonsLearnedPage() {
 					/>
 				)}
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

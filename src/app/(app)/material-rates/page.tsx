@@ -1,5 +1,8 @@
 'use client';
 
+import PermissionGuard from "@/components/PermissionGuard";
+
+
 import { useEffect, useMemo, useState } from 'react';
 import { downloadCSV, parseCSVText } from '@/lib/csv-parser';
 import {
@@ -257,6 +260,7 @@ export default function MaterialRatesPage() {
     (filteredMaterials.length || 1);
 
   return (
+    <PermissionGuard permission="estimates">
     <div className="space-y-8">
       {loading ? (
         <div className="text-center py-12">
@@ -499,5 +503,6 @@ export default function MaterialRatesPage() {
         </>
       )}
     </div>
+    </PermissionGuard>
   );
 }

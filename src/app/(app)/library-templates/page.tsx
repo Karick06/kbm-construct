@@ -1,5 +1,8 @@
+import PermissionGuard from "@/components/PermissionGuard";
+
 export default function LibraryTemplatesPage() {
   return (
+    <PermissionGuard permission="documents">
     <div className="space-y-8">
       <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
         <div className="flex items-center justify-between mb-6">
@@ -9,5 +12,6 @@ export default function LibraryTemplatesPage() {
         <div className="text-center py-12"><p className="text-5xl mb-4">📄</p><p className="text-gray-400">No templates</p></div>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

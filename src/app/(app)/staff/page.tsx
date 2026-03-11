@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { team } from "@/lib/sample-data";
@@ -19,6 +21,7 @@ export default function StaffPage() {
   });
 
   return (
+    <PermissionGuard permission="staff">
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Staff Management"
@@ -137,5 +140,6 @@ export default function StaffPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

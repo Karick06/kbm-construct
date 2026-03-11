@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
@@ -80,6 +82,7 @@ export default function RFIsPage() {
 
 	if (showForm && current) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Request for Information" subtitle="Design & Technical Queries" />
 
@@ -282,6 +285,7 @@ export default function RFIsPage() {
 					/>
 				)}
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

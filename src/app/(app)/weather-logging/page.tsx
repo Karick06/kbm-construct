@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -68,6 +70,7 @@ export default function WeatherLoggingPage() {
 
 	if (showForm && current) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Weather Log" subtitle="Site Conditions" />
 
@@ -228,6 +231,7 @@ export default function WeatherLoggingPage() {
 					/>
 				)}
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

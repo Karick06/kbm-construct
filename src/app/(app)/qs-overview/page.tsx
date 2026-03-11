@@ -1,5 +1,8 @@
 'use client';
 
+import PermissionGuard from "@/components/PermissionGuard";
+
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjectsFromStorage, getPaymentApplicationsFromStorage, getProjectBoQLineItemsFromStorage } from '@/lib/operations-data';
@@ -74,6 +77,7 @@ export default function QSOverviewPage() {
   };
 
   return (
+    <PermissionGuard permission="invoices">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -433,5 +437,6 @@ export default function QSOverviewPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

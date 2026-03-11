@@ -1,9 +1,11 @@
+'use client';
+import PermissionGuard from "@/components/PermissionGuard";
+
 /**
  * Timesheets Overview Page
  * Dashboard for timesheet management
  */
 
-'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import type { TimesheetEntry, TimesheetStats } from '@/lib/timesheet-models';
@@ -170,6 +172,7 @@ export default function TimesheetsOverviewPage() {
   }
 
   return (
+    <PermissionGuard permission="timesheets">
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="flex flex-col gap-3 rounded-lg border border-gray-700 border-l-4 border-l-orange-500 bg-gray-800 px-5 py-4">
@@ -254,5 +257,6 @@ export default function TimesheetsOverviewPage() {
         )}
       </div>
     </div>
+    </PermissionGuard>
   );
 }

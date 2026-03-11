@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -71,6 +73,7 @@ export default function MaterialReconciliationPage() {
 		const wastePercent = current.delivered > 0 ? (current.wasted / current.delivered) * 100 : 0;
 
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Material Reconciliation" subtitle="Material Tracking" />
 
@@ -260,6 +263,7 @@ export default function MaterialReconciliationPage() {
 					/>
 				)}
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

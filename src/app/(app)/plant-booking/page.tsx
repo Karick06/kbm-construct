@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -77,6 +79,7 @@ export default function PlantBookingPage() {
 
 	if (showForm && current) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Plant Booking" subtitle="Equipment Hire Management" />
 
@@ -233,6 +236,7 @@ export default function PlantBookingPage() {
 					/>
 				)}
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

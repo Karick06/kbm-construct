@@ -1,5 +1,8 @@
 'use client';
 
+import PermissionGuard from "@/components/PermissionGuard";
+
+
 import { useEffect, useMemo, useState } from 'react';
 import { downloadCSV, parseCSVText } from '@/lib/csv-parser';
 import {
@@ -256,6 +259,7 @@ export default function LabourRatesPage() {
   const maxHourly = labourRates.length ? Math.max(...labourRates.map((r) => r.hourlyRate)) : 0;
 
   return (
+    <PermissionGuard permission="estimates">
     <div className="space-y-8">
       {loading ? (
         <div className="text-center py-12">
@@ -491,5 +495,6 @@ export default function LabourRatesPage() {
         </>
       )}
     </div>
+    </PermissionGuard>
   );
 }

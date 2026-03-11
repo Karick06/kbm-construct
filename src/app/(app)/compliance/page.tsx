@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useEffect, useMemo, useState } from "react";
 import {
   createRAMSDocument,
@@ -721,6 +723,7 @@ export default function CompliancePage() {
   }, [sitePostcode]);
 
   return (
+    <PermissionGuard permission="compliance">
     <div className="space-y-6">
       <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
         <h1 className="text-2xl font-bold text-white">Risk Assessments & Method Statements</h1>
@@ -1010,5 +1013,6 @@ export default function CompliancePage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

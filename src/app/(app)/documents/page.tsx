@@ -1,8 +1,11 @@
+import PermissionGuard from "@/components/PermissionGuard";
+
 import PageHeader from "@/components/PageHeader";
 import { documents } from "@/lib/sample-data";
 
 export default function DocumentsPage() {
   return (
+    <PermissionGuard permission="documents">
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Document library"
@@ -53,5 +56,6 @@ export default function DocumentsPage() {
         </p>
       </section>
     </div>
+    </PermissionGuard>
   );
 }

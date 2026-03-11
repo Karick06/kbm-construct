@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/date-utils";
@@ -45,6 +47,7 @@ export default function ProcurementOverviewPage() {
   const maxSpend = Math.max(...spendData.map(d => d.value));
 
   return (
+    <PermissionGuard permission="procurement">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -250,5 +253,6 @@ export default function ProcurementOverviewPage() {
         </div>
       </section>
     </div>
+    </PermissionGuard>
   );
 }

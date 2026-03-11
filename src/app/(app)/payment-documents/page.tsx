@@ -1,5 +1,8 @@
 'use client';
 
+import PermissionGuard from "@/components/PermissionGuard";
+
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjectsFromStorage, getProjectBoQLineItemsFromStorage } from '@/lib/operations-data';
@@ -198,6 +201,7 @@ export default function PaymentDocumentsPage() {
   const project = projects.find(p => p.id === selectedProject);
 
   return (
+    <PermissionGuard permission="payments">
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
@@ -589,5 +593,6 @@ export default function PaymentDocumentsPage() {
         )}
       </div>
     </div>
+    </PermissionGuard>
   );
 }

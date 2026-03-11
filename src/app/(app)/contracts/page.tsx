@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useEffect, useMemo, useState } from "react";
 
 type ContractStatus = "Draft" | "Review" | "Approved";
@@ -345,6 +347,7 @@ export default function ContractsPage() {
   };
 
   return (
+    <PermissionGuard permission="contracts">
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
         <button
@@ -907,5 +910,6 @@ export default function ContractsPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

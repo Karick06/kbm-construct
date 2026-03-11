@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -105,6 +107,7 @@ export default function PhotosPage() {
 
 	if (showForm && current) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Photo Documentation" subtitle="Visual Record" />
 
@@ -282,6 +285,7 @@ export default function PhotosPage() {
 					/>
 				)}
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

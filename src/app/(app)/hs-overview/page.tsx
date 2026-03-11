@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 
@@ -46,6 +48,7 @@ export default function HSOverviewPage() {
   const maxIncidents = Math.max(...incidentData.map(d => d.value), 1);
 
   return (
+    <PermissionGuard permission="compliance">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -242,5 +245,6 @@ export default function HSOverviewPage() {
         </div>
       </section>
     </div>
+    </PermissionGuard>
   );
 }

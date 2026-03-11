@@ -1,8 +1,11 @@
+import PermissionGuard from "@/components/PermissionGuard";
+
 import PageHeader from "@/components/PageHeader";
 import { team } from "@/lib/sample-data";
 
 export default function TeamPage() {
   return (
+    <PermissionGuard permission="staff">
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Team and resources"
@@ -68,5 +71,6 @@ export default function TeamPage() {
         </div>
       </section>
     </div>
+    </PermissionGuard>
   );
 }

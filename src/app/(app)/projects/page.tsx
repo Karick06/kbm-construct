@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useEffect, useMemo, useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 import { formatCurrency, type ConstructionProject } from "@/lib/operations-models";
@@ -173,6 +175,7 @@ export default function ProjectsPage() {
   }, [mobileFilter, allProjects, projectsByStatus]);
 
   return (
+    <PermissionGuard permission="projects">
     <div className="space-y-6">
       {/* Mobile View - Only visible on mobile */}
       <div className="lg:hidden">
@@ -837,5 +840,6 @@ export default function ProjectsPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

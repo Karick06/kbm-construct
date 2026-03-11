@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
@@ -78,6 +80,7 @@ export default function DefectsPage() {
 
 	if (showForm && current) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Defect / Snag" subtitle="Quality Management" />
 
@@ -297,6 +300,7 @@ export default function DefectsPage() {
 				)}
 
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

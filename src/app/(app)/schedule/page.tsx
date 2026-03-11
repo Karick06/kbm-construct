@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 
@@ -101,6 +103,7 @@ export default function SchedulePage() {
   };
 
   return (
+    <PermissionGuard permission="projects">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -329,6 +332,7 @@ export default function SchedulePage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }
 

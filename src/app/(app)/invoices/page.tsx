@@ -1,9 +1,12 @@
+import PermissionGuard from "@/components/PermissionGuard";
+
 import PageHeader from "@/components/PageHeader";
 import StatusPill from "@/components/StatusPill";
 import { invoices } from "@/lib/sample-data";
 
 export default function InvoicesPage() {
   return (
+    <PermissionGuard permission="invoices">
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Billing and collections"
@@ -79,5 +82,6 @@ export default function InvoicesPage() {
         </div>
       </section>
     </div>
+    </PermissionGuard>
   );
 }

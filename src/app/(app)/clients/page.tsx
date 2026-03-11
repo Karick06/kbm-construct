@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import {
   createIntegratedProject,
@@ -664,6 +666,7 @@ export default function ClientsPage() {
   const activeClients = clients.filter(c => c.status === "Active" || c.status === "Preferred").length;
 
   return (
+    <PermissionGuard permission="clients">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -2190,5 +2193,6 @@ export default function ClientsPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

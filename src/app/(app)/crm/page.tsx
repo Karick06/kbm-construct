@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
@@ -134,6 +136,7 @@ export default function CRMPage() {
   };
 
   return (
+    <PermissionGuard permission="clients">
     <div className="space-y-6">
       <PageHeader title="CRM - Business Development" subtitle="Manage leads, opportunities, and customer relationships" />
 
@@ -1174,5 +1177,6 @@ export default function CRMPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

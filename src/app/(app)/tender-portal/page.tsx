@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useEffect, useMemo, useState } from "react";
 
 type TenderFilter = {
@@ -200,6 +202,7 @@ export default function TenderPortalPage() {
   };
 
   return (
+    <PermissionGuard permission="clients">
     <div className="space-y-8">
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 lg:col-span-2">
@@ -365,5 +368,6 @@ export default function TenderPortalPage() {
         )}
       </div>
     </div>
+    </PermissionGuard>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 
 const resourceStats = [
@@ -42,6 +44,7 @@ export default function ResourcesOverviewPage() {
   const maxResources = Math.max(...resourceData.map(d => d.value));
 
   return (
+    <PermissionGuard permission="resources">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -238,5 +241,6 @@ export default function ResourcesOverviewPage() {
         </div>
       </section>
     </div>
+    </PermissionGuard>
   );
 }

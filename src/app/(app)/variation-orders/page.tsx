@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -77,6 +79,7 @@ export default function VariationOrdersPage() {
 
 	if (showForm && current) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Variation Order" subtitle="Contract Change Management" />
 
@@ -287,6 +290,7 @@ export default function VariationOrdersPage() {
 					</div>
 				</div>
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

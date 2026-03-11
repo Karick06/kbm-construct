@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useEffect, useMemo, useState } from "react";
 
 type ValuationStatus = "Under Review" | "Certified" | "Part Certified";
@@ -308,6 +310,7 @@ export default function CommercialOverviewPage() {
   };
 
   return (
+    <PermissionGuard permission="invoices">
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
         <div className="flex flex-wrap gap-2">
@@ -787,5 +790,6 @@ export default function CommercialOverviewPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

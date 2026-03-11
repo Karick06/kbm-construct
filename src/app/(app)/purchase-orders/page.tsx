@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import { getProjectsFromStorage } from "@/lib/operations-data";
 import { getCostReportsFromStorage, saveCostReportsToStorage } from "@/lib/commercial-data";
@@ -455,6 +457,7 @@ export default function PurchaseOrdersPage() {
   };
 
   return (
+    <PermissionGuard permission="procurement">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -1096,5 +1099,6 @@ export default function PurchaseOrdersPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

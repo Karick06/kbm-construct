@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
 import CameraCapture from "@/components/CameraCapture";
@@ -909,6 +911,7 @@ export default function SiteDiaryPage() {
 
 	if (selectedEntry) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader
 					title="Diary Entry"
@@ -1158,6 +1161,7 @@ export default function SiteDiaryPage() {
 					</div>
 				</div>
 			</div>
+		  </PermissionGuard>
 		);
 	}
 

@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 
@@ -125,6 +127,7 @@ export default function ArchivePage() {
     : archivedData.filter(item => item.type === filter);
 
   return (
+    <PermissionGuard permission="estimates">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
@@ -344,5 +347,6 @@ export default function ArchivePage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

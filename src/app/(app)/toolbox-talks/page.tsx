@@ -1,5 +1,7 @@
 "use client";
 
+import PermissionGuard from "@/components/PermissionGuard";
+
 import { useState, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
@@ -67,6 +69,7 @@ export default function ToolBoxTalksPage() {
 
 	if (showForm && current) {
 		return (
+		  <PermissionGuard permission="projects">
 			<div className="flex flex-col gap-6">
 				<PageHeader title="Toolbox Talk" subtitle="Safety Briefings" />
 
@@ -271,6 +274,7 @@ export default function ToolBoxTalksPage() {
 					/>
 				)}
 			</div>
+		  </PermissionGuard>
 		);
 	}
 
