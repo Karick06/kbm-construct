@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import type { StatusTone } from "@/components/StatusPill";
 
 type Allocation = {
   id: string;
@@ -25,7 +27,7 @@ const defaultAllocations: Allocation[] = [
   { id: "ALL-004", staffName: "Lisa Drummond", role: "QS", project: "Cedar House", startDate: "2026-01-15", endDate: "2026-03-10", hoursPerWeek: 20, status: "Completed" },
 ];
 
-const statusTone: Record<Allocation["status"], string> = { Active: "on-track", Upcoming: "risk", Completed: "complete", "On Hold": "overdue" };
+const statusTone: Record<Allocation["status"], StatusTone> = { Active: "on-track", Upcoming: "risk", Completed: "paid", "On Hold": "late" };
 
 export default function AllocationPage() {
   const [allocations, setAllocations] = useState<Allocation[]>([]);
@@ -64,13 +66,11 @@ export default function AllocationPage() {
   return (
     <PermissionGuard permission="resources">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Resources</p>
-            <h1 className="text-2xl font-bold text-white">Staff Allocation</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Allocate Staff</button>
-        </div>
+        <PageHeader
+          title="Staff Allocation"
+          subtitle="Resources"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Allocate Staff</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[
@@ -117,7 +117,7 @@ export default function AllocationPage() {
                     <td className="px-4 py-3 text-sm text-gray-300">{a.startDate}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{a.endDate}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{a.hoursPerWeek}h</td>
-                    <td className="px-4 py-3"><StatusPill label={a.status} tone={statusTone[a.status] as any} /></td>
+                    <td className="px-4 py-3"><StatusPill label={a.status} tone={statusTone[a.status]} /></td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => openEdit(a)} className="text-xs text-blue-400 hover:text-blue-300">Edit</button>

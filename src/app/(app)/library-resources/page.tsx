@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
+import PageHeader from "@/components/PageHeader";
 
 type Resource = {
   id: string;
@@ -63,13 +64,11 @@ export default function LibraryResourcesPage() {
   return (
     <PermissionGuard permission="documents">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Library</p>
-            <h1 className="text-2xl font-bold text-white">Resource Library</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">+ Add Resource</button>
-        </div>
+        <PageHeader
+          title="Resource Library"
+          subtitle="Library"
+          actions={<button onClick={openAdd} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">+ Add Resource</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Total Resources", value: resources.length, icon: "📚" }, { label: "H&S Resources", value: resources.filter(r => r.category === "H&S").length, icon: "🦺" }, { label: "Forms & Checklists", value: resources.filter(r => r.category === "Forms & Checklists").length, icon: "📋" }].map(stat => (

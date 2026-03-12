@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import type { StatusTone } from "@/components/StatusPill";
 
 type Supplier = {
   id: string;
@@ -25,7 +27,7 @@ const defaultSuppliers: Supplier[] = [
   { id: "SUP-005", name: "Peak Plant Hire", category: "Plant Hire", contact: "Mike Farrow", phone: "07756 789012", email: "mike@peakplant.co.uk", status: "Active", rating: 5 },
 ];
 
-const statusTone: Record<Supplier["status"], string> = { Active: "on-track", "On Hold": "risk", Inactive: "overdue" };
+const statusTone: Record<Supplier["status"], StatusTone> = { Active: "on-track", "On Hold": "risk", Inactive: "late" };
 const ratingStars = (r: number) => "★".repeat(r) + "☆".repeat(5 - r);
 
 export default function SuppliersPage() {
@@ -74,13 +76,11 @@ export default function SuppliersPage() {
   return (
     <PermissionGuard permission="procurement">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Procurement</p>
-            <h1 className="text-2xl font-bold text-white">Suppliers</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Add Supplier</button>
-        </div>
+        <PageHeader
+          title="Suppliers"
+          subtitle="Procurement"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Add Supplier</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Total", value: suppliers.length, icon: "🏭" }, { label: "Active", value: active, icon: "✅" }, { label: "On Hold", value: onHold, icon: "⏸️" }].map(stat => (
@@ -125,7 +125,7 @@ export default function SuppliersPage() {
                     <td className="px-4 py-3 text-sm text-gray-300">{s.phone}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{s.email}</td>
                     <td className="px-4 py-3 text-sm text-yellow-400">{ratingStars(s.rating)}</td>
-                    <td className="px-4 py-3"><StatusPill label={s.status} tone={statusTone[s.status] as any} /></td>
+                    <td className="px-4 py-3"><StatusPill label={s.status} tone={statusTone[s.status]} /></td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => openEdit(s)} className="text-xs text-blue-400 hover:text-blue-300">Edit</button>

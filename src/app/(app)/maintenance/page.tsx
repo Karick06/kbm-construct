@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import type { StatusTone } from "@/components/StatusPill";
 
 type MaintenanceJob = {
   id: string;
@@ -28,7 +30,7 @@ const defaultJobs: MaintenanceJob[] = [
   { id: "MNT-004", asset: "Mercedes Sprinter - KM70 XYZ", assetType: "Vehicle", type: "MOT", dueDate: "2026-03-08", completedDate: "2026-03-08", status: "Completed", technician: "KwikFit Bradford", notes: "Passed first time", cost: "£54.85" },
 ];
 
-const statusTone: Record<MaintenanceJob["status"], string> = { Scheduled: "on-track", "In Progress": "risk", Completed: "complete", Overdue: "overdue" };
+const statusTone: Record<MaintenanceJob["status"], StatusTone> = { Scheduled: "open", "In Progress": "risk", Completed: "paid", Overdue: "late" };
 
 export default function MaintenancePage() {
   const [jobs, setJobs] = useState<MaintenanceJob[]>([]);
@@ -69,13 +71,11 @@ export default function MaintenancePage() {
   return (
     <PermissionGuard permission="fleet">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Fleet & Plant</p>
-            <h1 className="text-2xl font-bold text-white">Maintenance Schedule</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Schedule Maintenance</button>
-        </div>
+        <PageHeader
+          title="Maintenance Schedule"
+          subtitle="Fleet & Plant"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Schedule Maintenance</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Overdue", value: overdue, icon: "🔴" }, { label: "Scheduled", value: scheduled, icon: "📅" }, { label: "Completed", value: completed, icon: "✅" }].map(stat => (
@@ -118,7 +118,7 @@ export default function MaintenancePage() {
                     <td className="px-4 py-3 text-sm text-gray-300">{job.dueDate}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{job.technician}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{job.cost || "—"}</td>
-                    <td className="px-4 py-3"><StatusPill label={job.status} tone={statusTone[job.status] as any} /></td>
+                    <td className="px-4 py-3"><StatusPill label={job.status} tone={statusTone[job.status]} /></td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => openEdit(job)} className="text-xs text-blue-400 hover:text-blue-300">Edit</button>

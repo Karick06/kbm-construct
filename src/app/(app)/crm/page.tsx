@@ -3,7 +3,7 @@
 import PermissionGuard from "@/components/PermissionGuard";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import {
   type Lead,
@@ -38,12 +38,66 @@ import {
   updateLead,
   createOpportunity,
 } from "@/lib/crm-data";
+import {
+  type Enquiry,
+  getEnquiriesFromStorage,
+  saveEnquiriesToStorage,
+  getEstimateJobsFromStorage,
+  saveEstimateJobsToStorage,
+  createEstimateJobFromEnquiry,
+  convertFilesToDocuments,
+  convertFilesToDrawings,
+} from "@/lib/enquiries-store";
 
 type ViewMode = 'dashboard' | 'leads' | 'opportunities' | 'activities' | 'pipeline';
 
+const OPPORTUNITY_ENQUIRY_LINKS_KEY = "kbm_opportunity_enquiry_links";
+
+type OpportunityEnquiryLink = {
+  enquiryId: string;
+  documentCount: number;
+  drawingCount: number;
+};
+
+type OpportunityEnquiryLinksMap = Record<string, OpportunityEnquiryLink>;
+
+const generateEnquiryId = (): string => {
+  const number = Math.random().toString().substring(2, 5);
+  return `ENQ-2026-${number}`;
+};
+
+const formatOpportunityValue = (amount: number): string => {
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const getOpportunityEnquiryLinks = (): OpportunityEnquiryLinksMap => {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const stored = localStorage.getItem(OPPORTUNITY_ENQUIRY_LINKS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveOpportunityEnquiryLinks = (links: OpportunityEnquiryLinksMap): void => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(OPPORTUNITY_ENQUIRY_LINKS_KEY, JSON.stringify(links));
+};
+
 export default function CRMPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -56,6 +110,9 @@ export default function CRMPage() {
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
   const [showNewOpportunityModal, setShowNewOpportunityModal] = useState(false);
   const [showNewActivityModal, setShowNewActivityModal] = useState(false);
+  const [creatingOpportunity, setCreatingOpportunity] = useState(false);
+  const [opportunityFormError, setOpportunityFormError] = useState<string | null>(null);
+  const [opportunityEnquiryLinks, setOpportunityEnquiryLinks] = useState<OpportunityEnquiryLinksMap>({});
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterStage, setFilterStage] = useState<string>('all');
 
@@ -66,8 +123,16 @@ export default function CRMPage() {
     setActivities(getActivitiesFromStorage());
     setAccounts(getAccountsFromStorage());
     setContacts(getContactsFromStorage());
+    setOpportunityEnquiryLinks(getOpportunityEnquiryLinks());
     setMetrics(calculateCRMMetrics());
   }, []);
+
+  useEffect(() => {
+    if (!showNewOpportunityModal) {
+      setOpportunityFormError(null);
+      setCreatingOpportunity(false);
+    }
+  }, [showNewOpportunityModal]);
 
   // Save data
   useEffect(() => {
@@ -133,6 +198,80 @@ export default function CRMPage() {
   const getTodayActivities = () => {
     const today = new Date().toISOString().split('T')[0];
     return activities.filter(a => a.dueDate === today);
+  };
+
+  const createEnquiryFromOpportunity = async (opp: Opportunity, formData: FormData): Promise<OpportunityEnquiryLink> => {
+    const account = accounts.find((acc) => acc.id === opp.accountId);
+    const enquiryId = generateEnquiryId();
+    const documentFiles = (formData.getAll("documents") as File[]).filter((file) => file.size > 0);
+    const drawingFiles = (formData.getAll("drawings") as File[]).filter((file) => file.size > 0);
+    const documents = await convertFilesToDocuments(documentFiles, enquiryId);
+    const drawings = await convertFilesToDrawings(drawingFiles);
+    const returnDate = String(formData.get("returnDate") || "");
+    const anticipatedAwardDate = String(formData.get("anticipatedAwardDate") || "");
+    const anticipatedSosDate = String(formData.get("anticipatedSosDate") || "");
+    const projectAddress = String(formData.get("projectAddress") || "").trim();
+    const contactName = String(formData.get("contactName") || "").trim();
+    const contactEmail = String(formData.get("contactEmail") || "").trim();
+    const notes = String(formData.get("description") || "").trim();
+
+    const enquiry: Enquiry = {
+      id: enquiryId,
+      client: account?.name || "Unknown Client",
+      projectName: opp.name,
+      projectAddress: projectAddress || undefined,
+      value: formatOpportunityValue(opp.amount),
+      receivedDate: new Date().toISOString().split("T")[0],
+      contact: contactName || "TBC",
+      contactEmail: contactEmail || undefined,
+      source: opp.leadSource,
+      returnDate: returnDate || undefined,
+      anticipatedAwardDate: anticipatedAwardDate || undefined,
+      anticipatedSosDate: anticipatedSosDate || undefined,
+      documents: documents.length > 0 ? documents : undefined,
+      drawingFiles: drawings.length > 0 ? drawings : undefined,
+      status: "new",
+      notes: notes || undefined,
+    };
+
+    const enquiries = getEnquiriesFromStorage();
+    enquiries.unshift(enquiry);
+    saveEnquiriesToStorage(enquiries);
+
+    return {
+      enquiryId,
+      documentCount: documents.length,
+      drawingCount: drawings.length,
+    };
+  };
+
+  const handleSendOpportunityToEstimating = (opportunityId: string) => {
+    const link = opportunityEnquiryLinks[opportunityId];
+    if (!link) {
+      alert("This opportunity has no linked enquiry. Create one first.");
+      return;
+    }
+
+    const enquiries = getEnquiriesFromStorage();
+    const enquiry = enquiries.find((item) => item.id === link.enquiryId);
+    if (!enquiry) {
+      alert("Linked enquiry was not found.");
+      return;
+    }
+
+    const estimateJobs = getEstimateJobsFromStorage();
+    const existingJob = estimateJobs.find((job) => job.enquiryId === enquiry.id);
+    if (!existingJob) {
+      estimateJobs.unshift(createEstimateJobFromEnquiry(enquiry));
+      saveEstimateJobsToStorage(estimateJobs);
+    }
+
+    const updatedEnquiries = enquiries.map((item) =>
+      item.id === enquiry.id ? { ...item, status: "sent-to-estimating" as const } : item
+    );
+    saveEnquiriesToStorage(updatedEnquiries);
+    setSelectedOpportunity(null);
+    router.push(`/estimating-overview?enquiry=${enquiry.id}`);
   };
 
   return (
@@ -462,6 +601,7 @@ export default function CRMPage() {
           <div className="grid gap-4">
             {getFilteredOpportunities().map((opp) => {
               const account = accounts.find(a => a.id === opp.accountId);
+              const enquiryLink = opportunityEnquiryLinks[opp.id];
               return (
                 <div
                   key={opp.id}
@@ -472,6 +612,11 @@ export default function CRMPage() {
                     <div>
                       <h3 className="text-lg font-bold text-white">{opp.name}</h3>
                       <p className="text-sm text-gray-400">{account?.name || 'Unknown Account'}</p>
+                      {enquiryLink && (
+                        <p className="mt-2 inline-block rounded border border-blue-500/40 bg-blue-500/10 px-2 py-0.5 text-xs font-semibold text-blue-300">
+                          Linked Enquiry: {enquiryLink.enquiryId}
+                        </p>
+                      )}
                     </div>
                     <span className={`px-3 py-1 text-xs rounded border ${getStageColor(opp.stage)}`}>
                       {opp.stage}
@@ -579,7 +724,7 @@ export default function CRMPage() {
               <button onClick={() => setShowNewLeadModal(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
             
-            <form onSubmit={(e) => {
+            <form onSubmit={async (e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
               const newLead = createLead({
@@ -707,25 +852,42 @@ export default function CRMPage() {
               <button onClick={() => setShowNewOpportunityModal(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
             
-            <form onSubmit={(e) => {
+            <form onSubmit={async (e) => {
               e.preventDefault();
+              setCreatingOpportunity(true);
+              setOpportunityFormError(null);
               const formData = new FormData(e.currentTarget);
-              const newOpp = createOpportunity({
-                name: formData.get('name') as string,
-                accountId: formData.get('accountId') as string,
-                amount: parseFloat(formData.get('amount') as string),
-                closeDate: formData.get('closeDate') as string,
-                stage: formData.get('stage') as any || 'Prospecting',
-                type: formData.get('type') as any || 'New Business',
-                leadSource: formData.get('leadSource') as any || 'Website',
-                description: formData.get('description') as string || '',
-                nextStep: formData.get('nextStep') as string || '',
-                opportunityOwner: formData.get('opportunityOwner') as string,
-                isClosed: false,
-                isWon: false,
-              });
-              setOpportunities(getOpportunitiesFromStorage());
-              setShowNewOpportunityModal(false);
+
+              try {
+                const newOpp = createOpportunity({
+                  name: formData.get('name') as string,
+                  accountId: formData.get('accountId') as string,
+                  amount: parseFloat(String(formData.get('amount') || '0')),
+                  closeDate: formData.get('closeDate') as string,
+                  stage: formData.get('stage') as any || 'Prospecting',
+                  type: formData.get('type') as any || 'New Business',
+                  leadSource: formData.get('leadSource') as any || 'Website',
+                  description: formData.get('description') as string || '',
+                  nextStep: formData.get('nextStep') as string || '',
+                  opportunityOwner: formData.get('opportunityOwner') as string,
+                  isClosed: false,
+                  isWon: false,
+                });
+
+                const enquiryLink = await createEnquiryFromOpportunity(newOpp, formData);
+                const updatedLinks = {
+                  ...opportunityEnquiryLinks,
+                  [newOpp.id]: enquiryLink,
+                };
+                saveOpportunityEnquiryLinks(updatedLinks);
+                setOpportunityEnquiryLinks(updatedLinks);
+                setOpportunities(getOpportunitiesFromStorage());
+                setShowNewOpportunityModal(false);
+              } catch {
+                setOpportunityFormError("Failed to create opportunity with enquiry data. Please try again.");
+              } finally {
+                setCreatingOpportunity(false);
+              }
             }} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
@@ -785,6 +947,32 @@ export default function CRMPage() {
                 </div>
               </div>
               <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-1">Project Address</label>
+                <input name="projectAddress" placeholder="e.g., 123 High Street, London" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-1">Contact Name</label>
+                  <input name="contactName" placeholder="e.g., John Smith" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-1">Contact Email</label>
+                  <input name="contactEmail" type="email" placeholder="e.g., john.smith@client.com" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-1">Return Date</label>
+                  <input name="returnDate" type="date" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-1">Anticipated Award Date</label>
+                  <input name="anticipatedAwardDate" type="date" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-1">Anticipated Start of Service</label>
+                  <input name="anticipatedSosDate" type="date" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-1">Description</label>
                 <textarea name="description" rows={3} placeholder="Describe the opportunity..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white"></textarea>
               </div>
@@ -792,13 +980,35 @@ export default function CRMPage() {
                 <label className="block text-sm font-semibold text-gray-300 mb-1">Next Step</label>
                 <input name="nextStep" placeholder="e.g., Schedule follow-up call" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-1">Documents (Optional)</label>
+                <input
+                  name="documents"
+                  type="file"
+                  multiple
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white file:mr-3 file:rounded file:border-0 file:bg-orange-500/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-orange-300"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-1">Drawings (PDF/Images for Measurement)</label>
+                <input
+                  name="drawings"
+                  type="file"
+                  multiple
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white file:mr-3 file:rounded file:border-0 file:bg-blue-500/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-blue-300"
+                />
+              </div>
+              {opportunityFormError && (
+                <p className="text-sm text-red-400">{opportunityFormError}</p>
+              )}
               
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
                 <button type="button" onClick={() => setShowNewOpportunityModal(false)} className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 font-semibold">
-                  Create Opportunity
+                <button type="submit" disabled={creatingOpportunity} className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 font-semibold disabled:opacity-60">
+                  {creatingOpportunity ? 'Creating...' : 'Create Opportunity'}
                 </button>
               </div>
             </form>
@@ -1127,10 +1337,28 @@ export default function CRMPage() {
                 </div>
               )}
 
+              {opportunityEnquiryLinks[selectedOpportunity.id] && (
+                <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+                  <p className="text-xs font-semibold text-blue-300 uppercase mb-1">Linked Enquiry</p>
+                  <p className="text-sm text-white">{opportunityEnquiryLinks[selectedOpportunity.id].enquiryId}</p>
+                  <p className="text-xs text-gray-300 mt-1">
+                    {opportunityEnquiryLinks[selectedOpportunity.id].documentCount} document(s), {opportunityEnquiryLinks[selectedOpportunity.id].drawingCount} drawing(s)
+                  </p>
+                </div>
+              )}
+
               {/* Stage Progression Actions */}
               <div className="flex gap-3 pt-4 border-t border-gray-700">
                 {!selectedOpportunity.isClosed && (
                   <>
+                    {opportunityEnquiryLinks[selectedOpportunity.id] && (
+                      <button
+                        onClick={() => handleSendOpportunityToEstimating(selectedOpportunity.id)}
+                        className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 font-semibold"
+                      >
+                        Send to Estimating
+                      </button>
+                    )}
                     {selectedOpportunity.stage !== 'Negotiation' && (
                       <button
                         onClick={() => {

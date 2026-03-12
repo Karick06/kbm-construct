@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import type { StatusTone } from "@/components/StatusPill";
 
 type PayrollRun = {
   id: string;
@@ -21,7 +23,7 @@ const defaultPayrollRuns: PayrollRun[] = [
   { id: "PAY-003", period: "March 2026", runDate: "2026-03-31", employees: 25, grossPay: 54200, deductions: 12600, netPay: 41600, status: "Draft" },
 ];
 
-const statusTone: Record<PayrollRun["status"], string> = { Draft: "risk", Processing: "risk", Submitted: "on-track", Paid: "complete" };
+const statusTone: Record<PayrollRun["status"], StatusTone> = { Draft: "draft", Processing: "risk", Submitted: "open", Paid: "paid" };
 const fmt = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
 
 export default function PayrollPage() {
@@ -55,13 +57,11 @@ export default function PayrollPage() {
   return (
     <PermissionGuard permission="payroll">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">HR & Finance</p>
-            <h1 className="text-2xl font-bold text-white">Payroll</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Payroll Run</button>
-        </div>
+        <PageHeader
+          title="Payroll"
+          subtitle="HR & Finance"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Payroll Run</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[
@@ -103,7 +103,7 @@ export default function PayrollPage() {
                     <td className="px-4 py-3 text-sm text-white font-medium">{fmt(r.grossPay)}</td>
                     <td className="px-4 py-3 text-sm text-red-400">{fmt(r.deductions)}</td>
                     <td className="px-4 py-3 text-sm text-green-400 font-semibold">{fmt(r.netPay)}</td>
-                    <td className="px-4 py-3"><StatusPill label={r.status} tone={statusTone[r.status] as any} /></td>
+                    <td className="px-4 py-3"><StatusPill label={r.status} tone={statusTone[r.status]} /></td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => openEdit(r)} className="text-xs text-blue-400 hover:text-blue-300">Edit</button>

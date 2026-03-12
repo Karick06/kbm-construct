@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
+import PageHeader from "@/components/PageHeader";
 
 type Template = {
   id: string;
@@ -65,13 +66,11 @@ export default function LibraryTemplatesPage() {
   return (
     <PermissionGuard permission="documents">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Library</p>
-            <h1 className="text-2xl font-bold text-white">Document Templates</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">+ Add Template</button>
-        </div>
+        <PageHeader
+          title="Document Templates"
+          subtitle="Library"
+          actions={<button onClick={openAdd} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">+ Add Template</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Total Templates", value: templates.length, icon: "📄" }, { label: "Total Uses", value: totalUses, icon: "📈" }, { label: "Categories", value: new Set(templates.map(t => t.category)).size, icon: "🗂️" }].map(stat => (

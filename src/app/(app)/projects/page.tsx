@@ -318,7 +318,7 @@ export default function ProjectsPage() {
         </PullToRefresh>
 
         <FloatingActionButton 
-          onClick={() => console.log('Create new project')}
+          onClick={() => undefined}
           label="New"
           icon="+"
         />

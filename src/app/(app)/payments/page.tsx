@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import type { StatusTone } from "@/components/StatusPill";
 
 type Payment = {
   id: string;
@@ -22,7 +24,7 @@ const defaultPayments: Payment[] = [
   { id: "PAY-004", supplier: "Hartwood Joinery", invoiceRef: "INV-HJ019", description: "Door sets - City Centre Tower", amount: 4650, paymentDate: "2026-03-08", method: "BACS", status: "Paid" },
 ];
 
-const statusTone: Record<Payment["status"], string> = { Pending: "risk", Approved: "on-track", Paid: "complete", Rejected: "overdue" };
+const statusTone: Record<Payment["status"], StatusTone> = { Pending: "risk", Approved: "on-track", Paid: "paid", Rejected: "late" };
 const fmt = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
 
 export default function PaymentsPage() {
@@ -63,13 +65,11 @@ export default function PaymentsPage() {
   return (
     <PermissionGuard permission="payments">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Finance</p>
-            <h1 className="text-2xl font-bold text-white">Payment Records</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Payment</button>
-        </div>
+        <PageHeader
+          title="Payment Records"
+          subtitle="Finance"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Payment</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Total Payments", value: payments.length.toString(), icon: "💳" }, { label: "Total Paid", value: fmt(totalPaid), icon: "✅" }, { label: "Outstanding", value: fmt(totalPending), icon: "⏳" }].map(stat => (
@@ -112,7 +112,7 @@ export default function PaymentsPage() {
                     <td className="px-4 py-3 text-sm font-semibold text-white">{fmt(p.amount)}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{p.paymentDate}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{p.method}</td>
-                    <td className="px-4 py-3"><StatusPill label={p.status} tone={statusTone[p.status] as any} /></td>
+                    <td className="px-4 py-3"><StatusPill label={p.status} tone={statusTone[p.status]} /></td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => openEdit(p)} className="text-xs text-blue-400 hover:text-blue-300">Edit</button>

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import type { StatusTone } from "@/components/StatusPill";
 
 type Incident = {
   id: string;
@@ -26,7 +28,7 @@ const defaultIncidents: Incident[] = [
 
 const severityTone: Record<Incident["severity"], string> = { Low: "on-track", Medium: "risk", High: "overdue", Critical: "overdue" };
 const severityBg = { Low: "bg-green-900/30 text-green-400", Medium: "bg-yellow-900/30 text-yellow-400", High: "bg-orange-900/30 text-orange-400", Critical: "bg-red-900/30 text-red-400" };
-const statusTone: Record<Incident["status"], string> = { Open: "overdue", "Under Investigation": "risk", Closed: "on-track" };
+const statusTone: Record<Incident["status"], StatusTone> = { Open: "late", "Under Investigation": "risk", Closed: "paid" };
 
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -67,13 +69,11 @@ export default function IncidentsPage() {
   return (
     <PermissionGuard permission="compliance">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Health & Safety</p>
-            <h1 className="text-2xl font-bold text-white">Incident Log</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Report Incident</button>
-        </div>
+        <PageHeader
+          title="Incident Log"
+          subtitle="Health & Safety"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Report Incident</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Open", value: open, icon: "🔴" }, { label: "Investigating", value: investigating, icon: "🔍" }, { label: "High/Critical", value: critical, icon: "⚠️" }].map(stat => (
@@ -111,7 +111,7 @@ export default function IncidentsPage() {
                   <p className="text-xs text-gray-400 mt-1">{incident.project} · Reported by {incident.reporter} · {incident.date}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <StatusPill label={incident.status} tone={statusTone[incident.status] as any} />
+                  <StatusPill label={incident.status} tone={statusTone[incident.status]} />
                   <button onClick={() => openEdit(incident)} className="text-xs text-blue-400 hover:text-blue-300">Edit</button>
                   <button onClick={() => handleDelete(incident.id)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
                 </div>

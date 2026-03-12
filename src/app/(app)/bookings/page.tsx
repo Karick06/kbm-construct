@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import type { StatusTone } from "@/components/StatusPill";
 
 type Booking = {
   id: string;
@@ -25,7 +27,7 @@ const defaultBookings: Booking[] = [
   { id: "BKG-003", asset: "Hilti TE 60 Breaker", assetType: "Equipment", project: "City Centre Tower", requestedBy: "Mike Farrow", startDate: "2026-03-18", endDate: "2026-03-19", status: "Pending", notes: "Concrete breaking for penetrations" },
 ];
 
-const statusTone: Record<Booking["status"], string> = { Pending: "risk", Approved: "on-track", Active: "complete", Returned: "complete", Cancelled: "overdue" };
+const statusTone: Record<Booking["status"], StatusTone> = { Pending: "risk", Approved: "on-track", Active: "paid", Returned: "paid", Cancelled: "late" };
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -65,13 +67,11 @@ export default function BookingsPage() {
   return (
     <PermissionGuard permission="fleet">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Fleet & Plant</p>
-            <h1 className="text-2xl font-bold text-white">Asset Bookings</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Booking</button>
-        </div>
+        <PageHeader
+          title="Asset Bookings"
+          subtitle="Fleet & Plant"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Booking</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Total Bookings", value: bookings.length, icon: "📅" }, { label: "Active", value: active, icon: "🟢" }, { label: "Pending Approval", value: pending, icon: "⏳" }].map(stat => (
@@ -113,7 +113,7 @@ export default function BookingsPage() {
                     <td className="px-4 py-3 text-sm text-gray-300">{b.requestedBy}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{b.startDate}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{b.endDate}</td>
-                    <td className="px-4 py-3"><StatusPill label={b.status} tone={statusTone[b.status] as any} /></td>
+                    <td className="px-4 py-3"><StatusPill label={b.status} tone={statusTone[b.status]} /></td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => openEdit(b)} className="text-xs text-blue-400 hover:text-blue-300">Edit</button>

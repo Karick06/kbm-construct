@@ -353,8 +353,6 @@ export default function PurchaseOrdersPage() {
       };
       setNotifications([notification, ...notifications]);
       
-      // Show confirmation message
-      console.log(`✅ Notification sent to ${requiredApprover} for PO ${newPO.id}`);
     }
     
     if (selectedReq) {
@@ -476,7 +474,6 @@ export default function PurchaseOrdersPage() {
           </select>
           <button
             onClick={() => {
-              console.log("Button clicked, activeTab:", activeTab);
               if (activeTab === "requisitions") {
                 setShowReqModal(true);
               } else {

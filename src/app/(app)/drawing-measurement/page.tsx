@@ -1195,7 +1195,6 @@ export default function DrawingMeasurementPage() {
           }
         }
         
-        console.log('Loaded BOQ context:', ctx.boqDescription, '-', ctx.boqUnit);
       } catch (e) {
         console.error('Failed to load BOQ context:', e);
       }

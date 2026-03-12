@@ -179,7 +179,7 @@ export default function DashboardPage() {
                     <td className="py-3 text-sm text-gray-300">{project.manager}</td>
                     <td className="py-3 text-sm text-gray-400">{project.phase}</td>
                     <td className="py-3">
-                      <StatusPill label={project.health} tone={project.health as any} />
+                      <StatusPill label={project.health} tone={project.health} />
                     </td>
                     <td className="py-3 text-right text-sm font-semibold text-white">{project.budget}</td>
                   </tr>
@@ -257,7 +257,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-white">{invoice.amount}</p>
-                  <StatusPill label={invoice.status} tone={invoice.status as any} />
+                  <StatusPill label={invoice.status} tone={invoice.status} />
                 </div>
               </div>
             ))}

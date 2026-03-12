@@ -794,13 +794,10 @@ export default function EstimatingOverviewPage() {
   // Load SMM7 data when modal opens
   useEffect(() => {
     if (showSMM7Modal && smm7Tree.length === 0 && !smm7Loading) {
-      console.log('Starting SMM7 data load...');
       setSmm7Loading(true);
       loadSMM7Data()
         .then(data => {
-          console.log('SMM7 data loaded successfully:', data.length, 'items');
           const tree = buildSMM7Tree(data);
-          console.log('SMM7 tree built with', tree.length, 'root nodes');
           setSmm7Tree(tree);
           // Auto-expand first level for better usability
           const firstLevelIds = tree.map(n => n.id);
@@ -817,13 +814,10 @@ export default function EstimatingOverviewPage() {
   // Load CESSM data when CESSM tab is active
   useEffect(() => {
     if (showSMM7Modal && activeSMM7Tab === 'cessm' && cessmTree.length === 0 && !cessmLoading) {
-      console.log('Starting CESSM data load...');
       setCessmLoading(true);
       loadCESSMData()
         .then(data => {
-          console.log('CESSM data loaded successfully:', data.length, 'items');
           const tree = buildCessmTree(data);
-          console.log('CESSM tree built with', tree.length, 'root nodes');
           setCessmTree(tree);
           // Auto-expand first level
           const firstLevelIds = tree.map(n => n.id);
@@ -840,13 +834,10 @@ export default function EstimatingOverviewPage() {
   // Load Valescape data when Valescape tab is active
   useEffect(() => {
     if (showSMM7Modal && activeSMM7Tab === 'valescape' && valescapeTree.length === 0 && !valescapeLoading) {
-      console.log('Starting Valescape data load...');
       setValescapeLoading(true);
       loadValescapeData()
         .then(data => {
-          console.log('Valescape data loaded successfully:', data.length, 'items');
           const tree = buildValescapeTree(data);
-          console.log('Valescape tree built with', tree.length, 'root nodes');
           setValescapeTree(tree);
           // Auto-expand first level
           const firstLevelIds = tree.map(n => n.id);
@@ -1653,7 +1644,6 @@ export default function EstimatingOverviewPage() {
       });
     }
     
-    console.log(`Quote submitted for job ${jobId}`);
   };
 
   const handleGenerateQuotePDF = async () => {
@@ -1821,7 +1811,6 @@ export default function EstimatingOverviewPage() {
       winReason: winReason || "Successful bid",
     });
     
-    console.log(`Job ${jobId} marked as won and synced to client tracking`);
   };
 
   const handleMarkLost = (jobId: string, lostReason?: string, lostToCompetitor?: string) => {
@@ -1855,7 +1844,6 @@ export default function EstimatingOverviewPage() {
       lostToCompetitor,
     });
     
-    console.log(`Job ${jobId} marked as lost and synced to client tracking`);
   };
 
   const handleSendToOperations = (jobId: string) => {
@@ -2164,7 +2152,6 @@ export default function EstimatingOverviewPage() {
           const importedComponents: RateComponent[] = JSON.parse(storedComponents);
           setEditingComponents(prev => [...prev, ...importedComponents]);
           localStorage.removeItem('materials-calculator-export');
-          console.log(`Imported ${importedComponents.length} material components to rate buildup`);
         } catch (error) {
           console.error('Failed to import materials calculator components:', error);
         }
@@ -2258,7 +2245,6 @@ export default function EstimatingOverviewPage() {
     setJobs(updatedJobs);
     saveEstimateJobsToStorage(updatedJobs);
     
-    console.log(`Progress saved: ${newProgress}%`);
     alert(`Progress saved: ${newProgress}%`);
   };
 

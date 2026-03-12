@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
 
 type SkillRecord = {
   id: string;
@@ -75,13 +76,11 @@ export default function SkillsPage() {
   return (
     <PermissionGuard permission="staff">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">HR</p>
-            <h1 className="text-2xl font-bold text-white">Skills Matrix</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Add Skill</button>
-        </div>
+        <PageHeader
+          title="Skills Matrix"
+          subtitle="HR"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Add Skill</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Total Records", value: skills.length, icon: "🎓" }, { label: "Certified", value: skills.filter(s => s.certified).length, icon: "✅" }, { label: "Expiring Soon", value: expiringSoon, icon: "⚠️" }].map(stat => (

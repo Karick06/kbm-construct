@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import type { StatusTone } from "@/components/StatusPill";
 
 type TrainingRecord = {
   id: string;
@@ -27,7 +29,7 @@ const defaultTraining: TrainingRecord[] = [
   { id: "TRN-005", staffName: "Mike Farrow", course: "First Aid at Work (3-day)", provider: "St John Ambulance", category: "First Aid", completionDate: "2023-09-15", expiryDate: "2026-09-15", status: "Completed", certificate: true, cost: "£165" },
 ];
 
-const statusTone: Record<TrainingRecord["status"], string> = { Upcoming: "risk", Completed: "complete", Expired: "overdue", "In Progress": "on-track" };
+const statusTone: Record<TrainingRecord["status"], StatusTone> = { Upcoming: "risk", Completed: "paid", Expired: "late", "In Progress": "on-track" };
 
 export default function TrainingPage() {
   const [records, setRecords] = useState<TrainingRecord[]>([]);
@@ -69,13 +71,11 @@ export default function TrainingPage() {
   return (
     <PermissionGuard permission="training">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">HR & Compliance</p>
-            <h1 className="text-2xl font-bold text-white">Training Records</h1>
-          </div>
-          <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Add Training</button>
-        </div>
+        <PageHeader
+          title="Training Records"
+          subtitle="HR & Compliance"
+          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Add Training</button>}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: "Total Records", value: records.length, icon: "📚" }, { label: "Upcoming", value: upcoming, icon: "📅" }, { label: "Expired", value: expired, icon: "⚠️" }].map(stat => (
@@ -123,7 +123,7 @@ export default function TrainingPage() {
                     <td className="px-4 py-3 text-sm text-gray-300">{r.completionDate || "—"}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{r.expiryDate || "—"}</td>
                     <td className="px-4 py-3">{r.certificate ? <span className="text-green-400">✓</span> : <span className="text-gray-600">—</span>}</td>
-                    <td className="px-4 py-3"><StatusPill label={r.status} tone={statusTone[r.status] as any} /></td>
+                    <td className="px-4 py-3"><StatusPill label={r.status} tone={statusTone[r.status]} /></td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => openEdit(r)} className="text-xs text-blue-400 hover:text-blue-300">Edit</button>
