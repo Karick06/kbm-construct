@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
+import { getMsalInstance } from "@/lib/microsoft-auth";
 
 export type UserRow = {
 	id: string;
@@ -46,6 +47,38 @@ function isSupabaseMode() {
 async function getMicrosoftAccessTokenFromCookie(): Promise<string | null> {
 	const cookieStore = await cookies();
 	return cookieStore.get("ms_access_token")?.value ?? null;
+}
+
+async function getMicrosoftAppAccessToken(): Promise<string | null> {
+	const clientId = process.env.MICROSOFT_CLIENT_ID;
+	const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+	const tenantId = process.env.MICROSOFT_TENANT_ID;
+
+	if (!clientId || !clientSecret || !tenantId) {
+		return null;
+	}
+
+	try {
+		const msal = getMsalInstance();
+		const tokenResponse = await msal.acquireTokenByClientCredential({
+			scopes: ["https://graph.microsoft.com/.default"],
+		});
+
+		return tokenResponse?.accessToken ?? null;
+	} catch (error) {
+		console.error("Failed to acquire Microsoft app token:", error);
+		return null;
+	}
+}
+
+async function getSharePointAccessToken(): Promise<string | null> {
+	const delegatedToken = await getMicrosoftAccessTokenFromCookie();
+	if (delegatedToken) return delegatedToken;
+
+	const appToken = await getMicrosoftAppAccessToken();
+	if (appToken) return appToken;
+
+	return null;
 }
 
 function getSharePointUsersFileUrl(driveId: string): string {
@@ -119,7 +152,7 @@ export async function listUsers(): Promise<UserRow[]> {
 	}
 
 	if (isMicrosoftMode()) {
-		const accessToken = await getMicrosoftAccessTokenFromCookie();
+		const accessToken = await getSharePointAccessToken();
 		if (!accessToken) throw new Error("Not authenticated");
 		return await loadUsersFromSharePoint(accessToken);
 	}
@@ -174,7 +207,7 @@ export async function createUser(payload: {
 	}
 
 	if (isMicrosoftMode()) {
-		const accessToken = await getMicrosoftAccessTokenFromCookie();
+		const accessToken = await getSharePointAccessToken();
 		if (!accessToken) throw new Error("Not authenticated");
 
 		const users = await loadUsersFromSharePoint(accessToken);
@@ -246,7 +279,7 @@ export async function updateUser(payload: {
 	}
 
 	if (isMicrosoftMode()) {
-		const accessToken = await getMicrosoftAccessTokenFromCookie();
+		const accessToken = await getSharePointAccessToken();
 		if (!accessToken) throw new Error("Not authenticated");
 
 		const users = await loadUsersFromSharePoint(accessToken);
@@ -284,7 +317,7 @@ export async function deleteUserById(id: string): Promise<void> {
 	}
 
 	if (isMicrosoftMode()) {
-		const accessToken = await getMicrosoftAccessTokenFromCookie();
+		const accessToken = await getSharePointAccessToken();
 		if (!accessToken) throw new Error("Not authenticated");
 
 		const users = await loadUsersFromSharePoint(accessToken);
