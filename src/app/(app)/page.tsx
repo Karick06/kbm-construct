@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import StatCard from "@/components/StatCard";
 import StatusPill from "@/components/StatusPill";
 import { dashboardStats, projects, invoices, reports } from "@/lib/sample-data";
-import { seedAllModules, checkDataExists } from "@/lib/seed-data";
 
 const revenueDataSets = {
   "6months": [
@@ -51,7 +50,6 @@ const upcomingMilestones = [
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<"6months" | "12months" | "ytd">("6months");
-  const [seedLoading, setSeedLoading] = useState(false);
   const revenueData = revenueDataSets[period];
   const maxRevenue = Math.max(...revenueData.map(d => d.value));
   
@@ -63,31 +61,6 @@ export default function DashboardPage() {
   
   // Calculate percentage change (mock data)
   const percentageChange = period === "6months" ? 18 : period === "12months" ? 24 : 12;
-
-  // Auto-load seed data on first visit
-  useEffect(() => {
-    const autoSeed = async () => {
-      const hasData = await checkDataExists();
-      if (!hasData) {
-        console.log("🌱 No existing data found. Auto-loading seed data...");
-        await seedAllModules();
-      }
-    };
-    autoSeed();
-  }, []);
-
-  const handleSeedData = async () => {
-    setSeedLoading(true);
-    try {
-      await seedAllModules();
-      alert("✅ Sample data loaded! Check RFIs, Defects, Photos, Plant Booking, etc.");
-    } catch (error) {
-      console.error("Failed to seed data:", error);
-      alert("❌ Failed to load sample data");
-    } finally {
-      setSeedLoading(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -103,13 +76,6 @@ export default function DashboardPage() {
             <option value="12months">Last 12 months</option>
             <option value="ytd">Year to date</option>
           </select>
-          <button 
-            onClick={handleSeedData}
-            disabled={seedLoading}
-            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
-          >
-            {seedLoading ? "Loading..." : "Load Sample Data"}
-          </button>
           <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
             Export Report
           </button>
