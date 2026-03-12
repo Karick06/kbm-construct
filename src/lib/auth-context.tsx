@@ -35,14 +35,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Demo users - replace with real API authentication
 const DEMO_USERS = [
-  { id: "1", name: "Admin User", email: "admin@kbm.com", password: "admin123", role: "Administrator" },
-  { id: "2", name: "John Smith", email: "john@kbm.com", password: "password", role: "Project Manager" },
-  { id: "3", name: "Sarah Jones", email: "sarah@kbm.com", password: "password", role: "Commercial Manager" },
+  {
+    id: "1",
+    name: "Admin User",
+    email: "admin@kbm.com",
+    password: "admin123",
+    role: "Administrator",
+    permissions: ["user_management"],
+  },
+  { id: "2", name: "John Smith", email: "john@kbm.com", password: "password", role: "Project Manager", permissions: [] },
+  { id: "3", name: "Sarah Jones", email: "sarah@kbm.com", password: "password", role: "Commercial Manager", permissions: [] },
 ];
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 const REMOTE_AUTH_ENABLED = ["supabase", "microsoft"].includes(process.env.NEXT_PUBLIC_AUTH_MODE || "");
 const MICROSOFT_AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_MODE === "microsoft";
+const USER_MANAGEMENT_PERMISSION = "user_management";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -355,13 +363,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Admin functions
   const isAdmin = (): boolean => {
-    return user?.role === "Administrator";
+    return hasPermission(USER_MANAGEMENT_PERMISSION);
   };
 
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
-    // Admins have all permissions
-    if (user.role === "Administrator") return true;
     // Check if user has specific permission
     return user.permissions?.includes(permission) || false;
   };
@@ -385,7 +391,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const createUser = async (userData: Omit<User, 'id'> & { password: string }): Promise<boolean> => {
-    if (!isAdmin() || typeof window === "undefined") return false;
+    if (!hasPermission(USER_MANAGEMENT_PERMISSION) || typeof window === "undefined") return false;
 
     if (REMOTE_AUTH_ENABLED) {
       try {
@@ -446,7 +452,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUserPermissions = async (userId: string, updates: Partial<User>): Promise<boolean> => {
-    if (!isAdmin() || typeof window === "undefined") return false;
+    if (!hasPermission(USER_MANAGEMENT_PERMISSION) || typeof window === "undefined") return false;
 
     if (REMOTE_AUTH_ENABLED) {
       try {
@@ -499,7 +505,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteUser = async (userId: string): Promise<boolean> => {
-    if (!isAdmin() || typeof window === "undefined") return false;
+    if (!hasPermission(USER_MANAGEMENT_PERMISSION) || typeof window === "undefined") return false;
 
     if (REMOTE_AUTH_ENABLED) {
       try {
@@ -517,6 +523,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!response.ok) {
           return false;
         }
+
+        const users = getAllUsers();
+        const filteredUsers = users.filter((u) => u.id !== userId);
+        localStorage.setItem("kbm_all_users", JSON.stringify(filteredUsers));
 
         await syncUsersFromServer();
         return true;

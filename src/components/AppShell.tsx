@@ -25,8 +25,7 @@ const formatTime = (date: Date) => {
 };
 
 // Each item can have:
-//   permission  – user must have this permission (admins always pass)
-//   adminOnly   – visible only to Administrator role
+//   permission  – user must have this permission
 // If a section's visible item count drops to 0, the entire section is hidden.
 const navSections = [
   {
@@ -166,7 +165,7 @@ const navSections = [
     label: "Settings",
     items: [
       { label: "User Settings", href: "/settings" },
-      { label: "User Management", href: "/admin", adminOnly: true },
+      { label: "User Management", href: "/admin", permission: "user_management" },
       { label: "Sage Integration", href: "/sage-settings" },
     ],
   },
@@ -179,7 +178,7 @@ type AppShellProps = {
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, isAdmin, hasPermission } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const { notifications, unreadCount, markAsRead, dismissNotification, markAllAsRead } = useNotifications();
   const { toggleChat } = useFloatingChat();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -361,7 +360,6 @@ export default function AppShell({ children }: AppShellProps) {
           <nav className="space-y-4 p-4">
             {navSections.map((section) => {
               const visibleItems = section.items.filter((item: any) => {
-                if (item.adminOnly && !isAdmin()) return false;
                 if (item.permission && !hasPermission(item.permission)) return false;
                 return true;
               });

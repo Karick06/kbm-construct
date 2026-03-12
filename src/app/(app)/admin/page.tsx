@@ -5,8 +5,9 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
-  const { user, isAdmin, getAllUsers, createUser, updateUserPermissions, deleteUser } = useAuth();
+  const { user, hasPermission, getAllUsers, createUser, updateUserPermissions, deleteUser } = useAuth();
   const router = useRouter();
+  const canManageUsers = hasPermission("user_management");
   const [users, setUsers] = useState<any[]>([]);
   const [isMigratingUsers, setIsMigratingUsers] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -26,6 +27,7 @@ export default function AdminPage() {
 
   // Available permissions
   const availablePermissions = [
+    { id: "user_management", label: "User Management", description: "Create, edit, and delete users" },
     { id: "projects", label: "Projects", description: "View and manage projects" },
     { id: "estimates", label: "Estimates", description: "Create and view estimates" },
     { id: "boq", label: "BOQ Management", description: "Access BOQ tools and templates" },
@@ -70,16 +72,16 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    // Redirect non-admins
-    if (user && !isAdmin()) {
+    // Redirect users without user-management permission
+    if (user && !canManageUsers) {
       router.push("/");
     }
     
     // Load users
-    if (isAdmin()) {
+    if (canManageUsers) {
       loadUsers();
     }
-  }, [user, isAdmin, router]);
+  }, [user, canManageUsers, router]);
 
   const loadUsers = () => {
     const allUsers = getAllUsers();
@@ -222,7 +224,7 @@ export default function AdminPage() {
     }
   };
 
-  if (!user || !isAdmin()) {
+  if (!user || !canManageUsers) {
     return null; // Will redirect
   }
 

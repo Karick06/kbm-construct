@@ -50,7 +50,7 @@ const navSections = [
     label: "Settings", 
     items: [
       { label: "User Settings", href: "/settings" },
-      { label: "Admin", href: "/admin", adminOnly: true },
+      { label: "Admin", href: "/admin", permission: "user_management" },
     ] 
   },
 ];
@@ -59,7 +59,7 @@ export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -139,7 +139,7 @@ export default function MobileNav() {
                     </p>
                     <div className="space-y-1">
                       {section.items
-                        .filter((item: any) => !item.adminOnly || isAdmin())
+                        .filter((item: any) => !item.permission || hasPermission(item.permission))
                         .map((item: any) => {
                         const isActive = pathname === item.href;
                         return (

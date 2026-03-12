@@ -6,7 +6,6 @@
  * Wraps a page or section and shows an "Access Denied" message when the
  * current user does not hold the required permission.
  *
- * - Administrators bypass all permission checks.
  * - Always safe to nest multiple guards.
  *
  * Usage:

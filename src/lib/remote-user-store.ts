@@ -144,27 +144,44 @@ async function ensureBootstrapAdminUser(
 	accessToken: string,
 	users: UserRow[]
 ): Promise<UserRow[]> {
+	const hasUserManagementCapableUser = users.some((user) =>
+		(user.permissions ?? []).includes("user_management")
+	);
+
 	const existingBootstrapAdminIndex = users.findIndex(
 		(user) => normalizeEmail(user.email) === BOOTSTRAP_ADMIN_EMAIL
 	);
 
 	if (existingBootstrapAdminIndex !== -1) {
 		const existingBootstrapAdmin = users[existingBootstrapAdminIndex];
+		const existingPermissions = existingBootstrapAdmin.permissions ?? [];
+		const hasUserManagementPermission = existingPermissions.includes("user_management");
+		const needsPasswordHash = !existingBootstrapAdmin.password_hash;
+		const needsPermissionUpdate = !hasUserManagementPermission;
 
-		if (existingBootstrapAdmin.password_hash) {
+		if (!needsPasswordHash && !needsPermissionUpdate) {
 			return users;
 		}
 
-		const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
+		const passwordHash = needsPasswordHash
+			? await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10)
+			: existingBootstrapAdmin.password_hash;
 		const updatedUsers = [...users];
 		updatedUsers[existingBootstrapAdminIndex] = {
 			...existingBootstrapAdmin,
 			role: existingBootstrapAdmin.role || "Administrator",
+			permissions: hasUserManagementPermission
+				? existingPermissions
+				: [...existingPermissions, "user_management"],
 			password_hash: passwordHash,
 		};
 
 		await saveUsersToSharePoint(accessToken, updatedUsers);
 		return updatedUsers;
+	}
+
+	if (users.length > 0 && hasUserManagementCapableUser) {
+		return users;
 	}
 
 	const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
@@ -173,7 +190,7 @@ async function ensureBootstrapAdminUser(
 		name: BOOTSTRAP_ADMIN_NAME,
 		email: BOOTSTRAP_ADMIN_EMAIL,
 		role: "Administrator",
-		permissions: [],
+		permissions: ["user_management"],
 		line_manager_id: null,
 		line_manager_name: null,
 		department: null,
