@@ -48,6 +48,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getStoredUserByEmail = (email: string): User | null => {
+    if (typeof window === "undefined") return null;
+
+    const normalizedEmail = normalizeEmail(email);
+    const storedUsers = localStorage.getItem("kbm_all_users");
+    if (!storedUsers) return null;
+
+    try {
+      const users = JSON.parse(storedUsers) as User[];
+      return users.find((storedUser) => normalizeEmail(storedUser.email) === normalizedEmail) ?? null;
+    } catch (error) {
+      console.error("Failed to parse stored users:", error);
+      return null;
+    }
+  };
+
+  const hydrateUserFromStoredRecord = (baseUser: User): User => {
+    const storedUser = getStoredUserByEmail(baseUser.email);
+
+    if (!storedUser) {
+      return {
+        ...baseUser,
+        permissions: baseUser.permissions ?? [],
+      };
+    }
+
+    return {
+      ...baseUser,
+      ...storedUser,
+      id: storedUser.id || baseUser.id,
+      email: normalizeEmail(storedUser.email || baseUser.email),
+      name: storedUser.name || baseUser.name,
+      role: storedUser.role || baseUser.role,
+      permissions: storedUser.permissions ?? baseUser.permissions ?? [],
+    };
+  };
+
+  const persistUserSession = (nextUser: User) => {
+    setUser(nextUser);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("kbm_user", JSON.stringify(nextUser));
+    }
+  };
+
   const syncUsersFromServer = async () => {
     if (!REMOTE_AUTH_ENABLED || typeof window === "undefined") return;
 
@@ -56,24 +100,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) return;
       const users = (await response.json()) as User[];
       localStorage.setItem("kbm_all_users", JSON.stringify(users));
+
+      setUser((currentUser) => {
+        if (!currentUser) return currentUser;
+        const hydratedUser = hydrateUserFromStoredRecord(currentUser);
+        localStorage.setItem("kbm_user", JSON.stringify(hydratedUser));
+        return hydratedUser;
+      });
     } catch (error) {
       console.warn("Remote user sync skipped:", error);
     }
   };
 
   useEffect(() => {
-    // Check for existing session on mount (client-side only)
-    if (typeof window !== "undefined") {
+    const initializeAuth = async () => {
+      if (typeof window === "undefined") {
+        setIsLoading(false);
+        return;
+      }
+
       const storedUser = localStorage.getItem("kbm_user");
       if (storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
+          const parsedStoredUser = JSON.parse(storedUser) as User;
+          persistUserSession(hydrateUserFromStoredRecord(parsedStoredUser));
         } catch (error) {
           console.error("Failed to parse stored user:", error);
           localStorage.removeItem("kbm_user");
         }
-      } else if (MICROSOFT_AUTH_ENABLED) {
-        // Check for Microsoft session via cookies
+      }
+
+      await syncUsersFromServer();
+
+      if (MICROSOFT_AUTH_ENABLED) {
         const userEmail = document.cookie
           .split("; ")
           .find((row) => row.startsWith("user_email="))
@@ -84,33 +143,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ?.split("=")[1];
 
         if (userEmail && userName) {
-          // Validate session with server
-          fetch("/api/auth/microsoft/me")
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.id) {
-                // Load user's permissions from localStorage if they exist
-                const usersData = localStorage.getItem("kbm_all_users");
-                if (usersData) {
-                  const users = JSON.parse(usersData);
-                  const existingUser = users.find((u: any) => u.email.toLowerCase() === data.email.toLowerCase());
-                  if (existingUser && existingUser.permissions) {
-                    data.permissions = existingUser.permissions;
-                    data.role = existingUser.role || "User";
-                  }
-                }
-                setUser(data);
-                localStorage.setItem("kbm_user", JSON.stringify(data));
-              }
-            })
-            .catch((error) => {
-              console.error("Failed to validate Microsoft session:", error);
-            });
+          try {
+            const response = await fetch("/api/auth/microsoft/me", { cache: "no-store" });
+            const data = await response.json();
+
+            if (data.id) {
+              persistUserSession(hydrateUserFromStoredRecord(data as User));
+            }
+          } catch (error) {
+            console.error("Failed to validate Microsoft session:", error);
+          }
         }
       }
-    }
-    void syncUsersFromServer();
-    setIsLoading(false);
+
+      setIsLoading(false);
+    };
+
+    void initializeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key !== "kbm_all_users" && event.key !== "kbm_user") return;
+
+      setUser((currentUser) => {
+        if (!currentUser) return currentUser;
+        return hydrateUserFromStoredRecord(currentUser);
+      });
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -159,8 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedPassword = passwords[normalizedEmail] ?? passwords[foundStoredUser.email];
       if (savedPassword && savedPassword === password) {
         console.log("Login successful for stored user:", normalizedEmail);
-        setUser(foundStoredUser);
-        localStorage.setItem("kbm_user", JSON.stringify(foundStoredUser));
+        persistUserSession(hydrateUserFromStoredRecord(foundStoredUser));
         return true;
       }
 
@@ -169,8 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       if (demoUserMatch) {
         const { password: _, ...userWithoutPassword } = demoUserMatch;
-        setUser(userWithoutPassword);
-        localStorage.setItem("kbm_user", JSON.stringify(userWithoutPassword));
+        persistUserSession(hydrateUserFromStoredRecord(userWithoutPassword));
         return true;
       }
 
@@ -225,8 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUser = (updates: Partial<User>) => {
     if (user && typeof window !== "undefined") {
       const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      localStorage.setItem("kbm_user", JSON.stringify(updatedUser));
+      persistUserSession(updatedUser);
 
       try {
         const users = getAllUsers();
@@ -386,8 +448,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await syncUsersFromServer();
 
         if (user?.id === userId) {
-          setUser(updatedRemoteUser);
-          localStorage.setItem("kbm_user", JSON.stringify(updatedRemoteUser));
+          persistUserSession(hydrateUserFromStoredRecord(updatedRemoteUser));
         }
 
         return true;
@@ -410,8 +471,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // If updating current user, update session
       if (user?.id === userId) {
-        setUser({ ...user, ...updates });
-        localStorage.setItem("kbm_user", JSON.stringify({ ...user, ...updates }));
+        persistUserSession(hydrateUserFromStoredRecord({ ...user, ...updates }));
       }
       
       console.log("User updated successfully");
