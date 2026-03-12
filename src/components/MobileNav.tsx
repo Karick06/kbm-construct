@@ -5,61 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
-
-const navSections = [
-  { 
-    label: "Overview", 
-    items: [
-      { label: "Dashboard", href: "/" },
-      { label: "Chat", href: "/chat" },
-    ] 
-  },
-  { 
-    label: "Business Dev", 
-    items: [
-      { label: "CRM", href: "/crm" },
-      { label: "Clients", href: "/clients" },
-      { label: "Tenders", href: "/tender-portal" },
-    ] 
-  },
-  { 
-    label: "Estimating", 
-    items: [
-      { label: "Overview", href: "/estimating-overview" },
-      { label: "Rates", href: "/labour-rates" },
-    ] 
-  },
-  { 
-    label: "Operations", 
-    items: [
-      { label: "Projects", href: "/projects" },
-      { label: "Tasks", href: "/tasks" },
-      { label: "Schedule", href: "/schedule" },
-    ] 
-  },
-  { 
-    label: "Resources", 
-    items: [
-      { label: "Staff", href: "/staff" },
-      { label: "My Timesheets", href: "/my-timesheets" },
-      { label: "Compliance & RAMS", href: "/compliance" },
-      { label: "Leave", href: "/leave" },
-    ] 
-  },
-  { 
-    label: "Settings", 
-    items: [
-      { label: "User Settings", href: "/settings" },
-      { label: "Admin", href: "/admin", permission: "user_management" },
-    ] 
-  },
-];
+import { getVisibleNavSections } from "@/lib/navigation";
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout, hasPermission } = useAuth();
+  const visibleNavSections = getVisibleNavSections(hasPermission);
 
   const handleLogout = () => {
     logout();
@@ -132,15 +85,13 @@ export default function MobileNav() {
 
               {/* Navigation Sections */}
               <div className="space-y-6">
-                {navSections.map((section) => (
+                {visibleNavSections.map((section) => (
                   <div key={section.label}>
                     <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--sidebar-muted)] border-l-2 border-[var(--accent)] pl-2">
                       {section.label}
                     </p>
                     <div className="space-y-1">
-                      {section.items
-                        .filter((item: any) => !item.permission || hasPermission(item.permission))
-                        .map((item: any) => {
+                      {section.items.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                           <Link
