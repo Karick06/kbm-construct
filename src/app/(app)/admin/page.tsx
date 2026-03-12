@@ -8,6 +8,7 @@ export default function AdminPage() {
   const { user, isAdmin, getAllUsers, createUser, updateUserPermissions, deleteUser } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
+  const [isMigratingUsers, setIsMigratingUsers] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -174,6 +175,53 @@ export default function AdminPage() {
     setShowDeleteModal(true);
   };
 
+  const handleMigrateLocalUsers = async () => {
+    if (typeof window === "undefined") return;
+
+    const confirmed = window.confirm(
+      "This will import local browser users into the shared backend. Existing users with the same email will be updated. Continue?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsMigratingUsers(true);
+
+      const localUsersRaw = localStorage.getItem("kbm_all_users");
+      const localPasswordsRaw = localStorage.getItem("user_passwords");
+
+      const localUsers = localUsersRaw ? JSON.parse(localUsersRaw) : [];
+      const localPasswords = localPasswordsRaw ? JSON.parse(localPasswordsRaw) : {};
+
+      if (!Array.isArray(localUsers) || localUsers.length === 0) {
+        alert("No local users found to migrate.");
+        return;
+      }
+
+      const response = await fetch("/api/auth/users/migrate-local", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ users: localUsers, passwords: localPasswords }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.error || "Migration failed");
+      }
+
+      loadUsers();
+      alert(
+        `Migration complete. Created: ${result.created}, Updated: ${result.updated}, Skipped: ${result.skipped}`
+      );
+    } catch (error) {
+      console.error("Failed to migrate users:", error);
+      alert("Failed to migrate local users. Please try again.");
+    } finally {
+      setIsMigratingUsers(false);
+    }
+  };
+
   if (!user || !isAdmin()) {
     return null; // Will redirect
   }
@@ -185,15 +233,24 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <p className="text-sm text-gray-600 mt-1">Manage users, roles, and permissions</p>
         </div>
-        <button
-          onClick={() => {
-            setFormData({ name: "", email: "", password: "", role: "Project Manager", permissions: [], lineManagerId: "", department: "", jobTitle: "" });
-            setShowAddModal(true);
-          }}
-          className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
-        >
-          Add New User
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleMigrateLocalUsers}
+            disabled={isMigratingUsers}
+            className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isMigratingUsers ? "Migrating..." : "Migrate Local Users"}
+          </button>
+          <button
+            onClick={() => {
+              setFormData({ name: "", email: "", password: "", role: "Project Manager", permissions: [], lineManagerId: "", department: "", jobTitle: "" });
+              setShowAddModal(true);
+            }}
+            className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
+          >
+            Add New User
+          </button>
+        </div>
       </div>
 
       {/* Users Table */}
