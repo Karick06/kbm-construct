@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function SageSettingsPage() {
   const [config, setConfig] = useState({
@@ -16,11 +16,37 @@ export default function SageSettingsPage() {
     tenantId: '',
     environment: 'sandbox' as 'production' | 'sandbox',
   });
+  const [loadingConfig, setLoadingConfig] = useState(true);
 
   const [testStatus, setTestStatus] = useState<{
     status: 'idle' | 'loading' | 'success' | 'error';
     message: string;
   }>({ status: 'idle', message: '' });
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/api/sage/config');
+        if (!response.ok) {
+          throw new Error('Failed to load Sage configuration');
+        }
+
+        const result = await response.json();
+        if (result?.data) {
+          setConfig(result.data);
+        }
+      } catch {
+        setTestStatus({
+          status: 'error',
+          message: 'Unable to load saved Sage configuration',
+        });
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+
+    void loadConfig();
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -69,6 +95,12 @@ export default function SageSettingsPage() {
     <div className="space-y-8">
       <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
         <h2 className="text-xl font-bold text-white mb-6">API Credentials</h2>
+
+        {loadingConfig && (
+          <div className="mb-4 rounded-lg bg-blue-900 px-4 py-3 text-sm text-blue-200">
+            Loading saved Sage configuration...
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>

@@ -12,7 +12,22 @@ To integrate Sage 50 with KBM Construct, you need to:
    - API Key
    - Tenant ID
 
-## 2. Set Environment Variables
+## 2. Add Credentials in KBM Construct (Recommended)
+
+1. Open **Settings > Sage Integration**
+2. Enter:
+   - Business Name
+   - Username
+   - Password
+   - API Key
+   - Tenant ID
+   - Environment (sandbox or production)
+3. Click **Save Configuration**
+4. Click **Test Connection**
+
+The app stores this configuration locally in `.sage-config.json` (ignored by git).
+
+## 3. Set Environment Variables (Alternative)
 
 Create a `.env.local` file in the project root:
 
@@ -26,7 +41,7 @@ SAGE_TENANT_ID=your_tenant_id
 SAGE_ENVIRONMENT=sandbox  # or production
 ```
 
-## 3. Configure in App
+## 4. Configure in App
 
 1. Go to Settings > Sage Integration in the app
 2. Enter your credentials

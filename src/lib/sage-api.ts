@@ -3,7 +3,7 @@
  * Handles all API requests to Sage 50
  */
 
-import { SAGE_API_BASE, sageConfig } from './sage-config';
+import { getSageApiBase, getSageConfig, hasSageCredentials } from './sage-config';
 
 export interface SageCustomer {
   id: string;
@@ -65,24 +65,43 @@ export interface SageAccount {
 class SageAPIClient {
   private accessToken: string | null = null;
   private tokenExpiry: number | null = null;
+  private activeConfigSignature: string | null = null;
+
+  private getConfigSignature() {
+    const config = getSageConfig();
+    return `${config.businessName}|${config.username}|${config.apiKey}|${config.tenantId}|${config.environment}`;
+  }
 
   private async getAccessToken(): Promise<string> {
+    const config = getSageConfig();
+    if (!hasSageCredentials(config)) {
+      throw new Error('Sage is not configured. Add credentials in Settings > Sage Integration.');
+    }
+
+    const configSignature = this.getConfigSignature();
+    if (this.activeConfigSignature !== configSignature) {
+      this.accessToken = null;
+      this.tokenExpiry = null;
+      this.activeConfigSignature = configSignature;
+    }
+
     // Check if token is still valid
     if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
 
     // Authenticate with Sage
-    const authResponse = await fetch(`${SAGE_API_BASE}/oauth/authorize`, {
+    const authResponse = await fetch(`${getSageApiBase(config)}/oauth/authorize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        businessName: sageConfig.businessName,
-        username: sageConfig.username,
-        password: sageConfig.password,
-        apiKey: sageConfig.apiKey,
+        businessName: config.businessName,
+        username: config.username,
+        password: config.password,
+        apiKey: config.apiKey,
+        tenantId: config.tenantId,
       }),
     });
 
@@ -101,12 +120,14 @@ class SageAPIClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    const config = getSageConfig();
     const token = await this.getAccessToken();
 
-    const response = await fetch(`${SAGE_API_BASE}${endpoint}`, {
+    const response = await fetch(`${getSageApiBase(config)}${endpoint}`, {
       ...options,
       headers: {
         'Authorization': `Bearer ${token}`,
+        'X-Tenant-Id': config.tenantId,
         'Content-Type': 'application/json',
         ...options.headers,
       },
