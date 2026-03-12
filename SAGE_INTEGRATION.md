@@ -34,6 +34,8 @@ The app stores this configuration locally in `.sage-config.json` (ignored by git
 On Vercel/serverless, config is stored in `/tmp/.sage-config.json` because `/var/task` is read-only.
 You can override this path with `SAGE_CONFIG_FILE_PATH`.
 
+If Sage OAuth shows a generic authorize error, set `SAGE_REDIRECT_URI` explicitly so it exactly matches the callback URL registered in your Sage app.
+
 ## 3. Set Environment Variables (Alternative)
 
 Create a `.env.local` file in the project root:

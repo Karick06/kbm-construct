@@ -15,10 +15,11 @@ export async function GET(request: NextRequest) {
   }
 
   const appOrigin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
-  const redirectUri = `${appOrigin}/api/auth/sage/callback`;
+  const redirectUri = process.env.SAGE_REDIRECT_URI || `${appOrigin}/api/auth/sage/callback`;
   const state = crypto.randomUUID();
 
   const params = new URLSearchParams({
+    filter: 'apiv3.1',
     response_type: 'code',
     client_id: config.clientId,
     redirect_uri: redirectUri,

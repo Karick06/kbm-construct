@@ -6,9 +6,11 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
   const state = request.nextUrl.searchParams.get('state');
   const error = request.nextUrl.searchParams.get('error');
+  const errorDescription = request.nextUrl.searchParams.get('error_description');
 
   if (error) {
-    return NextResponse.redirect(new URL(`/sage-settings?sage_error=${encodeURIComponent(error)}`, request.url));
+    const message = errorDescription ? `${error}: ${errorDescription}` : error;
+    return NextResponse.redirect(new URL(`/sage-settings?sage_error=${encodeURIComponent(message)}`, request.url));
   }
 
   if (!code) {
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
   try {
     const config = getSageConfig();
     const appOrigin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
-    const redirectUri = `${appOrigin}/api/auth/sage/callback`;
+    const redirectUri = process.env.SAGE_REDIRECT_URI || `${appOrigin}/api/auth/sage/callback`;
 
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
