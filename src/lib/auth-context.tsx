@@ -41,7 +41,7 @@ const DEMO_USERS = [
 ];
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
-const REMOTE_AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_MODE === "supabase";
+const REMOTE_AUTH_ENABLED = ["supabase", "microsoft"].includes(process.env.NEXT_PUBLIC_AUTH_MODE || "");
 const MICROSOFT_AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_MODE === "microsoft";
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getSupabaseAdminClient } from "@/lib/supabase-admin";
-
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
+import { listUsers, normalizeEmail } from "@/lib/remote-user-store";
 
 export async function POST(request: Request) {
 	try {
@@ -12,22 +10,9 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
 		}
 
-		const supabase = getSupabaseAdminClient();
-		if (!supabase) {
-			return NextResponse.json({ error: "Remote auth is not configured" }, { status: 503 });
-		}
-
 		const normalizedEmail = normalizeEmail(email);
-		const { data, error } = await supabase
-			.from("app_users")
-			.select("id,name,email,role,avatar_url,permissions,line_manager_id,line_manager_name,department,job_title,password_hash")
-			.eq("email", normalizedEmail)
-			.maybeSingle();
-
-		if (error) {
-			console.error("Login query failed:", error);
-			return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
-		}
+		const users = await listUsers();
+		const data = users.find((user) => normalizeEmail(user.email) === normalizedEmail);
 
 		if (!data || !data.password_hash) {
 			return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -51,6 +36,12 @@ export async function POST(request: Request) {
 			jobTitle: data.job_title ?? undefined,
 		});
 	} catch (error) {
+		if (error instanceof Error && error.message === "Not authenticated") {
+			return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+		}
+		if (error instanceof Error && error.message.includes("Remote auth is not configured")) {
+			return NextResponse.json({ error: "Remote auth is not configured" }, { status: 503 });
+		}
 		console.error("Login API error:", error);
 		return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 	}
