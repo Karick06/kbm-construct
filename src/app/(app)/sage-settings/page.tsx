@@ -1,22 +1,24 @@
 /**
- * Sage 50 Settings Page
- * Configure Sage API credentials
+ * Sage Accounting Settings Page
+ * Configure OAuth credentials and connect Sage cloud account
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export default function SageSettingsPage() {
+  const searchParams = useSearchParams();
   const [config, setConfig] = useState({
     businessName: '',
-    username: '',
-    password: '',
-    apiKey: '',
-    tenantId: '',
+    clientId: '',
+    clientSecret: '',
+    businessId: '',
     environment: 'sandbox' as 'production' | 'sandbox',
   });
   const [loadingConfig, setLoadingConfig] = useState(true);
+  const [connected, setConnected] = useState(false);
 
   const [testStatus, setTestStatus] = useState<{
     status: 'idle' | 'loading' | 'success' | 'error';
@@ -33,7 +35,14 @@ export default function SageSettingsPage() {
 
         const result = await response.json();
         if (result?.data) {
-          setConfig(result.data);
+          setConfig({
+            businessName: result.data.businessName || '',
+            clientId: result.data.clientId || '',
+            clientSecret: result.data.clientSecret || '',
+            businessId: result.data.businessId || '',
+            environment: result.data.environment || 'sandbox',
+          });
+          setConnected(Boolean(result.data.connected));
         }
       } catch {
         setTestStatus({
@@ -48,6 +57,24 @@ export default function SageSettingsPage() {
     void loadConfig();
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get('sage_connected') === '1') {
+      setConnected(true);
+      setTestStatus({
+        status: 'success',
+        message: 'Sage OAuth connected successfully.',
+      });
+    }
+
+    const callbackError = searchParams.get('sage_error');
+    if (callbackError) {
+      setTestStatus({
+        status: 'error',
+        message: `Sage OAuth failed: ${callbackError}`,
+      });
+    }
+  }, [searchParams]);
+
   const handleSave = async () => {
     try {
       setTestStatus({ status: 'loading', message: 'Saving configuration...' });
@@ -59,7 +86,10 @@ export default function SageSettingsPage() {
         body: JSON.stringify(config),
       });
 
-      if (!response.ok) throw new Error('Failed to save configuration');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'Failed to save configuration');
+      }
 
       setTestStatus({ status: 'success', message: 'Configuration saved successfully' });
     } catch (error) {
@@ -70,13 +100,40 @@ export default function SageSettingsPage() {
     }
   };
 
+  const handleConnectOAuth = async () => {
+    try {
+      setTestStatus({ status: 'loading', message: 'Opening Sage OAuth...' });
+      const response = await fetch('/api/auth/sage/login');
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'Failed to start Sage OAuth');
+      }
+
+      const data = await response.json();
+      if (!data?.authUrl) {
+        throw new Error('Sage OAuth URL was not returned');
+      }
+
+      window.location.href = data.authUrl;
+    } catch (error) {
+      setTestStatus({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to start OAuth connection',
+      });
+    }
+  };
+
   const handleTest = async () => {
     try {
       setTestStatus({ status: 'loading', message: 'Testing Sage connection...' });
       
       const response = await fetch('/api/sage/accounts');
       
-      if (!response.ok) throw new Error('Connection test failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'Connection test failed');
+      }
       
       const data = await response.json();
       setTestStatus({
@@ -94,7 +151,11 @@ export default function SageSettingsPage() {
   return (
     <div className="space-y-8">
       <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
-        <h2 className="text-xl font-bold text-white mb-6">API Credentials</h2>
+        <h2 className="text-xl font-bold text-white mb-6">Sage Accounting OAuth</h2>
+
+        <div className={`mb-4 rounded-lg px-4 py-3 text-sm ${connected ? 'bg-green-900 text-green-200' : 'bg-yellow-900 text-yellow-200'}`}>
+          {connected ? 'Connected to Sage OAuth' : 'Not connected. Save credentials, then click Connect Sage OAuth.'}
+        </div>
 
         {loadingConfig && (
           <div className="mb-4 rounded-lg bg-blue-900 px-4 py-3 text-sm text-blue-200">
@@ -114,59 +175,46 @@ export default function SageSettingsPage() {
                 setConfig({ ...config, businessName: e.target.value })
               }
               className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
-              placeholder="Your Sage business name"
+              placeholder="Your company name"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Username
+              Client ID
             </label>
             <input
               type="text"
-              value={config.username}
-              onChange={(e) => setConfig({ ...config, username: e.target.value })}
+              value={config.clientId}
+              onChange={(e) => setConfig({ ...config, clientId: e.target.value })}
               className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
-              placeholder="Sage username"
+              placeholder="Sage app client ID"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Password
+              Client Secret
             </label>
             <input
               type="password"
-              value={config.password}
-              onChange={(e) => setConfig({ ...config, password: e.target.value })}
+              value={config.clientSecret}
+              onChange={(e) => setConfig({ ...config, clientSecret: e.target.value })}
               className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
-              placeholder="Sage password"
+              placeholder="Sage app client secret"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              API Key
-            </label>
-            <input
-              type="password"
-              value={config.apiKey}
-              onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-              className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
-              placeholder="Your Sage API key"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Tenant ID
+              Business ID
             </label>
             <input
               type="text"
-              value={config.tenantId}
-              onChange={(e) => setConfig({ ...config, tenantId: e.target.value })}
+              value={config.businessId}
+              onChange={(e) => setConfig({ ...config, businessId: e.target.value })}
               className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
-              placeholder="Your Sage tenant ID"
+              placeholder="Sage business/company ID"
             />
           </div>
 
@@ -191,6 +239,12 @@ export default function SageSettingsPage() {
         </div>
 
         <div className="mt-6 flex gap-3">
+          <button
+            onClick={handleConnectOAuth}
+            className="rounded-lg border border-green-500 px-6 py-2 font-semibold text-green-400 hover:bg-green-500 hover:text-white transition"
+          >
+            Connect Sage OAuth
+          </button>
           <button
             onClick={handleTest}
             className="rounded-lg border border-orange-500 px-6 py-2 font-semibold text-orange-500 hover:bg-orange-500 hover:text-white transition"
@@ -228,7 +282,7 @@ export default function SageSettingsPage() {
           <li>✓ Sync customers to Business Development</li>
           <li>✓ Sync suppliers to Procurement</li>
           <li>✓ Sync chart of accounts across all sections</li>
-          <li>✓ Real-time data synchronization</li>
+          <li>✓ OAuth token refresh for persistent connectivity</li>
         </ul>
       </div>
     </div>

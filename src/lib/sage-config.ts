@@ -9,11 +9,13 @@ import path from 'node:path';
 
 export interface SageConfig {
   businessName: string;
-  username: string;
-  password: string;
-  apiKey: string;
-  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  businessId: string;
   environment: 'production' | 'sandbox';
+  accessToken?: string;
+  refreshToken?: string;
+  tokenExpiry?: number;
 }
 
 export const SAGE_CONFIG_FILE = path.join(process.cwd(), '.sage-config.json');
@@ -25,11 +27,13 @@ const parseEnvironment = (value: unknown): SageConfig['environment'] => {
 const getEnvSageConfig = (): SageConfig => {
   return {
     businessName: process.env.SAGE_BUSINESS_NAME || '',
-    username: process.env.SAGE_USERNAME || '',
-    password: process.env.SAGE_PASSWORD || '',
-    apiKey: process.env.SAGE_API_KEY || '',
-    tenantId: process.env.SAGE_TENANT_ID || '',
+    clientId: process.env.SAGE_CLIENT_ID || '',
+    clientSecret: process.env.SAGE_CLIENT_SECRET || '',
+    businessId: process.env.SAGE_BUSINESS_ID || '',
     environment: parseEnvironment(process.env.SAGE_ENVIRONMENT),
+    accessToken: process.env.SAGE_ACCESS_TOKEN,
+    refreshToken: process.env.SAGE_REFRESH_TOKEN,
+    tokenExpiry: process.env.SAGE_TOKEN_EXPIRY ? Number(process.env.SAGE_TOKEN_EXPIRY) : undefined,
   };
 };
 
@@ -53,25 +57,56 @@ export const getSageConfig = (): SageConfig => {
 
   return {
     businessName: savedConfig?.businessName ?? envConfig.businessName,
-    username: savedConfig?.username ?? envConfig.username,
-    password: savedConfig?.password ?? envConfig.password,
-    apiKey: savedConfig?.apiKey ?? envConfig.apiKey,
-    tenantId: savedConfig?.tenantId ?? envConfig.tenantId,
+    clientId: savedConfig?.clientId ?? envConfig.clientId,
+    clientSecret: savedConfig?.clientSecret ?? envConfig.clientSecret,
+    businessId: savedConfig?.businessId ?? envConfig.businessId,
     environment: parseEnvironment(savedConfig?.environment ?? envConfig.environment),
+    accessToken: savedConfig?.accessToken ?? envConfig.accessToken,
+    refreshToken: savedConfig?.refreshToken ?? envConfig.refreshToken,
+    tokenExpiry: savedConfig?.tokenExpiry ?? envConfig.tokenExpiry,
   };
+};
+
+export const saveSageConfig = (config: SageConfig): void => {
+  fs.writeFileSync(SAGE_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+};
+
+export const updateSageConfig = (patch: Partial<SageConfig>): SageConfig => {
+  const current = getSageConfig();
+  const updated: SageConfig = {
+    ...current,
+    ...patch,
+    environment: parseEnvironment(patch.environment ?? current.environment),
+  };
+
+  saveSageConfig(updated);
+  return updated;
 };
 
 export const hasSageCredentials = (config: SageConfig = getSageConfig()): boolean => {
   return (
     config.businessName.trim().length > 0 &&
-    config.username.trim().length > 0 &&
-    config.password.trim().length > 0 &&
-    config.apiKey.trim().length > 0 &&
-    config.tenantId.trim().length > 0
+    config.clientId.trim().length > 0 &&
+    config.clientSecret.trim().length > 0 &&
+    config.businessId.trim().length > 0
   );
+};
+
+export const hasSageOAuthTokens = (config: SageConfig = getSageConfig()): boolean => {
+  return Boolean(config.accessToken && config.refreshToken && config.tokenExpiry);
 };
 
 export const getSageApiBase = (config: SageConfig = getSageConfig()): string =>
   config.environment === 'production'
     ? 'https://api.columbus.sage.com/v1'
     : 'https://api.sandbox.columbus.sage.com/v1';
+
+export const getSageAuthorizeUrl = (config: SageConfig = getSageConfig()): string =>
+  config.environment === 'production'
+    ? 'https://www.sageone.com/oauth2/auth/central'
+    : 'https://www.sageone.com/oauth2/auth/central';
+
+export const getSageTokenUrl = (config: SageConfig = getSageConfig()): string =>
+  config.environment === 'production'
+    ? 'https://oauth.accounting.sage.com/token'
+    : 'https://oauth.accounting.sage.com/token';

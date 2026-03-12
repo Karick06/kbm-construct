@@ -1,29 +1,33 @@
-# Sage 50 Integration Setup
+# Sage Accounting (Cloud) Integration Setup
 
-To integrate Sage 50 with KBM Construct, you need to:
+To integrate Sage Accounting cloud with KBM Construct, you need to:
 
-## 1. Get Sage API Credentials
+## 1. Create Sage Developer App Credentials
 
-1. Log in to your Sage 50 account at https://columbus.sage.com
-2. Go to Settings > API Management
-3. Create a new API application
+1. Sign in to the Sage Developer portal for your cloud account
+2. Create a new app for KBM Construct
+3. Add callback URL:
+   - Local: `http://localhost:3000/api/auth/sage/callback`
+   - Production: `https://your-domain.com/api/auth/sage/callback`
 4. Note down:
    - Business Name
-   - API Key
-   - Tenant ID
+   - Client ID
+   - Client Secret
+   - Business ID
 
 ## 2. Add Credentials in KBM Construct (Recommended)
 
 1. Open **Settings > Sage Integration**
 2. Enter:
    - Business Name
-   - Username
-   - Password
-   - API Key
-   - Tenant ID
+   - Client ID
+   - Client Secret
+   - Business ID
    - Environment (sandbox or production)
 3. Click **Save Configuration**
-4. Click **Test Connection**
+4. Click **Connect Sage OAuth**
+5. Complete Sage authorization
+6. Click **Test Connection**
 
 The app stores this configuration locally in `.sage-config.json` (ignored by git).
 
@@ -32,12 +36,11 @@ The app stores this configuration locally in `.sage-config.json` (ignored by git
 Create a `.env.local` file in the project root:
 
 ```env
-# Sage 50 Configuration
+# Sage Accounting OAuth Configuration
 SAGE_BUSINESS_NAME=your_business_name
-SAGE_USERNAME=your_sage_username
-SAGE_PASSWORD=your_sage_password
-SAGE_API_KEY=your_api_key
-SAGE_TENANT_ID=your_tenant_id
+SAGE_CLIENT_ID=your_client_id
+SAGE_CLIENT_SECRET=your_client_secret
+SAGE_BUSINESS_ID=your_business_id
 SAGE_ENVIRONMENT=sandbox  # or production
 ```
 

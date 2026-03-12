@@ -4,6 +4,7 @@
  */
 
 import { getSageApiBase, getSageConfig, hasSageCredentials } from './sage-config';
+import { getSageTokenUrl, hasSageOAuthTokens, updateSageConfig } from './sage-config';
 
 export interface SageCustomer {
   id: string;
@@ -69,13 +70,57 @@ class SageAPIClient {
 
   private getConfigSignature() {
     const config = getSageConfig();
-    return `${config.businessName}|${config.username}|${config.apiKey}|${config.tenantId}|${config.environment}`;
+    return `${config.businessName}|${config.clientId}|${config.clientSecret}|${config.businessId}|${config.environment}`;
+  }
+
+  private async refreshAccessToken() {
+    const config = getSageConfig();
+    if (!config.refreshToken) {
+      throw new Error('Sage OAuth refresh token is missing. Reconnect Sage in Settings > Sage Integration.');
+    }
+
+    const body = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: config.refreshToken,
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+    });
+
+    const tokenResponse = await fetch(getSageTokenUrl(config), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    });
+
+    if (!tokenResponse.ok) {
+      const tokenError = await tokenResponse.text();
+      throw new Error(
+        `Sage token refresh failed (${tokenResponse.status}): ${tokenError || tokenResponse.statusText}`
+      );
+    }
+
+    const tokenData = (await tokenResponse.json()) as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in: number;
+    };
+
+    updateSageConfig({
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token || config.refreshToken,
+      tokenExpiry: Date.now() + tokenData.expires_in * 1000,
+    });
+
+    this.accessToken = tokenData.access_token;
+    this.tokenExpiry = Date.now() + tokenData.expires_in * 1000;
   }
 
   private async getAccessToken(): Promise<string> {
     const config = getSageConfig();
     if (!hasSageCredentials(config)) {
-      throw new Error('Sage is not configured. Add credentials in Settings > Sage Integration.');
+      throw new Error('Sage is not configured. Add business details in Settings > Sage Integration.');
     }
 
     const configSignature = this.getConfigSignature();
@@ -85,35 +130,24 @@ class SageAPIClient {
       this.activeConfigSignature = configSignature;
     }
 
+    if (hasSageOAuthTokens(config)) {
+      this.accessToken = config.accessToken || null;
+      this.tokenExpiry = config.tokenExpiry || null;
+    }
+
     // Check if token is still valid
     if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
 
-    // Authenticate with Sage
-    const authResponse = await fetch(`${getSageApiBase(config)}/oauth/authorize`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        businessName: config.businessName,
-        username: config.username,
-        password: config.password,
-        apiKey: config.apiKey,
-        tenantId: config.tenantId,
-      }),
-    });
-
-    if (!authResponse.ok) {
-      throw new Error(`Sage authentication failed: ${authResponse.statusText}`);
+    if (config.refreshToken) {
+      await this.refreshAccessToken();
+      if (this.accessToken) {
+        return this.accessToken;
+      }
     }
 
-    const { access_token, expires_in } = await authResponse.json();
-    this.accessToken = access_token;
-    this.tokenExpiry = Date.now() + (expires_in * 1000);
-
-    return access_token;
+    throw new Error('Sage is not connected yet. Click Connect Sage OAuth in Settings > Sage Integration.');
   }
 
   private async request<T>(
@@ -127,15 +161,16 @@ class SageAPIClient {
       ...options,
       headers: {
         'Authorization': `Bearer ${token}`,
-        'X-Tenant-Id': config.tenantId,
+        'X-Tenant-Id': config.businessId,
         'Content-Type': 'application/json',
         ...options.headers,
       },
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
       throw new Error(
-        `Sage API request failed: ${response.status} ${response.statusText}`
+        `Sage API request failed (${response.status}): ${errorText || response.statusText}`
       );
     }
 

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { writeFile } from 'node:fs/promises';
-import { SAGE_CONFIG_FILE, getSageConfig, type SageConfig } from '@/lib/sage-config';
+import { getSageConfig, hasSageOAuthTokens, saveSageConfig, type SageConfig } from '@/lib/sage-config';
 
 function isValidEnvironment(value: unknown): value is SageConfig['environment'] {
   return value === 'sandbox' || value === 'production';
@@ -15,7 +14,15 @@ export async function GET() {
 
   return NextResponse.json({
     success: true,
-    data: config,
+    data: {
+      businessName: config.businessName,
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      businessId: config.businessId,
+      environment: config.environment,
+      connected: hasSageOAuthTokens(config),
+      tokenExpiry: config.tokenExpiry,
+    },
   });
 }
 
@@ -25,31 +32,34 @@ export async function POST(request: Request) {
 
     if (
       !isNonEmptyString(payload.businessName) ||
-      !isNonEmptyString(payload.username) ||
-      !isNonEmptyString(payload.password) ||
-      !isNonEmptyString(payload.apiKey) ||
-      !isNonEmptyString(payload.tenantId) ||
+      !isNonEmptyString(payload.clientId) ||
+      !isNonEmptyString(payload.clientSecret) ||
+      !isNonEmptyString(payload.businessId) ||
       !isValidEnvironment(payload.environment)
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'All Sage configuration fields are required',
+          error: 'Business name, client ID, client secret, business ID and environment are required',
         },
         { status: 400 }
       );
     }
 
+    const current = getSageConfig();
+
     const config: SageConfig = {
       businessName: payload.businessName.trim(),
-      username: payload.username.trim(),
-      password: payload.password,
-      apiKey: payload.apiKey.trim(),
-      tenantId: payload.tenantId.trim(),
+      clientId: payload.clientId.trim(),
+      clientSecret: payload.clientSecret,
+      businessId: payload.businessId.trim(),
       environment: payload.environment,
+      accessToken: current.accessToken,
+      refreshToken: current.refreshToken,
+      tokenExpiry: current.tokenExpiry,
     };
 
-    await writeFile(SAGE_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+    saveSageConfig(config);
 
     return NextResponse.json({
       success: true,
