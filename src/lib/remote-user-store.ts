@@ -58,29 +58,47 @@ async function getMicrosoftAppAccessToken(): Promise<string | null> {
 	const tenantId = process.env.MICROSOFT_TENANT_ID;
 
 	if (!clientId || !clientSecret || !tenantId) {
+		console.warn("[getMicrosoftAppAccessToken] Missing credentials - clientId:", !!clientId, "clientSecret:", !!clientSecret, "tenantId:", !!tenantId);
 		return null;
 	}
 
 	try {
+		console.log("[getMicrosoftAppAccessToken] Attempting to acquire token for tenant:", tenantId);
 		const msal = getMsalInstance();
 		const tokenResponse = await msal.acquireTokenByClientCredential({
 			scopes: ["https://graph.microsoft.com/.default"],
 		});
 
-		return tokenResponse?.accessToken ?? null;
+		if (!tokenResponse?.accessToken) {
+			console.warn("[getMicrosoftAppAccessToken] No access token in response");
+			return null;
+		}
+
+		console.log("[getMicrosoftAppAccessToken] Successfully acquired app token");
+		return tokenResponse.accessToken;
 	} catch (error) {
-		console.error("Failed to acquire Microsoft app token:", error);
+		console.error("[getMicrosoftAppAccessToken] Failed to acquire Microsoft app token:", error);
 		return null;
 	}
 }
 
 async function getSharePointAccessToken(): Promise<string | null> {
+	console.log("[getSharePointAccessToken] Attempting to get access token");
+	
 	const delegatedToken = await getMicrosoftAccessTokenFromCookie();
-	if (delegatedToken) return delegatedToken;
+	if (delegatedToken) {
+		console.log("[getSharePointAccessToken] Using delegated token from cookie");
+		return delegatedToken;
+	}
 
+	console.log("[getSharePointAccessToken] No delegated token, attempting to get app token");
 	const appToken = await getMicrosoftAppAccessToken();
-	if (appToken) return appToken;
+	if (appToken) {
+		console.log("[getSharePointAccessToken] Successfully obtained app token");
+		return appToken;
+	}
 
+	console.warn("[getSharePointAccessToken] Failed to obtain any access token");
 	return null;
 }
 
@@ -144,17 +162,22 @@ async function ensureBootstrapAdminUser(
 	accessToken: string,
 	users: UserRow[]
 ): Promise<UserRow[]> {
+	console.log("[ensureBootstrapAdminUser] Checking for bootstrap admin:", BOOTSTRAP_ADMIN_EMAIL);
+	
 	const existingBootstrapAdminIndex = users.findIndex(
 		(user) => normalizeEmail(user.email) === BOOTSTRAP_ADMIN_EMAIL
 	);
 
 	if (existingBootstrapAdminIndex !== -1) {
 		const existingBootstrapAdmin = users[existingBootstrapAdminIndex];
+		console.log("[ensureBootstrapAdminUser] Found existing bootstrap admin");
 
 		if (existingBootstrapAdmin.password_hash) {
+			console.log("[ensureBootstrapAdminUser] Bootstrap admin already has password hash");
 			return users;
 		}
 
+		console.log("[ensureBootstrapAdminUser] Adding password hash to existing bootstrap admin");
 		const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
 		const updatedUsers = [...users];
 		updatedUsers[existingBootstrapAdminIndex] = {
@@ -164,9 +187,11 @@ async function ensureBootstrapAdminUser(
 		};
 
 		await saveUsersToSharePoint(accessToken, updatedUsers);
+		console.log("[ensureBootstrapAdminUser] Saved bootstrap admin with password hash");
 		return updatedUsers;
 	}
 
+	console.log("[ensureBootstrapAdminUser] Creating new bootstrap admin");
 	const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
 	const bootstrapAdmin: UserRow = {
 		id: crypto.randomUUID(),
@@ -183,6 +208,7 @@ async function ensureBootstrapAdminUser(
 
 	const bootstrappedUsers = [...users, bootstrapAdmin];
 	await saveUsersToSharePoint(accessToken, bootstrappedUsers);
+	console.log("[ensureBootstrapAdminUser] Created and saved new bootstrap admin");
 	return bootstrappedUsers;
 }
 
@@ -201,10 +227,24 @@ export async function listUsers(): Promise<UserRow[]> {
 	}
 
 	if (isMicrosoftMode()) {
-		const accessToken = await getSharePointAccessToken();
-		if (!accessToken) throw new Error("Not authenticated");
-		const users = await loadUsersFromSharePoint(accessToken);
-		return await ensureBootstrapAdminUser(accessToken, users);
+		try {
+			console.log("[listUsers] Starting for Microsoft mode");
+			const accessToken = await getSharePointAccessToken();
+			console.log("[listUsers] Access token obtained:", accessToken ? "yes" : "no");
+			if (!accessToken) throw new Error("Not authenticated");
+			
+			const users = await loadUsersFromSharePoint(accessToken);
+			console.log("[listUsers] Loaded users from SharePoint:", users.length);
+			
+			const result = await ensureBootstrapAdminUser(accessToken, users);
+			console.log("[listUsers] After bootstrap check, users count:", result.length);
+			console.log("[listUsers] Bootstrap admin present:", result.some(u => normalizeEmail(u.email) === BOOTSTRAP_ADMIN_EMAIL) ? "yes" : "no");
+			
+			return result;
+		} catch (error) {
+			console.error("[listUsers] Error:", error);
+			throw error;
+		}
 	}
 
 	throw new Error("Remote auth is not configured");
