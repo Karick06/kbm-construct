@@ -144,8 +144,27 @@ async function ensureBootstrapAdminUser(
 	accessToken: string,
 	users: UserRow[]
 ): Promise<UserRow[]> {
-	if (users.length > 0) {
-		return users;
+	const existingBootstrapAdminIndex = users.findIndex(
+		(user) => normalizeEmail(user.email) === BOOTSTRAP_ADMIN_EMAIL
+	);
+
+	if (existingBootstrapAdminIndex !== -1) {
+		const existingBootstrapAdmin = users[existingBootstrapAdminIndex];
+
+		if (existingBootstrapAdmin.password_hash) {
+			return users;
+		}
+
+		const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
+		const updatedUsers = [...users];
+		updatedUsers[existingBootstrapAdminIndex] = {
+			...existingBootstrapAdmin,
+			role: existingBootstrapAdmin.role || "Administrator",
+			password_hash: passwordHash,
+		};
+
+		await saveUsersToSharePoint(accessToken, updatedUsers);
+		return updatedUsers;
 	}
 
 	const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
@@ -162,7 +181,7 @@ async function ensureBootstrapAdminUser(
 		password_hash: passwordHash,
 	};
 
-	const bootstrappedUsers = [bootstrapAdmin];
+	const bootstrappedUsers = [...users, bootstrapAdmin];
 	await saveUsersToSharePoint(accessToken, bootstrappedUsers);
 	return bootstrappedUsers;
 }
