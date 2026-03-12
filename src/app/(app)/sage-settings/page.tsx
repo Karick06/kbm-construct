@@ -15,6 +15,9 @@ type SageBusiness = {
 
 export default function SageSettingsPage() {
   const searchParams = useSearchParams();
+  const callbackUrl = typeof window === 'undefined'
+    ? '/api/auth/sage/callback'
+    : `${window.location.origin}/api/auth/sage/callback`;
   const [config, setConfig] = useState({
     businessName: '',
     clientId: '',
@@ -349,6 +352,27 @@ export default function SageSettingsPage() {
           <li>✓ Sync chart of accounts across all sections</li>
           <li>✓ OAuth token refresh for persistent connectivity</li>
         </ul>
+      </div>
+
+      <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
+        <h2 className="text-lg font-bold text-white mb-4">OAuth Setup Checklist</h2>
+        <div className="space-y-3 text-sm text-gray-300">
+          <p>
+            Register this exact callback URL in your Sage app:
+          </p>
+          <div className="rounded-lg bg-gray-900 px-4 py-3 font-mono text-xs text-gray-200">
+            {callbackUrl}
+          </div>
+          <p>
+            If Sage still shows "Authorise Application Error", it is usually one of these:
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-gray-400">
+            <li>The callback URL in Sage does not exactly match the URL above</li>
+            <li>The `Client ID` or `Client Secret` belongs to a different Sage app</li>
+            <li>The app does not have Sage Accounting API access enabled</li>
+            <li>You are testing local but only registered the live callback URL</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

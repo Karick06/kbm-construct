@@ -188,12 +188,28 @@ class SageAPIClient {
   }
 
   async getBusinesses(): Promise<SageBusiness[]> {
-    const data = await this.request<{ businesses?: SageBusiness[]; items?: SageBusiness[] }>(
-      '/businesses',
-      {},
-      false
-    );
-    return data.businesses || data.items || [];
+    const endpoints = ['/businesses', '/business_accounts', '/core/businesses'];
+
+    for (const endpoint of endpoints) {
+      try {
+        const data = await this.request<{ businesses?: SageBusiness[]; items?: SageBusiness[]; data?: SageBusiness[] }>(
+          endpoint,
+          {},
+          false
+        );
+        const businesses = data.businesses || data.items || data.data || [];
+        if (Array.isArray(businesses)) {
+          return businesses;
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        if (!message.includes('(404)')) {
+          throw error;
+        }
+      }
+    }
+
+    throw new Error('Unable to locate Sage business list endpoint for this account/environment.');
   }
 
   // Customer methods

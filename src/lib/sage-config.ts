@@ -105,7 +105,7 @@ export const hasSageOAuthTokens = (config: SageConfig = getSageConfig()): boolea
 export const getSageApiBase = (config: SageConfig = getSageConfig()): string =>
   config.environment === 'production'
     ? 'https://api.columbus.sage.com/v1'
-    : 'https://api.sandbox.columbus.sage.com/v1';
+    : 'https://api.columbus.sage.com/v1';
 
 export const getSageAuthorizeUrl = (config: SageConfig = getSageConfig()): string =>
   config.environment === 'production'
