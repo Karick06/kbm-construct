@@ -3,7 +3,7 @@
  * Handles all API requests to Sage 50
  */
 
-import { getSageApiBase, getSageConfig, hasSageCredentials } from './sage-config';
+import { getSageApiBase, getSageConfig, hasSageAppCredentials } from './sage-config';
 import { getSageTokenUrl, hasSageOAuthTokens, updateSageConfig } from './sage-config';
 
 export interface SageCustomer {
@@ -63,6 +63,11 @@ export interface SageAccount {
   balance: number;
 }
 
+export interface SageBusiness {
+  id: string;
+  name: string;
+}
+
 class SageAPIClient {
   private accessToken: string | null = null;
   private tokenExpiry: number | null = null;
@@ -119,8 +124,8 @@ class SageAPIClient {
 
   private async getAccessToken(): Promise<string> {
     const config = getSageConfig();
-    if (!hasSageCredentials(config)) {
-      throw new Error('Sage is not configured. Add business details in Settings > Sage Integration.');
+    if (!hasSageAppCredentials(config)) {
+      throw new Error('Sage is not configured. Add Client ID and Client Secret in Settings > Sage Integration.');
     }
 
     const configSignature = this.getConfigSignature();
@@ -152,16 +157,21 @@ class SageAPIClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    requireBusinessId = true
   ): Promise<T> {
     const config = getSageConfig();
     const token = await this.getAccessToken();
+
+    if (requireBusinessId && !config.businessId.trim()) {
+      throw new Error('Sage Business ID is missing. Use Fetch Businesses in Settings > Sage Integration.');
+    }
 
     const response = await fetch(`${getSageApiBase(config)}${endpoint}`, {
       ...options,
       headers: {
         'Authorization': `Bearer ${token}`,
-        'X-Tenant-Id': config.businessId,
+        ...(requireBusinessId ? { 'X-Tenant-Id': config.businessId } : {}),
         'Content-Type': 'application/json',
         ...options.headers,
       },
@@ -175,6 +185,15 @@ class SageAPIClient {
     }
 
     return response.json() as Promise<T>;
+  }
+
+  async getBusinesses(): Promise<SageBusiness[]> {
+    const data = await this.request<{ businesses?: SageBusiness[]; items?: SageBusiness[] }>(
+      '/businesses',
+      {},
+      false
+    );
+    return data.businesses || data.items || [];
   }
 
   // Customer methods

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getSageAuthorizeUrl, getSageConfig, hasSageCredentials } from '@/lib/sage-config';
+import { getSageAuthorizeUrl, getSageConfig, hasSageAppCredentials } from '@/lib/sage-config';
 
 export async function GET(request: NextRequest) {
   const config = getSageConfig();
 
-  if (!hasSageCredentials(config)) {
+  if (!hasSageAppCredentials(config)) {
     return NextResponse.json(
       {
-        error: 'Set Sage Client ID, Client Secret and Business ID first.',
+        error: 'Set Sage Client ID and Client Secret first.',
       },
       { status: 400 }
     );

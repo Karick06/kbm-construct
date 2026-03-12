@@ -31,6 +31,9 @@ To integrate Sage Accounting cloud with KBM Construct, you need to:
 
 The app stores this configuration locally in `.sage-config.json` (ignored by git).
 
+On Vercel/serverless, config is stored in `/tmp/.sage-config.json` because `/var/task` is read-only.
+You can override this path with `SAGE_CONFIG_FILE_PATH`.
+
 ## 3. Set Environment Variables (Alternative)
 
 Create a `.env.local` file in the project root:

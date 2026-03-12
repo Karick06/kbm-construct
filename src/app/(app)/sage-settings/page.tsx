@@ -8,6 +8,11 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
+type SageBusiness = {
+  id: string;
+  name: string;
+};
+
 export default function SageSettingsPage() {
   const searchParams = useSearchParams();
   const [config, setConfig] = useState({
@@ -19,6 +24,7 @@ export default function SageSettingsPage() {
   });
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [connected, setConnected] = useState(false);
+  const [businesses, setBusinesses] = useState<SageBusiness[]>([]);
 
   const [testStatus, setTestStatus] = useState<{
     status: 'idle' | 'loading' | 'success' | 'error';
@@ -124,6 +130,44 @@ export default function SageSettingsPage() {
     }
   };
 
+  const handleFetchBusinesses = async () => {
+    try {
+      setTestStatus({ status: 'loading', message: 'Fetching Sage businesses...' });
+      const response = await fetch('/api/sage/businesses');
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'Failed to fetch Sage businesses');
+      }
+
+      const result = await response.json();
+      const list: SageBusiness[] = result?.data || [];
+      setBusinesses(list);
+
+      if (list.length === 0) {
+        setTestStatus({
+          status: 'error',
+          message: 'No businesses found. Ensure your Sage account has at least one connected company.',
+        });
+        return;
+      }
+
+      if (!config.businessId) {
+        setConfig((prev) => ({ ...prev, businessId: list[0].id }));
+      }
+
+      setTestStatus({
+        status: 'success',
+        message: `Found ${list.length} business${list.length > 1 ? 'es' : ''}. Select one and click Save Configuration.`,
+      });
+    } catch (error) {
+      setTestStatus({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to fetch businesses',
+      });
+    }
+  };
+
   const handleTest = async () => {
     try {
       setTestStatus({ status: 'loading', message: 'Testing Sage connection...' });
@@ -209,13 +253,28 @@ export default function SageSettingsPage() {
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Business ID
             </label>
-            <input
-              type="text"
-              value={config.businessId}
-              onChange={(e) => setConfig({ ...config, businessId: e.target.value })}
-              className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
-              placeholder="Sage business/company ID"
-            />
+            {businesses.length > 0 ? (
+              <select
+                value={config.businessId}
+                onChange={(e) => setConfig({ ...config, businessId: e.target.value })}
+                className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white focus:border-orange-500 focus:outline-none"
+              >
+                <option value="">Select Sage business</option>
+                {businesses.map((business) => (
+                  <option key={business.id} value={business.id}>
+                    {business.name} ({business.id})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={config.businessId}
+                onChange={(e) => setConfig({ ...config, businessId: e.target.value })}
+                className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+                placeholder="Click Fetch Businesses after OAuth"
+              />
+            )}
           </div>
 
           <div>
@@ -239,6 +298,12 @@ export default function SageSettingsPage() {
         </div>
 
         <div className="mt-6 flex gap-3">
+          <button
+            onClick={handleFetchBusinesses}
+            className="rounded-lg border border-blue-500 px-6 py-2 font-semibold text-blue-400 hover:bg-blue-500 hover:text-white transition"
+          >
+            Fetch Businesses
+          </button>
           <button
             onClick={handleConnectOAuth}
             className="rounded-lg border border-green-500 px-6 py-2 font-semibold text-green-400 hover:bg-green-500 hover:text-white transition"

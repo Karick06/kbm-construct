@@ -34,13 +34,12 @@ export async function POST(request: Request) {
       !isNonEmptyString(payload.businessName) ||
       !isNonEmptyString(payload.clientId) ||
       !isNonEmptyString(payload.clientSecret) ||
-      !isNonEmptyString(payload.businessId) ||
       !isValidEnvironment(payload.environment)
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Business name, client ID, client secret, business ID and environment are required',
+          error: 'Business name, client ID, client secret and environment are required',
         },
         { status: 400 }
       );
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
       businessName: payload.businessName.trim(),
       clientId: payload.clientId.trim(),
       clientSecret: payload.clientSecret,
-      businessId: payload.businessId.trim(),
+      businessId: (payload.businessId || '').trim(),
       environment: payload.environment,
       accessToken: current.accessToken,
       refreshToken: current.refreshToken,

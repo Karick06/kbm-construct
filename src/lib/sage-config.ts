@@ -18,7 +18,11 @@ export interface SageConfig {
   tokenExpiry?: number;
 }
 
-export const SAGE_CONFIG_FILE = path.join(process.cwd(), '.sage-config.json');
+export const SAGE_CONFIG_FILE = process.env.SAGE_CONFIG_FILE_PATH
+  ? process.env.SAGE_CONFIG_FILE_PATH
+  : process.env.VERCEL
+  ? '/tmp/.sage-config.json'
+  : path.join(process.cwd(), '.sage-config.json');
 
 const parseEnvironment = (value: unknown): SageConfig['environment'] => {
   return value === 'production' ? 'production' : 'sandbox';
@@ -84,11 +88,13 @@ export const updateSageConfig = (patch: Partial<SageConfig>): SageConfig => {
 };
 
 export const hasSageCredentials = (config: SageConfig = getSageConfig()): boolean => {
+  return hasSageAppCredentials(config) && config.businessId.trim().length > 0;
+};
+
+export const hasSageAppCredentials = (config: SageConfig = getSageConfig()): boolean => {
   return (
-    config.businessName.trim().length > 0 &&
     config.clientId.trim().length > 0 &&
-    config.clientSecret.trim().length > 0 &&
-    config.businessId.trim().length > 0
+    config.clientSecret.trim().length > 0
   );
 };
 
