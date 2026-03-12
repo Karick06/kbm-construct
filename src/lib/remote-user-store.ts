@@ -17,9 +17,12 @@ export type UserRow = {
 	password_hash?: string | null;
 };
 
-const USERS_FILE_NAME = process.env.SHAREPOINT_USERS_FILE_NAME || "kbm-users.json";
-
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+const USERS_FILE_NAME = process.env.SHAREPOINT_USERS_FILE_NAME || "kbm-users.json";
+const BOOTSTRAP_ADMIN_EMAIL = normalizeEmail(process.env.BOOTSTRAP_ADMIN_EMAIL || "admin@kbm.com");
+const BOOTSTRAP_ADMIN_PASSWORD = process.env.BOOTSTRAP_ADMIN_PASSWORD || "admin123";
+const BOOTSTRAP_ADMIN_NAME = process.env.BOOTSTRAP_ADMIN_NAME || "Admin User";
 
 export function mapUser(row: Record<string, unknown>) {
 	return {
@@ -137,6 +140,33 @@ async function saveUsersToSharePoint(accessToken: string, users: UserRow[]): Pro
 	}
 }
 
+async function ensureBootstrapAdminUser(
+	accessToken: string,
+	users: UserRow[]
+): Promise<UserRow[]> {
+	if (users.length > 0) {
+		return users;
+	}
+
+	const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
+	const bootstrapAdmin: UserRow = {
+		id: crypto.randomUUID(),
+		name: BOOTSTRAP_ADMIN_NAME,
+		email: BOOTSTRAP_ADMIN_EMAIL,
+		role: "Administrator",
+		permissions: [],
+		line_manager_id: null,
+		line_manager_name: null,
+		department: null,
+		job_title: "Administrator",
+		password_hash: passwordHash,
+	};
+
+	const bootstrappedUsers = [bootstrapAdmin];
+	await saveUsersToSharePoint(accessToken, bootstrappedUsers);
+	return bootstrappedUsers;
+}
+
 export async function listUsers(): Promise<UserRow[]> {
 	if (isSupabaseMode()) {
 		const supabase = getSupabaseAdminClient();
@@ -154,7 +184,8 @@ export async function listUsers(): Promise<UserRow[]> {
 	if (isMicrosoftMode()) {
 		const accessToken = await getSharePointAccessToken();
 		if (!accessToken) throw new Error("Not authenticated");
-		return await loadUsersFromSharePoint(accessToken);
+		const users = await loadUsersFromSharePoint(accessToken);
+		return await ensureBootstrapAdminUser(accessToken, users);
 	}
 
 	throw new Error("Remote auth is not configured");
