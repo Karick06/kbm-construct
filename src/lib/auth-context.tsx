@@ -92,6 +92,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const clearUserSession = async () => {
+    setUser(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("kbm_user");
+
+      if (MICROSOFT_AUTH_ENABLED) {
+        try {
+          await fetch("/api/auth/microsoft/logout", { method: "POST" });
+        } catch (error) {
+          console.error("Failed to clear Microsoft session:", error);
+        }
+      }
+    }
+  };
+
   const syncUsersFromServer = async () => {
     if (!REMOTE_AUTH_ENABLED || typeof window === "undefined") return;
 
@@ -148,6 +163,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
 
             if (data.id) {
+              const storedUser = getStoredUserByEmail(data.email);
+
+              if (!storedUser) {
+                await clearUserSession();
+                window.location.href = "/login?ms_error=user_not_setup";
+                return;
+              }
+
               persistUserSession(hydrateUserFromStoredRecord(data as User));
             }
           } catch (error) {
@@ -270,19 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    setUser(null);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("kbm_user");
-
-      // Clear Microsoft session if enabled
-      if (MICROSOFT_AUTH_ENABLED) {
-        try {
-          await fetch("/api/auth/microsoft/logout", { method: "POST" });
-        } catch (error) {
-          console.error("Failed to clear Microsoft session:", error);
-        }
-      }
-    }
+    await clearUserSession();
   };
 
   const updateUser = (updates: Partial<User>) => {
@@ -411,6 +422,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: userData.name,
         email: normalizedEmail,
         role: userData.role,
+        permissions: userData.permissions ?? [],
+        lineManagerId: userData.lineManagerId,
+        lineManagerName: userData.lineManagerName,
+        department: userData.department,
+        jobTitle: userData.jobTitle,
       };
       
       users.push(newUser);

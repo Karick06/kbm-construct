@@ -44,6 +44,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (microsoftError === "user_not_setup") {
+      setError("Your account has not been set up yet. Ask an administrator to create your user and assign permissions.");
+      return;
+    }
+
     setError("Sign-in failed. Please try again.");
   }, []);
 
