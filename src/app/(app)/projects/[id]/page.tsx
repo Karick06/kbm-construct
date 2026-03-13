@@ -104,6 +104,28 @@ export default function ProjectDetailPage() {
     }
   }, []);
 
+  useEffect(() => {
+    setPaymentApps(getPaymentApplicationsFromStorage().filter(app => app.projectId === projectId));
+    setPlantAllocations(getPlantAllocationsFromStorage().filter(pa => pa.projectId === projectId));
+    setMaterialDeliveries(getMaterialDeliveriesFromStorage().filter(md => md.projectId === projectId));
+    setMaterialStockpiles(getMaterialStockpilesFromStorage().filter(ms => ms.projectId === projectId));
+    setQualityTests(getQualityTestsFromStorage().filter(qt => qt.projectId === projectId));
+    setSurveyRecords(getSurveyRecordsFromStorage().filter(sr => sr.projectId === projectId));
+    const allBoQItems = getProjectBoQLineItemsFromStorage();
+    setBoqLineItems(
+      allBoQItems.map(item => ({
+        ...item,
+        itemNo: item.itemNumber,
+        desc: item.description,
+        unit: item.unit,
+        qty: item.originalQuantity,
+        rate: item.rate,
+        claimed: item.amountClaimed,
+        complete: item.percentageComplete,
+      }))
+    );
+  }, [projectId]);
+
   // Find the project - in real app would fetch from database
   const project = projects.find(p => p.id === projectId);
 
@@ -182,18 +204,6 @@ export default function ProjectDetailPage() {
     }));
   };
 
-  // Load operational data on mount
-  useEffect(() => {
-    setPaymentApps(getPaymentApplicationsFromStorage().filter(app => app.projectId === projectId));
-    setPlantAllocations(getPlantAllocationsFromStorage().filter(pa => pa.projectId === projectId));
-    setMaterialDeliveries(getMaterialDeliveriesFromStorage().filter(md => md.projectId === projectId));
-    setMaterialStockpiles(getMaterialStockpilesFromStorage().filter(ms => ms.projectId === projectId));
-    setQualityTests(getQualityTestsFromStorage().filter(qt => qt.projectId === projectId));
-    setSurveyRecords(getSurveyRecordsFromStorage().filter(sr => sr.projectId === projectId));
-    const allBoQItems = getProjectBoQLineItemsFromStorage();
-    setBoqLineItems(normalizeBoQItems(allBoQItems));
-  }, [projectId]);
-  
   // Get documents, photos, diary, invoices, variations, and defects for this project
   const projectDocuments = sampleProjectDocuments.filter(doc => doc.projectId === projectId);
   const projectPhotos = samplePhotos.filter(photo => photo.projectId === projectId);
