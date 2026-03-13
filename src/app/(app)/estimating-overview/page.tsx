@@ -1847,8 +1847,29 @@ export default function EstimatingOverviewPage() {
   };
 
   const handleSendToOperations = (jobId: string) => {
-    const job = jobs.find(j => j.id === jobId);
-    if (!job) return;
+    const currentStoredJobs = getEstimateJobsFromStorage();
+    const storedJob = currentStoredJobs.find(j => j.id === jobId);
+    const inMemoryJob = jobs.find(j => j.id === jobId);
+    const baseJob = inMemoryJob || storedJob;
+    if (!baseJob) return;
+
+    const resolvedBoqItems =
+      workingOnJob?.id === jobId && boqItems.length > 0
+        ? boqItems
+        : inMemoryJob?.boqItems && inMemoryJob.boqItems.length > 0
+          ? inMemoryJob.boqItems
+          : storedJob?.boqItems || [];
+
+    const resolvedMarginPercent =
+      workingOnJob?.id === jobId
+        ? marginPercent
+        : inMemoryJob?.marginPercent ?? storedJob?.marginPercent;
+
+    const job = {
+      ...baseJob,
+      boqItems: resolvedBoqItems,
+      marginPercent: resolvedMarginPercent,
+    };
 
     const navigateToOperations = () => {
       try {
@@ -1866,6 +1887,18 @@ export default function EstimatingOverviewPage() {
       navigateToOperations();
       return;
     }
+
+    const refreshedJobs = jobs.map((item) =>
+      item.id === jobId
+        ? {
+            ...item,
+            boqItems: job.boqItems,
+            marginPercent: job.marginPercent,
+          }
+        : item
+    );
+    setJobs(refreshedJobs);
+    saveEstimateJobsToStorage(refreshedJobs);
 
     const handover = createHandoverFromEstimate(job);
     const updatedHandovers = [...handovers, handover];
