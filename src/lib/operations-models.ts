@@ -128,10 +128,32 @@ export type ProjectHandover = {
   id: string;
   projectId: string;
   estimateId: string;
+  enquiryId?: string;
   client: string;
   projectName: string;
+  projectAddress?: string;
   contractValue: number;
   contractType: "lump-sum" | "remeasure" | "cost-plus" | "target-cost";
+  quoteRef?: string;
+  quoteTotal?: number;
+  marginPercent?: number;
+  submittedDate?: string;
+  dueDate?: string;
+  receivedDate?: string;
+  estimateStatus?: "new-assignment" | "in-progress" | "quote-submitted" | "won" | "lost";
+  estimateProgress?: number;
+  estimator?: string;
+  assignedTo?: string;
+  outcome?: string;
+  estimateNotes?: string;
+  drawingFiles?: Array<{
+    id: string;
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    uploadedAt: string;
+    dataUrl: string;
+  }>;
   boqItems?: Array<{
     id: string;
     itemNumber: string;

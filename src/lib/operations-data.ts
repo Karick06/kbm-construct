@@ -135,9 +135,21 @@ export const saveProjectsToStorage = (projects: ConstructionProject[]): void => 
 
 export const createHandoverFromEstimate = (job: {
   id: string;
+  enquiryId?: string;
   client: string;
   projectName: string;
+  projectAddress?: string;
   value: string;
+  status?: "new-assignment" | "in-progress" | "quote-submitted" | "won" | "lost";
+  progress?: number;
+  quoteRef?: string;
+  submittedDate?: string;
+  dueDate?: string;
+  receivedDate?: string;
+  quoteTotal?: number;
+  marginPercent?: number;
+  outcome?: string;
+  notes?: string;
   boqItems?: Array<{
     id?: string;
     itemNumber?: string;
@@ -157,6 +169,14 @@ export const createHandoverFromEstimate = (job: {
   contractFileName?: string;
   invoiceAddress?: string;
   paymentTerms?: string;
+  drawingFiles?: Array<{
+    id: string;
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    uploadedAt: string;
+    dataUrl: string;
+  }>;
 }): ProjectHandover => {
   const today = new Date();
   const startDate = new Date(today);
@@ -182,10 +202,25 @@ export const createHandoverFromEstimate = (job: {
     id: `HO-${Date.now()}`,
     projectId: `PRJ-${estimateSuffix}`,
     estimateId: job.id,
+    enquiryId: job.enquiryId,
     client: job.client,
     projectName: job.projectName,
-    contractValue: parseCurrencyValue(job.value),
+    projectAddress: job.projectAddress,
+    contractValue: job.quoteTotal ?? parseCurrencyValue(job.value),
     contractType: "lump-sum",
+    quoteRef: job.quoteRef,
+    quoteTotal: job.quoteTotal,
+    marginPercent: job.marginPercent,
+    submittedDate: job.submittedDate,
+    dueDate: job.dueDate,
+    receivedDate: job.receivedDate,
+    estimateStatus: job.status,
+    estimateProgress: job.progress,
+    estimator: job.estimator,
+    assignedTo: job.assignedTo,
+    outcome: job.outcome,
+    estimateNotes: job.notes,
+    drawingFiles: job.drawingFiles,
     boqItems: mappedBoqItems.length > 0 ? mappedBoqItems : undefined,
     startDate: formatIsoDate(startDate),
     duration: durationWeeks,
@@ -237,7 +272,7 @@ export const createProjectFromHandover = (handover: ProjectHandover): Constructi
       phone: "",
     },
     siteAddress: {
-      line1: "TBD",
+      line1: handover.projectAddress || "TBD",
       city: "",
       postcode: "",
     },
@@ -256,7 +291,7 @@ export const createProjectFromHandover = (handover: ProjectHandover): Constructi
     overallProgress: 0,
     daysToCompletion: Number.isNaN(daysToCompletion) ? 0 : daysToCompletion,
     onProgramme: true,
-    projectManager: handover.handoverToUser || "Operations Team",
+    projectManager: handover.handoverToUser || handover.estimator || handover.assignedTo || "Operations Team",
     team: [
       {
         userId: "USR-OPS",
