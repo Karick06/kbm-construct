@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kbm-construct-v3';
+const CACHE_NAME = 'kbm-construct-v4';
 const API_CACHE_NAME = 'kbm-api-cache-v1';
 const DB_NAME = 'kbm-offline-db';
 const DB_VERSION = 1;
@@ -43,6 +43,16 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== self.location.origin) return;
 
+  if (url.pathname.startsWith('/_next/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirstNavigation(request));
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstApi(request));
     return;
@@ -55,6 +65,23 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(cacheFirstAppShell(request));
 });
+
+async function networkFirstNavigation(request) {
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    const fallback = await caches.match('/');
+    if (fallback) return fallback;
+    return new Response('Offline', { status: 503 });
+  }
+}
 
 async function cacheFirstAppShell(request) {
   const cached = await caches.match(request);

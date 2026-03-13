@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 export default function RegisterServiceWorker() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
+    let hasRefreshed = false;
 
     if ('serviceWorker' in navigator) {
       if (process.env.NODE_ENV === 'production') {
@@ -26,6 +27,12 @@ export default function RegisterServiceWorker() {
                   navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
                 }
               });
+            });
+
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+              if (hasRefreshed) return;
+              hasRefreshed = true;
+              window.location.reload();
             });
           })
           .catch((error) => {
