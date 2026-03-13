@@ -18,7 +18,10 @@ import {
   createProjectFromHandover,
   getHandoversFromStorage,
   getProjectsFromStorage,
+  getBillOfQuantitiesForProject,
+  getProjectBoQLineItemsFromStorage,
   saveHandoversToStorage,
+  saveProjectBoQLineItemsToStorage,
   saveProjectsToStorage,
   addSiteDiaryEntry,
   addSitePhoto,
@@ -181,6 +184,97 @@ export default function OperationsOverviewPage() {
     ? projects 
     : projects.filter(p => p.stage === filterStage);
 
+  const handleBackfillBoqFromEstimates = () => {
+    if (!confirm("Backfill BOQ items from Estimating for existing Operations projects? This will replace current Operations BOQ line items for matched projects.")) {
+      return;
+    }
+
+    const estimateJobs = getEstimateJobsFromStorage();
+    const existingProjectLineItems = getProjectBoQLineItemsFromStorage();
+    const updatedProjectLineItems = [...existingProjectLineItems];
+    let migrated = 0;
+    let skipped = 0;
+    let linkedProjectCount = 0;
+
+    const projectsWithBoq = projects.map(project => {
+      const estimateJob = estimateJobs.find(job => job.id === project.estimateId);
+      const sourceBoqItems = estimateJob?.boqItems || [];
+
+      if (sourceBoqItems.length === 0) {
+        skipped += 1;
+        return project;
+      }
+
+      const mappedBoqItems = sourceBoqItems.map((item, index) => ({
+        id: item.id,
+        itemNumber: `ITEM-${String(index + 1).padStart(3, "0")}`,
+        description: item.description,
+        unit: item.unit,
+        quantity: item.quantity,
+        rate: item.rate,
+        amount: item.total,
+        standard: "SMM7" as const,
+      }));
+
+      const existingBoq = getBillOfQuantitiesForProject(project.id);
+      if (existingBoq) {
+        const subtotal = mappedBoqItems.reduce((sum, item) => sum + item.amount, 0);
+        const contingencyPercent = existingBoq.contingencyPercent ?? 5;
+        const contingency = (subtotal * contingencyPercent) / 100;
+
+        createOrUpdateBillOfQuantities({
+          ...existingBoq,
+          items: mappedBoqItems,
+          subtotal,
+          contingency,
+          total: subtotal + contingency,
+        });
+      } else {
+        const createdBoq = createBillOfQuantitiesFromBoQItems(project.id, project.projectName, mappedBoqItems);
+        createOrUpdateBillOfQuantities(createdBoq);
+        project = { ...project, boqId: createdBoq.id };
+        linkedProjectCount += 1;
+      }
+
+      for (let index = updatedProjectLineItems.length - 1; index >= 0; index--) {
+        if (updatedProjectLineItems[index].projectId === project.id) {
+          updatedProjectLineItems.splice(index, 1);
+        }
+      }
+
+      mappedBoqItems.forEach((item) => {
+        updatedProjectLineItems.push({
+          id: `boq-item-${project.id}-${item.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          projectId: project.id,
+          boqItemId: item.id,
+          itemNumber: item.itemNumber,
+          description: item.description,
+          unit: item.unit,
+          originalQuantity: item.quantity,
+          rate: item.rate,
+          originalAmount: item.amount,
+          quantityClaimed: 0,
+          amountClaimed: 0,
+          percentageComplete: 0,
+          amountClaimedByPercentage: 0,
+          variations: [],
+        });
+      });
+
+      migrated += 1;
+      return project;
+    });
+
+    saveProjectBoQLineItemsToStorage(updatedProjectLineItems);
+
+    if (linkedProjectCount > 0) {
+      setProjects(projectsWithBoq);
+      saveProjectsToStorage(projectsWithBoq);
+    }
+
+    alert(`BOQ backfill complete. Migrated: ${migrated}, Skipped (no estimate BOQ): ${skipped}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Quick Actions Bar */}
@@ -219,6 +313,12 @@ export default function OperationsOverviewPage() {
             className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-600 transition"
           >
             All Projects
+          </button>
+          <button
+            onClick={handleBackfillBoqFromEstimates}
+            className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700 transition"
+          >
+            Sync BOQ from Estimating
           </button>
           <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition">
             + New Project
