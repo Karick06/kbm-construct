@@ -55,6 +55,40 @@ export default function ProjectDetailPage() {
 
   const [projects, setProjects] = useState<ConstructionProject[]>(sampleProjects);
   const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'photos' | 'diary' | 'financials' | 'defects' | 'commercial' | 'payment-apps' | 'plant' | 'materials' | 'quality' | 'surveys' | 'team' | 'boq' | 'valuations' | 'wip' | 'budget'>('overview');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showDiaryModal, setShowDiaryModal] = useState(false);
+  const [showAssignOperativeModal, setShowAssignOperativeModal] = useState(false);
+  const [showAssignEquipmentModal, setShowAssignEquipmentModal] = useState(false);
+  
+  // BoQ Claiming modal state
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [selectedBoQItem, setSelectedBoQItem] = useState<any>(null);
+  const [claimType, setClaimType] = useState<'quantity' | 'percentage'>('percentage');
+  const [claimValue, setClaimValue] = useState<number>(0);
+  
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editType, setEditType] = useState<'invoice' | 'variation' | 'defect' | null>(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editData, setEditData] = useState<any>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  
+  // Toast notification state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; id: string } | null>(null);
+  
+  // Local state for data persistence
+  const [localInvoices, setLocalInvoices] = useState(sampleInvoices);
+  const [localVariations, setLocalVariations] = useState(sampleVariations);
+  const [localDefects, setLocalDefects] = useState(sampleDefects);
+  const [paymentApps, setPaymentApps] = useState<any[]>([]);
+  const [plantAllocations, setPlantAllocations] = useState<any[]>([]);
+  const [materialDeliveries, setMaterialDeliveries] = useState<any[]>([]);
+  const [materialStockpiles, setMaterialStockpiles] = useState<any[]>([]);
+  const [qualityTests, setQualityTests] = useState<any[]>([]);
+  const [surveyRecords, setSurveyRecords] = useState<any[]>([]);
+  const [boqLineItems, setBoqLineItems] = useState<any[]>([]);
 
   useEffect(() => {
     setProjects(getProjectsFromStorage());
@@ -101,40 +135,6 @@ export default function ProjectDetailPage() {
   }
 
   const health = calculateProjectHealth(project);
-  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'photos' | 'diary' | 'financials' | 'defects' | 'commercial' | 'payment-apps' | 'plant' | 'materials' | 'quality' | 'surveys' | 'team' | 'boq' | 'valuations' | 'wip' | 'budget'>('overview');
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [showDiaryModal, setShowDiaryModal] = useState(false);
-  const [showAssignOperativeModal, setShowAssignOperativeModal] = useState(false);
-  const [showAssignEquipmentModal, setShowAssignEquipmentModal] = useState(false);
-  
-  // BoQ Claiming modal state
-  const [showClaimModal, setShowClaimModal] = useState(false);
-  const [selectedBoQItem, setSelectedBoQItem] = useState<any>(null);
-  const [claimType, setClaimType] = useState<'quantity' | 'percentage'>('percentage');
-  const [claimValue, setClaimValue] = useState<number>(0);
-  
-  // Edit modal state
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editType, setEditType] = useState<'invoice' | 'variation' | 'defect' | null>(null);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [editData, setEditData] = useState<any>(null);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  
-  // Toast notification state
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; id: string } | null>(null);
-  
-  // Local state for data persistence
-  const [localInvoices, setLocalInvoices] = useState(sampleInvoices);
-  const [localVariations, setLocalVariations] = useState(sampleVariations);
-  const [localDefects, setLocalDefects] = useState(sampleDefects);
-  const [paymentApps, setPaymentApps] = useState<any[]>([]);
-  const [plantAllocations, setPlantAllocations] = useState<any[]>([]);
-  const [materialDeliveries, setMaterialDeliveries] = useState<any[]>([]);
-  const [materialStockpiles, setMaterialStockpiles] = useState<any[]>([]);
-  const [qualityTests, setQualityTests] = useState<any[]>([]);
-  const [surveyRecords, setSurveyRecords] = useState<any[]>([]);
-  const [boqLineItems, setBoqLineItems] = useState<any[]>([]);
   
   // Default BoQ items for demo
   const defaultBoqItems = [
