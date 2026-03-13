@@ -26,6 +26,7 @@ import {
   createBillOfQuantitiesFromBoQItems,
   createOrUpdateBillOfQuantities,
 } from "@/lib/operations-data";
+import { getEstimateJobsFromStorage } from "@/lib/enquiries-store";
 
 type ViewMode = "dashboard" | "kanban" | "gantt" | "map";
 
@@ -75,62 +76,84 @@ export default function OperationsOverviewPage() {
     const existingProject = projects.find(p => p.estimateId === handover.estimateId);
     let newProject = existingProject || createProjectFromHandover(handover);
     
-    // If this is a new project, create sample BoQ items for demonstration
+    // If this is a new project, create BoQ items from handover (or fallback demo items)
     if (!existingProject) {
-      // Create sample BoQ items typical for groundworks/civils
       const sampleBoQItems = [
         {
           id: `item-1-${handover.projectId}`,
+          itemNumber: "A/01",
           description: "Mobilisation & Site Setup",
           unit: "Item",
           quantity: 1,
           rate: 28000,
-          baseRate: 28000,
-          total: 28000,
+          amount: 28000,
+          standard: "SMM7" as const,
         },
         {
           id: `item-2-${handover.projectId}`,
+          itemNumber: "C/01",
           description: "Excavation - General",
           unit: "m³",
           quantity: 450,
           rate: 18.50,
-          baseRate: 18.50,
-          total: 8325,
+          amount: 8325,
+          standard: "SMM7" as const,
         },
         {
           id: `item-3-${handover.projectId}`,
+          itemNumber: "D/01",
           description: "Concrete - Basis/Pads E28",
           unit: "m³",
           quantity: 120,
           rate: 185.00,
-          baseRate: 185.00,
-          total: 22200,
+          amount: 22200,
+          standard: "SMM7" as const,
         },
         {
           id: `item-4-${handover.projectId}`,
+          itemNumber: "F/01",
           description: "Reinforcement - Fabric A393",
           unit: "m²",
           quantity: 450,
           rate: 8.50,
-          baseRate: 8.50,
-          total: 3825,
+          amount: 3825,
+          standard: "SMM7" as const,
         },
         {
           id: `item-5-${handover.projectId}`,
+          itemNumber: "F/02",
           description: "Structural Steelwork",
           unit: "Tonne",
           quantity: 85,
           rate: 950.00,
-          baseRate: 950.00,
-          total: 80750,
+          amount: 80750,
+          standard: "SMM7" as const,
         },
       ];
 
-      // Create BillOfQuantities from sample items
+      const estimateJob = getEstimateJobsFromStorage().find(j => j.id === handover.estimateId);
+      const estimateBoqItems = (estimateJob?.boqItems || []).map((item, index) => ({
+        id: item.id,
+        itemNumber: `ITEM-${String(index + 1).padStart(3, "0")}`,
+        description: item.description,
+        unit: item.unit,
+        quantity: item.quantity,
+        rate: item.rate,
+        amount: item.total,
+        standard: "SMM7" as const,
+      }));
+
+      const handoverBoqItems = handover.boqItems && handover.boqItems.length > 0
+        ? handover.boqItems
+        : estimateBoqItems.length > 0
+          ? estimateBoqItems
+          : sampleBoQItems;
+
+      // Create BillOfQuantities from handover/source items
       const boq = createBillOfQuantitiesFromBoQItems(
         newProject.id,
         newProject.projectName,
-        sampleBoQItems as any
+        handoverBoqItems
       );
       
       // Save BillOfQuantities
@@ -140,7 +163,7 @@ export default function OperationsOverviewPage() {
       newProject = { ...newProject, boqId: boq.id };
       
       // Create ProjectBoQLineItems for tracking claims
-      createProjectBoQLineItems(newProject.id, sampleBoQItems as any);
+      createProjectBoQLineItems(newProject.id, handoverBoqItems);
     }
 
     const updatedProjects = existingProject

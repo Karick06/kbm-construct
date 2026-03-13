@@ -138,6 +138,19 @@ export const createHandoverFromEstimate = (job: {
   client: string;
   projectName: string;
   value: string;
+  boqItems?: Array<{
+    id?: string;
+    itemNumber?: string;
+    description: string;
+    unit: string;
+    quantity: number;
+    rate: number;
+    total?: number;
+    amount?: number;
+    section?: string;
+    notes?: string;
+    standard?: "SMM7" | "CESMM" | "SHW";
+  }>;
   estimator?: string;
   assignedTo?: string;
   orderNumber?: string;
@@ -152,6 +165,18 @@ export const createHandoverFromEstimate = (job: {
   const completionDate = new Date(startDate);
   completionDate.setDate(completionDate.getDate() + durationWeeks * 7);
   const estimateSuffix = job.id.replace("EST-", "");
+  const mappedBoqItems = (job.boqItems || []).map((item, index) => ({
+    id: item.id || `BOQ-${estimateSuffix}-${index + 1}`,
+    itemNumber: item.itemNumber || `ITEM-${String(index + 1).padStart(3, "0")}`,
+    description: item.description,
+    unit: item.unit,
+    quantity: item.quantity,
+    rate: item.rate,
+    amount: item.amount ?? item.total ?? item.quantity * item.rate,
+    standard: item.standard || "SMM7",
+    section: item.section,
+    notes: item.notes,
+  }));
 
   return {
     id: `HO-${Date.now()}`,
@@ -161,6 +186,7 @@ export const createHandoverFromEstimate = (job: {
     projectName: job.projectName,
     contractValue: parseCurrencyValue(job.value),
     contractType: "lump-sum",
+    boqItems: mappedBoqItems.length > 0 ? mappedBoqItems : undefined,
     startDate: formatIsoDate(startDate),
     duration: durationWeeks,
     completionDate: formatIsoDate(completionDate),

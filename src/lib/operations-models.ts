@@ -132,6 +132,18 @@ export type ProjectHandover = {
   projectName: string;
   contractValue: number;
   contractType: "lump-sum" | "remeasure" | "cost-plus" | "target-cost";
+  boqItems?: Array<{
+    id: string;
+    itemNumber: string;
+    description: string;
+    unit: string;
+    quantity: number;
+    rate: number;
+    amount: number;
+    standard: "SMM7" | "CESMM" | "SHW";
+    section?: string;
+    notes?: string;
+  }>;
   startDate: string;
   duration: number; // in weeks
   completionDate: string;
