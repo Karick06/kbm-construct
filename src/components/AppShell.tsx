@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getVisibleNavSections } from "@/lib/navigation";
+import { getVisibleNavSections, type NavSection } from "@/lib/navigation";
 import { useNotifications } from "@/lib/notifications-context";
 import { useFloatingChat } from "@/lib/floating-chat-context";
 import FloatingChat from "@/components/FloatingChat";
@@ -40,14 +40,23 @@ export default function AppShell({ children }: AppShellProps) {
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const activeSection = visibleNavSections.find((section) =>
-      Boolean(
-        section.href &&
-          (pathname === section.href ||
-            (section.activeMatchPrefixes || []).some((prefix) => pathname.startsWith(prefix)))
-      )
+  const isSectionActive = (section: NavSection) => {
+    const matchesSectionHref = Boolean(
+      section.href &&
+        (pathname === section.href ||
+          (section.activeMatchPrefixes || []).some((prefix) => pathname.startsWith(prefix)))
     );
+
+    if (matchesSectionHref) return true;
+
+    const sectionItems = section.items || [];
+    return sectionItems.some(
+      (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
+    );
+  };
+
+  useEffect(() => {
+    const activeSection = visibleNavSections.find((section) => isSectionActive(section));
 
     setExpandedSectionLabel(activeSection?.label || "");
   }, [pathname, visibleNavSections]);
@@ -221,11 +230,7 @@ export default function AppShell({ children }: AppShellProps) {
         <aside className="hidden w-64 overflow-y-auto border-r border-[var(--line)] bg-[var(--sidebar-bg)] lg:block">
           <nav className="space-y-5 p-4">
             {visibleNavSections.map((section, sectionIndex) => {
-              const sectionActive = Boolean(
-                section.href &&
-                  (pathname === section.href ||
-                    (section.activeMatchPrefixes || []).some((prefix) => pathname.startsWith(prefix)))
-              );
+              const sectionActive = isSectionActive(section);
               const sectionItems = section.items || [];
               const hasItems = sectionItems.length > 0;
               const isExpanded = hasItems && expandedSectionLabel === section.label;
@@ -247,9 +252,14 @@ export default function AppShell({ children }: AppShellProps) {
                         {section.label}
                       </Link>
                     ) : (
-                      <p className="flex-1 rounded-r-md border-l-2 border-[var(--accent)] px-2 py-1 text-sm font-bold uppercase tracking-wide text-[var(--sidebar-text)]/90">
+                      <button
+                        type="button"
+                        onClick={() => hasItems && setExpandedSectionLabel((current) => (current === section.label ? "" : section.label))}
+                        className="flex-1 rounded-r-md border-l-2 border-[var(--accent)] px-2 py-1 text-left text-sm font-bold uppercase tracking-wide text-[var(--sidebar-text)]/90 hover:text-[var(--sidebar-text)]"
+                        aria-expanded={hasItems ? isExpanded : undefined}
+                      >
                         {section.label}
-                      </p>
+                      </button>
                     )}
                     {hasItems && (
                       <button
