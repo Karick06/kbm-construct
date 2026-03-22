@@ -4393,6 +4393,13 @@ export default function EstimatingOverviewPage() {
                           <span>🔧</span>
                           <span>Materials Calculator</span>
                         </button>
+                        <button
+                          onClick={() => window.open('/tools/site-audit-pro', '_blank')}
+                          className="rounded bg-gray-800 px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition-colors flex items-center justify-center gap-1"
+                        >
+                          <span>🛡️</span>
+                          <span>Site Audit Pro</span>
+                        </button>
                       </div>
                       <p className="mt-2 text-xs text-gray-500">
                         Calculate quantities and outputs, then import directly to this rate buildup
