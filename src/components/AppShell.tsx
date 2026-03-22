@@ -234,7 +234,7 @@ export default function AppShell({ children }: AppShellProps) {
                       {section.label}
                     </p>
                   )}
-                  {section.items && section.items.length > 0 && (
+                  {section.items && section.items.length > 0 && sectionActive && (
                     <div className="ml-2 space-y-1.5">
                       {section.items.map((item) => {
                       const isActive = pathname === item.href;
