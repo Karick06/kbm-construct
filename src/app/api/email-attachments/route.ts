@@ -1,29 +1,29 @@
-import fs from "fs";
-import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 import type { SavedEmailAttachment } from "@/lib/email-attachments";
+import { readGlobalJsonStore, writeGlobalJsonStore } from "@/lib/global-storage";
 
-const DATA_PATH = path.join(process.cwd(), "data", "email-attachments.json");
+const LOCAL_RELATIVE_PATH = "data/email-attachments.json";
+const REMOTE_RELATIVE_PATH = "data/email-attachments.json";
 
-function readStore(): SavedEmailAttachment[] {
-  try {
-    if (!fs.existsSync(DATA_PATH)) return [];
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as SavedEmailAttachment[]) : [];
-  } catch {
-    return [];
-  }
+async function readStore(): Promise<SavedEmailAttachment[]> {
+  const parsed = await readGlobalJsonStore<unknown>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    fallback: [],
+  });
+  return Array.isArray(parsed) ? (parsed as SavedEmailAttachment[]) : [];
 }
 
-function writeStore(items: SavedEmailAttachment[]) {
-  const dir = path.dirname(DATA_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 2), "utf-8");
+async function writeStore(items: SavedEmailAttachment[]): Promise<void> {
+  await writeGlobalJsonStore<SavedEmailAttachment[]>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    value: items,
+  });
 }
 
 export async function GET() {
-  return NextResponse.json({ attachments: readStore() });
+  return NextResponse.json({ attachments: await readStore() });
 }
 
 export async function POST(request: NextRequest) {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     recordId: body.recordId,
     recordLabel: body.recordLabel,
   };
-  const next = [entry, ...readStore()];
-  writeStore(next);
+  const next = [entry, ...(await readStore())];
+  await writeStore(next);
   return NextResponse.json({ attachment: entry, attachments: next });
 }

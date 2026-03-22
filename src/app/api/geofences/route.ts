@@ -3,31 +3,31 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { DEFAULT_GEOFENCES, type Geofence } from '@/lib/geofence';
+import { readGlobalJsonStore, writeGlobalJsonStore } from '@/lib/global-storage';
 
-const DATA_PATH = path.join(process.cwd(), 'data', 'geofences.json');
+const LOCAL_RELATIVE_PATH = 'data/geofences.json';
+const REMOTE_RELATIVE_PATH = 'data/geofences.json';
 
-function readStoredGeofences(): Geofence[] {
-  try {
-    if (!fs.existsSync(DATA_PATH)) return [];
-    const raw = fs.readFileSync(DATA_PATH, 'utf-8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Geofence[]) : [];
-  } catch {
-    return [];
-  }
+async function readStoredGeofences(): Promise<Geofence[]> {
+  const parsed = await readGlobalJsonStore<unknown>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    fallback: [],
+  });
+  return Array.isArray(parsed) ? (parsed as Geofence[]) : [];
 }
 
-function writeStoredGeofences(items: Geofence[]) {
-  const dir = path.dirname(DATA_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 2), 'utf-8');
+async function writeStoredGeofences(items: Geofence[]): Promise<void> {
+  await writeGlobalJsonStore<Geofence[]>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    value: items,
+  });
 }
 
-function getAllGeofences(): Geofence[] {
-  const stored = readStoredGeofences();
+async function getAllGeofences(): Promise<Geofence[]> {
+  const stored = await readStoredGeofences();
   const merged = [...DEFAULT_GEOFENCES];
 
   stored.forEach((item) => {
@@ -44,7 +44,7 @@ function getAllGeofences(): Geofence[] {
 
 export async function GET(request: NextRequest) {
   try {
-    const geofences = getAllGeofences();
+    const geofences = await getAllGeofences();
     return NextResponse.json({
       success: true,
       count: geofences.length,
@@ -82,10 +82,10 @@ export async function POST(request: NextRequest) {
       active: hasCoordinates ? (body.active ?? true) : false,
     };
 
-    const stored = readStoredGeofences();
+    const stored = await readStoredGeofences();
     const next = stored.filter((item) => item.id !== nextItem.id);
     next.unshift(nextItem);
-    writeStoredGeofences(next);
+    await writeStoredGeofences(next);
 
     return NextResponse.json({ success: true, data: nextItem });
   } catch (error) {
@@ -108,7 +108,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const existing = getAllGeofences().find((item) => item.id === body.id);
+    const existing = (await getAllGeofences()).find((item) => item.id === body.id);
     if (!existing) {
       return NextResponse.json(
         { success: false, error: 'Geofence not found' },
@@ -134,9 +134,9 @@ export async function PATCH(request: NextRequest) {
       deleted: false,
     };
 
-    const stored = readStoredGeofences().filter((item) => item.id !== nextItem.id);
+    const stored = (await readStoredGeofences()).filter((item) => item.id !== nextItem.id);
     stored.unshift(nextItem);
-    writeStoredGeofences(stored);
+    await writeStoredGeofences(stored);
 
     return NextResponse.json({ success: true, data: nextItem });
   } catch (error) {
@@ -159,7 +159,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const existing = [...DEFAULT_GEOFENCES, ...readStoredGeofences()].find((item) => item.id === id);
+    const existing = [...DEFAULT_GEOFENCES, ...(await readStoredGeofences())].find((item) => item.id === id);
     if (!existing) {
       return NextResponse.json(
         { success: false, error: 'Geofence not found' },
@@ -173,9 +173,9 @@ export async function DELETE(request: NextRequest) {
       active: false,
     };
 
-    const stored = readStoredGeofences().filter((item) => item.id !== id);
+    const stored = (await readStoredGeofences()).filter((item) => item.id !== id);
     stored.unshift(tombstone);
-    writeStoredGeofences(stored);
+    await writeStoredGeofences(stored);
 
     return NextResponse.json({ success: true, id });
   } catch (error) {

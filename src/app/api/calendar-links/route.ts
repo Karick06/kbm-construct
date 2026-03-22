@@ -1,28 +1,28 @@
-import path from "path";
-import fs from "fs";
 import { NextRequest, NextResponse } from "next/server";
 import type { CalendarLinkMap, CalendarLinkedRecord, CalendarEventSnapshot } from "@/lib/calendar-links";
+import { readGlobalJsonStore, writeGlobalJsonStore } from "@/lib/global-storage";
 
-const DATA_PATH = path.join(process.cwd(), "data", "calendar-links.json");
+const LOCAL_RELATIVE_PATH = "data/calendar-links.json";
+const REMOTE_RELATIVE_PATH = "data/calendar-links.json";
 
-function readStore(): CalendarLinkMap {
-  try {
-    if (!fs.existsSync(DATA_PATH)) return {};
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
-    return JSON.parse(raw) as CalendarLinkMap;
-  } catch {
-    return {};
-  }
+async function readStore(): Promise<CalendarLinkMap> {
+  return readGlobalJsonStore<CalendarLinkMap>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    fallback: {},
+  });
 }
 
-function writeStore(map: CalendarLinkMap): void {
-  const dir = path.dirname(DATA_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(map, null, 2), "utf-8");
+async function writeStore(map: CalendarLinkMap): Promise<void> {
+  await writeGlobalJsonStore<CalendarLinkMap>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    value: map,
+  });
 }
 
 export async function GET() {
-  return NextResponse.json({ links: readStore() });
+  return NextResponse.json({ links: await readStore() });
 }
 
 export async function POST(request: NextRequest) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const store = readStore();
+  const store = await readStore();
   const current = store[eventId]?.links || [];
   const duplicate = current.find(
     (e) => e.type === link.type && e.recordId === link.recordId
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     links: [newLink, ...current],
   };
 
-  writeStore(store);
+  await writeStore(store);
   return NextResponse.json({ links: store[eventId].links });
 }
 
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  const store = readStore();
+  const store = await readStore();
   const current = store[eventId]?.links || [];
   const nextLinks = current.filter((e) => e.id !== linkId);
 
@@ -88,6 +88,6 @@ export async function DELETE(request: NextRequest) {
     store[eventId] = { ...store[eventId], links: nextLinks };
   }
 
-  writeStore(store);
+  await writeStore(store);
   return NextResponse.json({ links: nextLinks });
 }

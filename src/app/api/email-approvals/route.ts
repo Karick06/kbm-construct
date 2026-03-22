@@ -1,29 +1,29 @@
-import fs from "fs";
-import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 import type { EmailApprovalItem, EmailApprovalStatus } from "@/lib/email-approvals";
+import { readGlobalJsonStore, writeGlobalJsonStore } from "@/lib/global-storage";
 
-const DATA_PATH = path.join(process.cwd(), "data", "email-approvals.json");
+const LOCAL_RELATIVE_PATH = "data/email-approvals.json";
+const REMOTE_RELATIVE_PATH = "data/email-approvals.json";
 
-function readStore(): EmailApprovalItem[] {
-  try {
-    if (!fs.existsSync(DATA_PATH)) return [];
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as EmailApprovalItem[]) : [];
-  } catch {
-    return [];
-  }
+async function readStore(): Promise<EmailApprovalItem[]> {
+  const parsed = await readGlobalJsonStore<unknown>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    fallback: [],
+  });
+  return Array.isArray(parsed) ? (parsed as EmailApprovalItem[]) : [];
 }
 
-function writeStore(items: EmailApprovalItem[]) {
-  const dir = path.dirname(DATA_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 2), "utf-8");
+async function writeStore(items: EmailApprovalItem[]): Promise<void> {
+  await writeGlobalJsonStore<EmailApprovalItem[]>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    value: items,
+  });
 }
 
 export async function GET() {
-  return NextResponse.json({ items: readStore() });
+  return NextResponse.json({ items: await readStore() });
 }
 
 export async function POST(request: NextRequest) {
@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
     notes: body.notes,
     mailbox: body.mailbox,
   };
-  const next = [item, ...readStore()];
-  writeStore(next);
+  const next = [item, ...(await readStore())];
+  await writeStore(next);
   return NextResponse.json({ item, items: next });
 }
 
@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "id and status are required" }, { status: 400 });
   }
   const status = body.status as EmailApprovalStatus;
-  const next = readStore().map((item) => item.id === body.id ? { ...item, status } : item);
-  writeStore(next);
+  const next = (await readStore()).map((item) => item.id === body.id ? { ...item, status } : item);
+  await writeStore(next);
   return NextResponse.json({ items: next });
 }

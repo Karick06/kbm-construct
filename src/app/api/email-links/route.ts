@@ -1,28 +1,28 @@
-import path from "path";
-import fs from "fs";
 import { NextRequest, NextResponse } from "next/server";
 import type { EmailLinkMap, EmailLinkedRecord, EmailMessageSnapshot } from "@/lib/email-links";
+import { readGlobalJsonStore, writeGlobalJsonStore } from "@/lib/global-storage";
 
-const DATA_PATH = path.join(process.cwd(), "data", "email-links.json");
+const LOCAL_RELATIVE_PATH = "data/email-links.json";
+const REMOTE_RELATIVE_PATH = "data/email-links.json";
 
-function readStore(): EmailLinkMap {
-  try {
-    if (!fs.existsSync(DATA_PATH)) return {};
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
-    return JSON.parse(raw) as EmailLinkMap;
-  } catch {
-    return {};
-  }
+async function readStore(): Promise<EmailLinkMap> {
+  return readGlobalJsonStore<EmailLinkMap>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    fallback: {},
+  });
 }
 
-function writeStore(map: EmailLinkMap): void {
-  const dir = path.dirname(DATA_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(map, null, 2), "utf-8");
+async function writeStore(map: EmailLinkMap): Promise<void> {
+  await writeGlobalJsonStore<EmailLinkMap>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    value: map,
+  });
 }
 
 export async function GET() {
-  return NextResponse.json({ links: readStore() });
+  return NextResponse.json({ links: await readStore() });
 }
 
 export async function POST(request: NextRequest) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const store = readStore();
+  const store = await readStore();
   const current = store[messageId]?.links || [];
   const duplicate = current.find(
     (e) => e.type === link.type && e.recordId === link.recordId
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     links: [newLink, ...current],
   };
 
-  writeStore(store);
+  await writeStore(store);
   return NextResponse.json({ links: store[messageId].links });
 }
 
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  const store = readStore();
+  const store = await readStore();
   const current = store[messageId]?.links || [];
   const nextLinks = current.filter((e) => e.id !== linkId);
 
@@ -88,7 +88,7 @@ export async function DELETE(request: NextRequest) {
     store[messageId] = { ...store[messageId], links: nextLinks };
   }
 
-  writeStore(store);
+  await writeStore(store);
   return NextResponse.json({ links: nextLinks });
 }
 
@@ -99,7 +99,7 @@ export async function PUT(request: NextRequest) {
     if (!body?.links || typeof body.links !== "object") {
       return NextResponse.json({ error: "links object is required" }, { status: 400 });
     }
-    writeStore(body.links);
+    await writeStore(body.links);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });

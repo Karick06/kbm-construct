@@ -198,3 +198,26 @@ export async function validateToken(accessToken: string): Promise<UserInfo | nul
 		return null;
 	}
 }
+
+/**
+ * Acquire app-only Microsoft Graph token via client credentials.
+ * Used for backend storage operations that should be shared globally.
+ */
+export async function getAppAccessToken(): Promise<string> {
+	const msal = getMsalInstance();
+
+	try {
+		const response = await msal.acquireTokenByClientCredential({
+			scopes: ["https://graph.microsoft.com/.default"],
+		});
+
+		if (!response?.accessToken) {
+			throw new Error("No access token returned from client credential flow");
+		}
+
+		return response.accessToken;
+	} catch (error) {
+		console.error("App token acquisition failed:", error);
+		throw new Error("Failed to acquire app token for Microsoft Graph");
+	}
+}

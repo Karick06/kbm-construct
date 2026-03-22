@@ -1,33 +1,33 @@
-import fs from "fs";
-import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 import type { SharedMailbox } from "@/lib/shared-mailboxes";
 import { requireApiPermission } from "@/lib/api-permissions";
+import { readGlobalJsonStore, writeGlobalJsonStore } from "@/lib/global-storage";
 
-const DATA_PATH = path.join(process.cwd(), "data", "shared-mailboxes.json");
+const LOCAL_RELATIVE_PATH = "data/shared-mailboxes.json";
+const REMOTE_RELATIVE_PATH = "data/shared-mailboxes.json";
 
-function readStore(): SharedMailbox[] {
-  try {
-    if (!fs.existsSync(DATA_PATH)) return [];
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as SharedMailbox[]) : [];
-  } catch {
-    return [];
-  }
+async function readStore(): Promise<SharedMailbox[]> {
+  const parsed = await readGlobalJsonStore<unknown>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    fallback: [],
+  });
+  return Array.isArray(parsed) ? (parsed as SharedMailbox[]) : [];
 }
 
-function writeStore(items: SharedMailbox[]) {
-  const dir = path.dirname(DATA_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 2), "utf-8");
+async function writeStore(items: SharedMailbox[]): Promise<void> {
+  await writeGlobalJsonStore<SharedMailbox[]>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    value: items,
+  });
 }
 
 export async function GET() {
   const permissionCheck = await requireApiPermission("user_management");
   if (!permissionCheck.ok) return permissionCheck.response;
 
-  return NextResponse.json({ mailboxes: readStore() });
+  return NextResponse.json({ mailboxes: await readStore() });
 }
 
 export async function POST(request: NextRequest) {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   if (!body.displayName || !body.address) {
     return NextResponse.json({ error: "displayName and address are required" }, { status: 400 });
   }
-  const mailboxes = readStore();
+  const mailboxes = await readStore();
   const mailbox: SharedMailbox = {
     id: `mailbox-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     displayName: body.displayName,
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     createdAt: new Date().toISOString(),
   };
   const next = [mailbox, ...mailboxes];
-  writeStore(next);
+  await writeStore(next);
   return NextResponse.json({ mailbox, mailboxes: next });
 }
 
@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest) {
 
   const id = request.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
-  const next = readStore().filter((entry) => entry.id !== id);
-  writeStore(next);
+  const next = (await readStore()).filter((entry) => entry.id !== id);
+  await writeStore(next);
   return NextResponse.json({ mailboxes: next });
 }

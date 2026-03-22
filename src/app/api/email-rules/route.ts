@@ -1,33 +1,33 @@
-import fs from "fs";
-import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 import type { EmailAutoLinkRule } from "@/lib/email-rules";
 import { requireApiPermission } from "@/lib/api-permissions";
+import { readGlobalJsonStore, writeGlobalJsonStore } from "@/lib/global-storage";
 
-const DATA_PATH = path.join(process.cwd(), "data", "email-rules.json");
+const LOCAL_RELATIVE_PATH = "data/email-rules.json";
+const REMOTE_RELATIVE_PATH = "data/email-rules.json";
 
-function readStore(): EmailAutoLinkRule[] {
-  try {
-    if (!fs.existsSync(DATA_PATH)) return [];
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as EmailAutoLinkRule[]) : [];
-  } catch {
-    return [];
-  }
+async function readStore(): Promise<EmailAutoLinkRule[]> {
+  const parsed = await readGlobalJsonStore<unknown>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    fallback: [],
+  });
+  return Array.isArray(parsed) ? (parsed as EmailAutoLinkRule[]) : [];
 }
 
-function writeStore(items: EmailAutoLinkRule[]) {
-  const dir = path.dirname(DATA_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 2), "utf-8");
+async function writeStore(items: EmailAutoLinkRule[]): Promise<void> {
+  await writeGlobalJsonStore<EmailAutoLinkRule[]>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    value: items,
+  });
 }
 
 export async function GET() {
   const permissionCheck = await requireApiPermission("user_management");
   if (!permissionCheck.ok) return permissionCheck.response;
 
-  return NextResponse.json({ rules: readStore() });
+  return NextResponse.json({ rules: await readStore() });
 }
 
 export async function POST(request: NextRequest) {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "name, recordType, recordId, recordLabel and recordHref are required" }, { status: 400 });
   }
 
-  const rules = readStore();
+  const rules = await readStore();
   const now = new Date().toISOString();
   const rule: EmailAutoLinkRule = {
     id: `rule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   };
 
   const next = [rule, ...rules];
-  writeStore(next);
+  await writeStore(next);
   return NextResponse.json({ rule, rules: next });
 }
 
@@ -71,7 +71,7 @@ export async function DELETE(request: NextRequest) {
 
   const id = request.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
-  const next = readStore().filter((entry) => entry.id !== id);
-  writeStore(next);
+  const next = (await readStore()).filter((entry) => entry.id !== id);
+  await writeStore(next);
   return NextResponse.json({ rules: next });
 }
