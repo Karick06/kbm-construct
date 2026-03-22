@@ -14,6 +14,19 @@ type AppShellProps = {
   children: ReactNode;
 };
 
+function formatNotificationTimestamp(value?: string | Date) {
+  if (!value) {
+    return "Unknown time";
+  }
+
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown time";
+  }
+
+  return `${parsed.toLocaleDateString()} at ${parsed.toLocaleTimeString()}`;
+}
+
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -125,8 +138,7 @@ export default function AppShell({ children }: AppShellProps) {
                               <p className="text-sm font-semibold text-white">{notif.title}</p>
                               <p className="mt-1 text-xs text-gray-300">{notif.message}</p>
                               <p className="mt-1 text-xs text-gray-400">
-                                {new Date(notif.timestamp).toLocaleDateString()} at{" "}
-                                {new Date(notif.timestamp).toLocaleTimeString()}
+                                {formatNotificationTimestamp(notif.timestamp)}
                               </p>
                             </div>
                             {!notif.read && (
