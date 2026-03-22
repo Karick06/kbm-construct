@@ -505,7 +505,7 @@ export default function MailPage() {
   const [selectedMessage, setSelectedMessage] = useState<MailMessageDetail | null>(null);
   const [attachments, setAttachments] = useState<MailAttachment[]>([]);
 
-  const [loadingFolders, setLoadingFolders] = useState(true);
+  const [loadingFolders, setLoadingFolders] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(false);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
