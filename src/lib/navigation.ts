@@ -194,6 +194,7 @@ export const appNavSections: NavSection[] = [
 			{ label: "Drawing Measurement", href: "/drawing-measurement" },
 			{ label: "Materials Calculator", href: "/tools/materials-calculator" },
 			{ label: "Civils & Groundworks Rate Builder", href: "/tools/civils-rate-builder" },
+			{ label: "Site Audit Pro", href: "/tools/site-audit-pro" },
 		],
 	},
 	{
