@@ -1,31 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import type { RAMSDocument } from "@/lib/rams-data";
+import { readGlobalJsonStore, writeGlobalJsonStore } from "@/lib/global-storage";
 
-const RAMS_DIR = path.join(process.cwd(), "data", "rams");
+const LOCAL_RELATIVE_PATH = "data/rams-documents.json";
+const REMOTE_RELATIVE_PATH = "data/rams-documents.json";
 
-// Ensure directory exists
-async function ensureRamsDir() {
-  try {
-    await fs.mkdir(RAMS_DIR, { recursive: true });
-  } catch (error) {
-    // Directory might already exist
-  }
+async function readStore(): Promise<RAMSDocument[]> {
+  const parsed = await readGlobalJsonStore<unknown>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    fallback: [],
+  });
+  return Array.isArray(parsed) ? (parsed as RAMSDocument[]) : [];
+}
+
+async function writeStore(items: RAMSDocument[]): Promise<void> {
+  await writeGlobalJsonStore<RAMSDocument[]>({
+    localRelativePath: LOCAL_RELATIVE_PATH,
+    remoteRelativePath: REMOTE_RELATIVE_PATH,
+    value: items,
+  });
 }
 
 // GET - List all RAMS documents
 export async function GET() {
   try {
-    await ensureRamsDir();
-    const files = await fs.readdir(RAMS_DIR);
-    const jsonFiles = files.filter((f) => f.endsWith(".json"));
-
-    const documents = await Promise.all(
-      jsonFiles.map(async (file) => {
-        const content = await fs.readFile(path.join(RAMS_DIR, file), "utf-8");
-        return JSON.parse(content);
-      })
-    );
+    const documents = await readStore();
 
     // Sort by last modified date, newest first
     documents.sort((a, b) => 
@@ -42,17 +42,15 @@ export async function GET() {
 // POST - Create or update a RAMS document
 export async function POST(request: NextRequest) {
   try {
-    await ensureRamsDir();
-    const document = await request.json();
+    const document = (await request.json()) as RAMSDocument;
 
     if (!document.id) {
       return NextResponse.json({ success: false, error: "Document ID is required" }, { status: 400 });
     }
 
-    const filename = `${document.id}.json`;
-    const filepath = path.join(RAMS_DIR, filename);
-
-    await fs.writeFile(filepath, JSON.stringify(document, null, 2), "utf-8");
+    const current = await readStore();
+    const next = [document, ...current.filter((entry) => entry.id !== document.id)];
+    await writeStore(next);
 
     return NextResponse.json({ success: true, document });
   } catch (error) {
@@ -71,10 +69,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Document ID is required" }, { status: 400 });
     }
 
-    const filename = `${id}.json`;
-    const filepath = path.join(RAMS_DIR, filename);
+    const current = await readStore();
+    const next = current.filter((entry) => entry.id !== id);
 
-    await fs.unlink(filepath);
+    if (next.length === current.length) {
+      return NextResponse.json({ success: false, error: "Document not found" }, { status: 404 });
+    }
+
+    await writeStore(next);
 
     return NextResponse.json({ success: true });
   } catch (error) {
