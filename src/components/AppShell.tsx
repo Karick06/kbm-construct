@@ -37,6 +37,7 @@ export default function AppShell({ children }: AppShellProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [expandedSectionLabel, setExpandedSectionLabel] = useState<string>("");
+  const lastPathnameRef = useRef<string | null>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -56,9 +57,14 @@ export default function AppShell({ children }: AppShellProps) {
   };
 
   useEffect(() => {
+    if (lastPathnameRef.current === pathname) {
+      return;
+    }
+
     const activeSection = visibleNavSections.find((section) => isSectionActive(section));
 
     setExpandedSectionLabel(activeSection?.label || "");
+    lastPathnameRef.current = pathname;
   }, [pathname, visibleNavSections]);
 
   useEffect(() => {
