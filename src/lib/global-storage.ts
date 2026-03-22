@@ -14,6 +14,15 @@ type JsonWriteOptions<T> = {
   value: T;
 };
 
+export type GlobalStorageMode = "onedrive" | "fallback-local";
+
+export type GlobalStorageHealth = {
+  mode: GlobalStorageMode;
+  driveIdConfigured: boolean;
+  remoteBaseFolder: string;
+  reason?: string;
+};
+
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
 function getConfiguredDriveId(): string | null {
@@ -170,6 +179,60 @@ async function getOneDriveContext(): Promise<{ accessToken: string; driveId: str
   } catch (error) {
     console.error("Failed to get app token for global storage:", error);
     return null;
+  }
+}
+
+export async function getGlobalStorageHealth(): Promise<GlobalStorageHealth> {
+  const driveId = getConfiguredDriveId();
+  const remoteBaseFolder = getRemoteBaseFolder();
+
+  if (!driveId) {
+    return {
+      mode: "fallback-local",
+      driveIdConfigured: false,
+      remoteBaseFolder,
+      reason: "SHAREPOINT_DRIVE_ID is not configured",
+    };
+  }
+
+  try {
+    const accessToken = await getAppAccessToken();
+    const probeEndpoint = `${GRAPH_BASE}/drives/${encodeURIComponent(driveId)}?$select=id,name`;
+    const response = await fetch(probeEndpoint, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      let message = `Graph drive probe failed (${response.status})`;
+      try {
+        const payload = (await response.json()) as { error?: { message?: string } };
+        message = payload.error?.message || message;
+      } catch {
+        // no-op
+      }
+
+      return {
+        mode: "fallback-local",
+        driveIdConfigured: true,
+        remoteBaseFolder,
+        reason: message,
+      };
+    }
+
+    return {
+      mode: "onedrive",
+      driveIdConfigured: true,
+      remoteBaseFolder,
+    };
+  } catch (error) {
+    return {
+      mode: "fallback-local",
+      driveIdConfigured: true,
+      remoteBaseFolder,
+      reason: error instanceof Error ? error.message : "Failed to acquire Microsoft Graph app token",
+    };
   }
 }
 
