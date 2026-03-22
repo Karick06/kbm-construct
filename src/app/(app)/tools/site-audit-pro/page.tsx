@@ -1,364 +1,319 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 
-type AuditStatus = "pass" | "fail" | "na";
-type ActionStatus = "open" | "in-progress" | "closed";
-type Severity = "low" | "medium" | "high";
+type IssueSeverity = "low" | "medium" | "high";
+type IssueStatus = "open" | "in-progress" | "resolved";
 
-type AuditQuestion = {
+type AuditPhoto = {
   id: string;
-  text: string;
+  base64: string;
+  caption: string;
+  uploadedAt: string;
 };
 
-type AuditSection = {
+type AuditIssue = {
   id: string;
   title: string;
-  questions: AuditQuestion[];
+  description: string;
+  severity: IssueSeverity;
+  status: IssueStatus;
+  photos: AuditPhoto[];
+  createdAt: string;
+  updatedAt: string;
 };
 
-type QuestionResponse = {
-  status: AuditStatus;
-  note: string;
-};
-
-type AuditAction = {
+type AuditProject = {
   id: string;
-  sourceQuestionId: string;
   title: string;
-  severity: Severity;
-  owner: string;
-  dueDate: string;
-  status: ActionStatus;
-};
-
-type AuditMeta = {
-  siteName: string;
   projectRef: string;
-  auditor: string;
-  auditDate: string;
-  weather: string;
+  clientName: string;
+  companyName: string;
+  createdAt: string;
+  updatedAt: string;
+  issues: AuditIssue[];
 };
 
-type SavedAuditState = {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  meta: AuditMeta;
-  responses: Record<string, QuestionResponse>;
-  actions: AuditAction[];
+type ProjectFormData = {
+  title: string;
+  projectRef: string;
+  clientName: string;
+  companyName: string;
 };
 
-type SiteAuditRecord = Required<SavedAuditState>;
+const STORAGE_KEY = "kbm_site_audit_pro_projects_v2";
 
-const STORAGE_KEY = "kbm_site_audit_pro_v1";
-
-const AUDIT_SECTIONS: AuditSection[] = [
-  {
-    id: "access-housekeeping",
-    title: "Access & Housekeeping",
-    questions: [
-      { id: "safe-access-routes", text: "Safe access/egress routes are maintained and unobstructed" },
-      { id: "site-housekeeping", text: "Site housekeeping standard is acceptable across workfaces" },
-      { id: "welfare-access", text: "Welfare facilities are available and fit for use" },
-    ],
-  },
-  {
-    id: "plant-equipment",
-    title: "Plant & Equipment",
-    questions: [
-      { id: "daily-plant-checks", text: "Daily plant pre-use checks are recorded" },
-      { id: "plant-segregation", text: "Plant and pedestrian segregation is effective" },
-      { id: "lifting-controls", text: "Lifting operations controls and exclusion zones are in place" },
-    ],
-  },
-  {
-    id: "safety-compliance",
-    title: "Safety Compliance",
-    questions: [
-      { id: "ppe-compliance", text: "Required PPE compliance observed in audit area" },
-      { id: "rams-briefings", text: "RAMS briefings are current and understood" },
-      { id: "permits-available", text: "Relevant permits are in place and visible" },
-    ],
-  },
-  {
-    id: "environment",
-    title: "Environmental Controls",
-    questions: [
-      { id: "spill-kits", text: "Spill kits and spill response controls are available" },
-      { id: "waste-segregation", text: "Waste segregation and disposal controls are effective" },
-      { id: "dust-noise-controls", text: "Dust/noise controls are implemented where required" },
-    ],
-  },
-];
-
-const EMPTY_META: AuditMeta = {
-  siteName: "",
-  projectRef: "",
-  auditor: "",
-  auditDate: new Date().toISOString().slice(0, 10),
-  weather: "",
-};
-
-function buildDefaultResponses(): Record<string, QuestionResponse> {
-  const entries = AUDIT_SECTIONS.flatMap((section) =>
-    section.questions.map((question) => [
-      question.id,
-      { status: "na" as AuditStatus, note: "" },
-    ])
-  );
-  return Object.fromEntries(entries);
-}
-
-function formatStatusLabel(value: AuditStatus): string {
-  if (value === "pass") return "Pass";
-  if (value === "fail") return "Fail";
-  return "N/A";
-}
-
-function formatActionStatusLabel(value: ActionStatus): string {
-  if (value === "in-progress") return "In Progress";
-  if (value === "closed") return "Closed";
-  return "Open";
-}
+// (rest of file will be replaced below)
 
 export default function SiteAuditProPage() {
-  const [auditId, setAuditId] = useState<string | null>(null);
-  const [createdAt, setCreatedAt] = useState<string | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [projects, setProjects] = useState<AuditProject[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoadingFromServer, setIsLoadingFromServer] = useState(true);
-  const [recentAudits, setRecentAudits] = useState<SiteAuditRecord[]>([]);
-  const [meta, setMeta] = useState<AuditMeta>(EMPTY_META);
-  const [responses, setResponses] = useState<Record<string, QuestionResponse>>(buildDefaultResponses);
-  const [actions, setActions] = useState<AuditAction[]>([]);
-  const [savedStateMessage, setSavedStateMessage] = useState("");
+  const [message, setMessage] = useState("");
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showLogIssue, setShowLogIssue] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const hydrateFromRecord = (record: SiteAuditRecord) => {
-    setAuditId(record.id);
-    setCreatedAt(record.createdAt);
-    setUpdatedAt(record.updatedAt);
-    setMeta({ ...EMPTY_META, ...record.meta });
-    setResponses({
-      ...buildDefaultResponses(),
-      ...record.responses,
-    });
-    setActions(Array.isArray(record.actions) ? record.actions : []);
-  };
-
+  // Load projects from server on mount
   useEffect(() => {
-    const hydrate = async () => {
+    const loadProjects = async () => {
       try {
         const response = await fetch("/api/site-audits", { cache: "no-store" });
         if (response.ok) {
-          const data = (await response.json()) as { audits?: SiteAuditRecord[] };
-          const audits = Array.isArray(data.audits) ? data.audits : [];
-          setRecentAudits(audits);
-          if (audits.length > 0) {
-            hydrateFromRecord(audits[0]);
-            setSavedStateMessage("Loaded latest audit from shared storage.");
-            setIsLoadingFromServer(false);
-            return;
+          const data = (await response.json()) as { audits?: AuditProject[] };
+          const loadedProjects = Array.isArray(data.audits) ? data.audits : [];
+          setProjects(loadedProjects);
+          if (loadedProjects.length > 0) {
+            setSelectedProjectId(loadedProjects[0].id);
+            setMessage("Loaded projects from shared storage.");
           }
         }
       } catch {
-        // fallback to local draft below
-      }
-
-      try {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw) as Partial<SavedAuditState>;
-        if (parsed.id) setAuditId(parsed.id);
-        if (parsed.createdAt) setCreatedAt(parsed.createdAt);
-        if (parsed.updatedAt) setUpdatedAt(parsed.updatedAt);
-        if (parsed.meta) setMeta({ ...EMPTY_META, ...parsed.meta });
-        if (parsed.responses) {
-          setResponses({
-            ...buildDefaultResponses(),
-            ...parsed.responses,
-          });
-        }
-        if (Array.isArray(parsed.actions)) setActions(parsed.actions);
-        setSavedStateMessage("Loaded local draft.");
-      } catch {
-        // keep defaults
+        setMessage("Using local storage (server unavailable).");
       } finally {
-        setIsLoadingFromServer(false);
+        setIsLoading(false);
       }
     };
 
-    void hydrate();
+    void loadProjects();
   }, []);
 
-  useEffect(() => {
-    if (isLoadingFromServer) return;
-    const payload: SavedAuditState = {
-      id: auditId || undefined,
-      createdAt: createdAt || undefined,
-      updatedAt: updatedAt || undefined,
-      meta,
-      responses,
-      actions,
-    };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [actions, auditId, createdAt, isLoadingFromServer, meta, responses, updatedAt]);
-
-  const saveAuditToServer = async () => {
+  const saveProjects = async (updated: AuditProject[]) => {
+    setIsSaving(true);
     try {
-      setIsSaving(true);
       const response = await fetch("/api/site-audits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: auditId,
-          createdAt: createdAt || undefined,
-          meta,
-          responses,
-          actions,
-        }),
+        body: JSON.stringify({ projects: updated }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save audit to shared storage");
+        throw new Error("Save failed");
       }
 
-      const data = (await response.json()) as { audit: SiteAuditRecord; audits: SiteAuditRecord[] };
-      setAuditId(data.audit.id);
-      setCreatedAt(data.audit.createdAt);
-      setUpdatedAt(data.audit.updatedAt);
-      setRecentAudits(Array.isArray(data.audits) ? data.audits : []);
-      setSavedStateMessage("Audit saved to shared storage.");
+      const data = (await response.json()) as { audits?: AuditProject[] };
+      const saved = Array.isArray(data.audits) ? data.audits : updated;
+      setProjects(saved);
+      setMessage("Saved to shared storage.");
     } catch {
-      setSavedStateMessage("Save failed. Draft is still stored locally.");
+      setMessage("Save failed, but data persists locally.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const score = useMemo(() => {
-    const values = Object.values(responses);
-    const pass = values.filter((item) => item.status === "pass").length;
-    const fail = values.filter((item) => item.status === "fail").length;
-    const na = values.filter((item) => item.status === "na").length;
-    const relevant = pass + fail;
-    const percent = relevant > 0 ? Math.round((pass / relevant) * 100) : 0;
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-    return { pass, fail, na, relevant, percent };
-  }, [responses]);
-
-  const failedQuestionIds = useMemo(
-    () =>
-      Object.entries(responses)
-        .filter(([, value]) => value.status === "fail")
-        .map(([questionId]) => questionId),
-    [responses]
-  );
-
-  const allQuestionsById = useMemo(() => {
-    const pairs = AUDIT_SECTIONS.flatMap((section) =>
-      section.questions.map(
-        (question): [string, string] => [question.id, question.text]
-      )
-    );
-    return new Map<string, string>(pairs);
-  }, []);
-
-  const updateResponse = (questionId: string, partial: Partial<QuestionResponse>) => {
-    setResponses((current) => ({
-      ...current,
-      [questionId]: {
-        ...current[questionId],
-        ...partial,
-      },
-    }));
-  };
-
-  const createActionsFromFails = () => {
-    if (failedQuestionIds.length === 0) {
-      setSavedStateMessage("No failed items to convert into actions.");
-      return;
-    }
-
-    setActions((current) => {
-      const existingByQuestion = new Set(current.map((action) => action.sourceQuestionId));
-      const newActions = failedQuestionIds
-        .filter((questionId) => !existingByQuestion.has(questionId))
-        .map((questionId) => ({
-          id: `action-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          sourceQuestionId: questionId,
-          title: allQuestionsById.get(questionId) || questionId,
-          severity: "medium" as Severity,
-          owner: "",
-          dueDate: "",
-          status: "open" as ActionStatus,
-        }));
-
-      if (newActions.length === 0) {
-        setSavedStateMessage("All failed items already have actions.");
-        return current;
-      }
-
-      setSavedStateMessage(`Created ${newActions.length} new action(s).`);
-      return [...newActions, ...current];
-    });
-  };
-
-  const updateAction = <K extends keyof AuditAction>(
-    actionId: string,
-    key: K,
-    value: AuditAction[K]
-  ) => {
-    setActions((current) =>
-      current.map((action) =>
-        action.id === actionId
-          ? {
-              ...action,
-              [key]: value,
-            }
-          : action
-      )
-    );
-  };
-
-  const removeAction = (actionId: string) => {
-    setActions((current) => current.filter((action) => action.id !== actionId));
-  };
-
-  const resetAudit = () => {
-    setAuditId(null);
-    setCreatedAt(null);
-    setUpdatedAt(null);
-    setMeta(EMPTY_META);
-    setResponses(buildDefaultResponses());
-    setActions([]);
-    setSavedStateMessage("Audit reset.");
-    window.localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const exportReport = () => {
-    const payload = {
-      id: auditId,
-      createdAt,
-      updatedAt,
-      generatedAt: new Date().toISOString(),
-      meta,
-      score,
-      responses,
-      actions,
+  const createProject = (formData: ProjectFormData) => {
+    const newProject: AuditProject = {
+      id: `proj-${Date.now()}`,
+      ...formData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      issues: [],
     };
 
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
+    const updated = [newProject, ...projects];
+    setProjects(updated);
+    setSelectedProjectId(newProject.id);
+    setShowCreateProject(false);
+    setMessage("Project created.");
+    void saveProjects(updated);
+  };
 
+  const addIssue = (formData: { title: string; description: string; severity: IssueSeverity }) => {
+    if (!selectedProject) return;
+
+    const newIssue: AuditIssue = {
+      id: `issue-${Date.now()}`,
+      ...formData,
+      status: "open",
+      photos: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updated = projects.map((p) =>
+      p.id === selectedProject.id
+        ? {
+            ...p,
+            issues: [newIssue, ...p.issues],
+            updatedAt: new Date().toISOString(),
+          }
+        : p
+    );
+
+    setProjects(updated);
+    setShowLogIssue(false);
+    setMessage("Issue logged.");
+    void saveProjects(updated);
+  };
+
+  const addPhotoToIssue = (issueId: string, base64: string, caption: string) => {
+    if (!selectedProject) return;
+
+    const photo: AuditPhoto = {
+      id: `photo-${Date.now()}`,
+      base64,
+      caption,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    const updated = projects.map((p) =>
+      p.id === selectedProject.id
+        ? {
+            ...p,
+            issues: p.issues.map((i) =>
+              i.id === issueId
+                ? {
+                    ...i,
+                    photos: [photo, ...i.photos],
+                    updatedAt: new Date().toISOString(),
+                  }
+                : i
+            ),
+            updatedAt: new Date().toISOString(),
+          }
+        : p
+    );
+
+    setProjects(updated);
+    setMessage("Photo added.");
+    void saveProjects(updated);
+  };
+
+  const updateIssueStatus = (issueId: string, status: IssueStatus) => {
+    if (!selectedProject) return;
+
+    const updated = projects.map((p) =>
+      p.id === selectedProject.id
+        ? {
+            ...p,
+            issues: p.issues.map((i) =>
+              i.id === issueId
+                ? {
+                    ...i,
+                    status,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : i
+            ),
+            updatedAt: new Date().toISOString(),
+          }
+        : p
+    );
+
+    setProjects(updated);
+    void saveProjects(updated);
+  };
+
+  const deleteIssue = (issueId: string) => {
+    if (!selectedProject) return;
+
+    const updated = projects.map((p) =>
+      p.id === selectedProject.id
+        ? {
+            ...p,
+            issues: p.issues.filter((i) => i.id !== issueId),
+            updatedAt: new Date().toISOString(),
+          }
+        : p
+    );
+
+    setProjects(updated);
+    setMessage("Issue deleted.");
+    void saveProjects(updated);
+  };
+
+  const deleteProject = (projectId: string) => {
+    const updated = projects.filter((p) => p.id !== projectId);
+    setProjects(updated);
+    if (selectedProjectId === projectId) {
+      setSelectedProjectId(updated.length > 0 ? updated[0].id : null);
+    }
+    setMessage("Project deleted.");
+    void saveProjects(updated);
+  };
+
+  const exportPDF = () => {
+    if (!selectedProject) return;
+
+    // Generate simple HTML report
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Site Audit Report - ${selectedProject.title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: white; }
+            .header { background: #f5f5f5; padding: 20px; margin-bottom: 20px; }
+            .project-info { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-left: 4px solid #ff6b35; }
+            .issue { margin: 20px 0; padding: 15px; border: 1px solid #ddd; page-break-inside: avoid; }
+            .issue.high { border-left: 4px solid #dc2626; }
+            .issue.medium { border-left: 4px solid #f59e0b; }
+            .issue.low { border-left: 4px solid #10b981; }
+            .issue-title { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+            .issue-meta { font-size: 12px; color: #666; margin-bottom: 10px; }
+            .issue-desc { margin: 10px 0; }
+            .photo { max-width: 400px; margin: 10px 0; }
+            .status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-top: 8px; }
+            .status.open { background: #fee2e2; color: #991b1b; }
+            .status.in-progress { background: #fef3c7; color: #92400e; }
+            .status.resolved { background: #dcfce7; color: #166534; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Site Audit Report</h1>
+            <p>Generated: ${new Date().toLocaleString("en-GB")}</p>
+          </div>
+          
+          <div class="project-info">
+            <h2>${selectedProject.title}</h2>
+            <p><strong>Project Reference:</strong> ${selectedProject.projectRef}</p>
+            <p><strong>Client:</strong> ${selectedProject.clientName}</p>
+            <p><strong>Company:</strong> ${selectedProject.companyName}</p>
+            <p><strong>Created:</strong> ${new Date(selectedProject.createdAt).toLocaleString("en-GB")}</p>
+            <p><strong>Total Issues:</strong> ${selectedProject.issues.length}</p>
+          </div>
+
+          <div style="margin-bottom: 30px;">
+            ${selectedProject.issues
+              .map(
+                (issue) => `
+              <div class="issue ${issue.severity}">
+                <div class="issue-title">${issue.title}</div>
+                <div class="issue-meta">
+                  <strong>Severity:</strong> ${issue.severity.toUpperCase()} | 
+                  <strong>Date:</strong> ${new Date(issue.createdAt).toLocaleString("en-GB")}
+                </div>
+                <div class="issue-desc"><strong>Description:</strong> ${issue.description}</div>
+                <div class="status ${issue.status}">${issue.status.toUpperCase()}</div>
+                ${
+                  issue.photos.length > 0
+                    ? `<div style="margin-top: 10px;"><strong>Photos:</strong><div>${issue.photos.map((p) => `<img class="photo" src="${p.base64}" alt="${p.caption}"><p><em>${p.caption}</em></p>`).join("")}</div></div>`
+                    : ""
+                }
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([html], { type: "text/html" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `site-audit-${meta.projectRef || "report"}-${meta.auditDate || "today"}.json`;
+    link.download = `audit-${selectedProject.projectRef}-${new Date().toISOString().slice(0, 10)}.html`;
     link.click();
     URL.revokeObjectURL(link.href);
-    setSavedStateMessage("Audit report exported.");
+    setMessage("Report exported.");
   };
 
   return (

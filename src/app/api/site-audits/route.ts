@@ -1,56 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readGlobalJsonStore, writeGlobalJsonStore } from "@/lib/global-storage";
 
-type AuditStatus = "pass" | "fail" | "na";
-type ActionStatus = "open" | "in-progress" | "closed";
-type Severity = "low" | "medium" | "high";
+type IssueSeverity = "low" | "medium" | "high";
+type IssueStatus = "open" | "in-progress" | "resolved";
 
-type QuestionResponse = {
-  status: AuditStatus;
-  note: string;
+type AuditPhoto = {
+  id: string;
+  base64: string;
+  caption: string;
+  uploadedAt: string;
 };
 
-type AuditAction = {
+type AuditIssue = {
   id: string;
-  sourceQuestionId: string;
   title: string;
-  severity: Severity;
-  owner: string;
-  dueDate: string;
-  status: ActionStatus;
-};
-
-type AuditMeta = {
-  siteName: string;
-  projectRef: string;
-  auditor: string;
-  auditDate: string;
-  weather: string;
-};
-
-export type SiteAuditRecord = {
-  id: string;
+  description: string;
+  severity: IssueSeverity;
+  status: IssueStatus;
+  photos: AuditPhoto[];
   createdAt: string;
   updatedAt: string;
-  meta: AuditMeta;
-  responses: Record<string, QuestionResponse>;
-  actions: AuditAction[];
+};
+
+export type AuditProject = {
+  id: string;
+  title: string;
+  projectRef: string;
+  clientName: string;
+  companyName: string;
+  createdAt: string;
+  updatedAt: string;
+  issues: AuditIssue[];
 };
 
 const LOCAL_RELATIVE_PATH = "data/site-audits.json";
 const REMOTE_RELATIVE_PATH = "data/site-audits.json";
 
-async function readStore(): Promise<SiteAuditRecord[]> {
+async function readStore(): Promise<AuditProject[]> {
   const parsed = await readGlobalJsonStore<unknown>({
     localRelativePath: LOCAL_RELATIVE_PATH,
     remoteRelativePath: REMOTE_RELATIVE_PATH,
     fallback: [],
   });
-  return Array.isArray(parsed) ? (parsed as SiteAuditRecord[]) : [];
+  return Array.isArray(parsed) ? (parsed as AuditProject[]) : [];
 }
 
-async function writeStore(items: SiteAuditRecord[]): Promise<void> {
-  await writeGlobalJsonStore<SiteAuditRecord[]>({
+async function writeStore(items: AuditProject[]): Promise<void> {
+  await writeGlobalJsonStore<AuditProject[]>({
     localRelativePath: LOCAL_RELATIVE_PATH,
     remoteRelativePath: REMOTE_RELATIVE_PATH,
     value: items,
@@ -67,36 +63,20 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json()) as Partial<SiteAuditRecord>;
-  if (!body.meta || !body.responses || !Array.isArray(body.actions)) {
+  const body = (await request.json()) as { projects?: AuditProject[] };
+
+  if (!body.projects || !Array.isArray(body.projects)) {
     return NextResponse.json(
-      { error: "meta, responses and actions are required" },
+      { error: "projects array is required" },
       { status: 400 }
     );
   }
 
-  const now = new Date().toISOString();
-  const incomingId = body.id || `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const projects = body.projects;
 
-  const record: SiteAuditRecord = {
-    id: incomingId,
-    createdAt: body.createdAt || now,
-    updatedAt: now,
-    meta: body.meta,
-    responses: body.responses,
-    actions: body.actions,
-  };
+  await writeStore(projects);
 
-  const current = await readStore();
-  const existing = current.find((item) => item.id === incomingId);
-  if (existing) {
-    record.createdAt = existing.createdAt;
-  }
-
-  const next = [record, ...current.filter((item) => item.id !== incomingId)];
-  await writeStore(next);
-
-  return NextResponse.json({ audit: record, audits: next });
+  return NextResponse.json({ audits: projects });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -109,9 +89,10 @@ export async function DELETE(request: NextRequest) {
   const next = current.filter((item) => item.id !== id);
 
   if (next.length === current.length) {
-    return NextResponse.json({ error: "Audit not found" }, { status: 404 });
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
   await writeStore(next);
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, audits: next });
 }
+
