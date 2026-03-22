@@ -99,9 +99,9 @@ export default function ResourcesOverviewPage() {
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Teams</p>
               <h2 className="mt-1 text-xl font-bold text-white">Staff Allocation</h2>
             </div>
-            <button className="text-sm font-medium text-orange-500 hover:text-orange-400">
+            <Link href="/staff" className="text-sm font-medium text-orange-500 hover:text-orange-400">
               View all →
-            </button>
+            </Link>
           </div>
 
           <div className="overflow-x-auto">

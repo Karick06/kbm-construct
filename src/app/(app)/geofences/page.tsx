@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import PermissionGuard from '@/components/PermissionGuard';
+import GeofenceMapPicker from '@/components/GeofenceMapPicker';
 import type { Geofence } from '@/lib/geofence';
 
 type EditableGeofence = {
   id: string;
   name: string;
   type: Geofence['type'];
+  postcode: string;
   latitude: string;
   longitude: string;
   radiusMeters: string;
@@ -30,6 +32,7 @@ function createEmptyForm(type: Geofence['type']): EditableGeofence {
     id: '',
     name: '',
     type,
+    postcode: '',
     latitude: '',
     longitude: '',
     radiusMeters: '200',
@@ -39,11 +42,19 @@ function createEmptyForm(type: Geofence['type']): EditableGeofence {
   };
 }
 
+function extractUkPostcodeFromAddress(address: string) {
+  const match = address
+    .toUpperCase()
+    .match(/\b([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})\b/);
+  return match?.[1]?.replace(/\s+/g, ' ').trim() ?? '';
+}
+
 function createFormFromGeofence(geofence: Geofence): EditableGeofence {
   return {
     id: geofence.id,
     name: geofence.name,
     type: geofence.type,
+    postcode: extractUkPostcodeFromAddress(geofence.address),
     latitude: String(geofence.latitude),
     longitude: String(geofence.longitude),
     radiusMeters: String(geofence.radiusMeters),
@@ -142,6 +153,7 @@ export default function GeofencesPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<EditableGeofence>(createEmptyForm('office'));
   const [error, setError] = useState<string | null>(null);
+  const [postcodeLookupLoading, setPostcodeLookupLoading] = useState(false);
 
   const officeGeofences = useMemo(
     () => geofences.filter((geofence) => geofence.type === 'office'),
@@ -298,6 +310,50 @@ export default function GeofencesPage() {
     }
   }
 
+  async function handlePostcodeLookup() {
+    const postcode = form.postcode.trim().toUpperCase();
+    if (!postcode) {
+      setError('Enter a postcode to locate the pin.');
+      return;
+    }
+
+    try {
+      setPostcodeLookupLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/geocode/postcode?postcode=${encodeURIComponent(postcode)}`
+      );
+      const data = await response.json();
+
+      if (!response.ok || !data.success || !data.data) {
+        throw new Error(data.error || 'Postcode lookup failed');
+      }
+
+      updateForm('postcode', data.data.postcode || postcode);
+      updateForm('latitude', Number(data.data.latitude).toFixed(6));
+      updateForm('longitude', Number(data.data.longitude).toFixed(6));
+      updateForm('coordinatesKnown', true);
+
+      if (!form.address.trim()) {
+        updateForm('address', data.data.postcode || postcode);
+      }
+    } catch (lookupError) {
+      console.error('Error looking up postcode:', lookupError);
+      setError(
+        lookupError instanceof Error
+          ? lookupError.message
+          : 'Failed to look up postcode'
+      );
+    } finally {
+      setPostcodeLookupLoading(false);
+    }
+  }
+
+  const parsedLatitude = Number(form.latitude);
+  const parsedLongitude = Number(form.longitude);
+  const hasValidCoordinates = Number.isFinite(parsedLatitude) && Number.isFinite(parsedLongitude);
+
   return (
     <PermissionGuard permission="timesheets">
       <div className="space-y-8">
@@ -386,6 +442,26 @@ export default function GeofencesPage() {
                   </select>
                 </label>
 
+                <label className="space-y-2 text-sm text-gray-300 md:col-span-2">
+                  <span>Postcode (start here)</span>
+                  <div className="flex gap-2">
+                    <input
+                      value={form.postcode}
+                      onChange={(event) => updateForm('postcode', event.target.value)}
+                      className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white outline-none placeholder:text-gray-500 focus:border-orange-500"
+                      placeholder="e.g. ST4 6BW"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePostcodeLookup}
+                      disabled={postcodeLookupLoading}
+                      className="whitespace-nowrap rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {postcodeLookupLoading ? 'Locating...' : 'Find on map'}
+                    </button>
+                  </div>
+                </label>
+
                 <label className="flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-300 md:col-span-2">
                   <input
                     type="checkbox"
@@ -395,6 +471,20 @@ export default function GeofencesPage() {
                   />
                   I have exact coordinates for this geofence
                 </label>
+
+                {form.coordinatesKnown ? (
+                  <div className="md:col-span-2">
+                    <GeofenceMapPicker
+                      latitude={hasValidCoordinates ? parsedLatitude : undefined}
+                      longitude={hasValidCoordinates ? parsedLongitude : undefined}
+                      radiusMeters={Number(form.radiusMeters) || 200}
+                      onPick={(latitude, longitude) => {
+                        updateForm('latitude', latitude.toFixed(6));
+                        updateForm('longitude', longitude.toFixed(6));
+                      }}
+                    />
+                  </div>
+                ) : null}
 
                 <label className="space-y-2 text-sm text-gray-300">
                   <span>Latitude</span>

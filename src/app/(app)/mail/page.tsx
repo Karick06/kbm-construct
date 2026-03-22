@@ -12,6 +12,7 @@ import {
   getLinkedMessagesForRecord,
   inheritConversationLinks,
   removeLinkFromMessage,
+  saveEmailLinksToStorage,
   syncEmailLinksFromServer,
   type EmailLinkMap,
   type EmailLinkedRecord,
@@ -19,13 +20,13 @@ import {
 } from "@/lib/email-links";
 import { getEstimateJobsFromStorage, getEnquiriesFromStorage, type EstimateJob } from "@/lib/enquiries-store";
 import { getProjectsFromStorage, getPaymentApplicationsFromStorage } from "@/lib/operations-data";
-import { invoices as sampleInvoiceLedger } from "@/lib/sample-data";
 import { createTaskFromEmail } from "@/lib/tasks-store";
 import { createEmailApproval, getEmailApprovalsFromStorage, syncEmailApprovalsFromServer, type EmailApprovalItem } from "@/lib/email-approvals";
 import { getEmailRulesFromStorage, createEmailRule, getMatchingEmailRules, syncEmailRulesFromServer, getSenderDomain, type EmailAutoLinkRule } from "@/lib/email-rules";
 import { getSharedMailboxesFromStorage, syncSharedMailboxesFromServer, type SharedMailbox } from "@/lib/shared-mailboxes";
 import { getEmailAuditFromStorage, logEmailAudit, syncEmailAuditFromServer, type EmailAuditEntry } from "@/lib/email-audit";
 import { saveEmailAttachmentRecord, syncSavedEmailAttachmentsFromServer } from "@/lib/email-attachments";
+import type { InvoiceApplication } from "@/lib/operations-models";
 
 type MailFolder = {
   id: string;
@@ -205,28 +206,112 @@ function buildClients(): GenericRecord[] {
 function buildInvoices(): GenericRecord[] {
   try {
     const apps = getPaymentApplicationsFromStorage();
-    const runtimeInvoices = apps.map((inv) => ({
-      id: inv.id,
-      label: `${inv.id} · ${inv.projectId}`,
-      href: `/invoices`,
-    }));
+    const projectNameById = getProjectsFromStorage().reduce<Record<string, string>>((acc, project) => {
+      acc[project.id] = project.projectName;
+      return acc;
+    }, {});
 
-    const sampleInvoices = sampleInvoiceLedger.map((invoice) => ({
-      id: invoice.id,
-      label: `${invoice.id} · ${invoice.client}`,
-      href: "/invoices",
-    }));
+    const toInvoiceRecordId = (application: InvoiceApplication) =>
+      `APP-${String(application.applicationNumber).padStart(4, "0")}`;
 
-    return [...runtimeInvoices, ...sampleInvoices].filter(
-      (entry, index, list) => list.findIndex((candidate) => candidate.id === entry.id) === index
-    );
+    return apps.map((application) => {
+      const invoiceId = toInvoiceRecordId(application);
+      const projectName = projectNameById[application.projectId] || application.projectId;
+      return {
+        id: invoiceId,
+        label: `${invoiceId} · ${projectName}`,
+        href: "/invoices",
+      };
+    });
   } catch {
-    return sampleInvoiceLedger.map((invoice) => ({
-      id: invoice.id,
-      label: `${invoice.id} · ${invoice.client}`,
-      href: "/invoices",
-    }));
+    return [];
   }
+}
+
+function toCanonicalInvoiceId(applicationNumber: number): string {
+  return `APP-${String(applicationNumber).padStart(4, "0")}`;
+}
+
+function buildLegacyInvoiceIdMap(): Map<string, string> {
+  const map = new Map<string, string>();
+
+  getPaymentApplicationsFromStorage().forEach((application) => {
+    const canonicalId = toCanonicalInvoiceId(application.applicationNumber);
+    map.set(application.id.toLowerCase(), canonicalId);
+    map.set(`app-${application.applicationNumber}`.toLowerCase(), canonicalId);
+    map.set(canonicalId.toLowerCase(), canonicalId);
+  });
+
+  return map;
+}
+
+function normalizeInvoiceRecordId(recordId: string, legacyMap: Map<string, string>): string {
+  const canonicalMatch = /^APP-(\d+)$/i.exec(recordId);
+  if (canonicalMatch) {
+    return toCanonicalInvoiceId(Number(canonicalMatch[1]));
+  }
+
+  return legacyMap.get(recordId.toLowerCase()) || recordId;
+}
+
+async function migrateLegacyInvoiceLinks(): Promise<boolean> {
+  const legacyMap = buildLegacyInvoiceIdMap();
+  if (legacyMap.size === 0) return false;
+
+  const existing = getEmailLinksFromStorage();
+  let mutated = false;
+  const next: EmailLinkMap = {};
+
+  Object.entries(existing).forEach(([messageId, entry]) => {
+    const transformed = entry.links.map((link) => {
+      if (link.type !== "invoice") return link;
+
+      const normalizedId = normalizeInvoiceRecordId(link.recordId, legacyMap);
+      if (normalizedId === link.recordId) return link;
+
+      mutated = true;
+      return {
+        ...link,
+        recordId: normalizedId,
+        label: link.label.startsWith(`${link.recordId} ·`)
+          ? `${normalizedId} ·${link.label.slice(link.recordId.length + 2)}`
+          : link.label,
+      };
+    });
+
+    const deduped: typeof transformed = [];
+    const seen = new Set<string>();
+    transformed.forEach((link) => {
+      const key = `${link.type}:${link.recordId}`;
+      if (seen.has(key)) {
+        mutated = true;
+        return;
+      }
+      seen.add(key);
+      deduped.push(link);
+    });
+
+    next[messageId] = {
+      ...entry,
+      links: deduped,
+    };
+  });
+
+  if (!mutated) return false;
+
+  saveEmailLinksToStorage(next);
+
+  try {
+    await fetch("/api/email-links", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ links: next }),
+    });
+  } catch {
+    // local migration is still valid when offline
+  }
+
+  return true;
 }
 
 function buildSuppliers(): GenericRecord[] {
@@ -777,7 +862,8 @@ export default function MailPage() {
     setMessageLinks(getEmailLinksFromStorage());
 
     // Hydrate from server then refresh local cache
-    void syncEmailLinksFromServer().then(() => {
+    void syncEmailLinksFromServer().then(async () => {
+      await migrateLegacyInvoiceLinks();
       setMessageLinks(getEmailLinksFromStorage());
     });
     void syncSharedMailboxesFromServer().then(setSharedMailboxes);

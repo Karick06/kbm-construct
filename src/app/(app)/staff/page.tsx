@@ -2,15 +2,50 @@
 
 import PermissionGuard from "@/components/PermissionGuard";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
-import { team } from "@/lib/sample-data";
+import { useAuth } from "@/lib/auth-context";
+
+type StaffMember = {
+  id: string;
+  name: string;
+  role: string;
+  focus: string;
+};
 
 export default function StaffPage() {
+  const { getAllUsers } = useAuth();
   const [filterRole, setFilterRole] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [team, setTeam] = useState<StaffMember[]>([]);
 
-  const roles = ["all", ...Array.from(new Set(team.map(m => m.role)))];
+  useEffect(() => {
+    const hydrate = () => {
+      const users = getAllUsers();
+      setTeam(
+        users.map((user) => ({
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          focus: user.department || user.jobTitle || user.role,
+        }))
+      );
+    };
+
+    hydrate();
+    window.addEventListener("storage", hydrate);
+    window.addEventListener("focus", hydrate);
+    return () => {
+      window.removeEventListener("storage", hydrate);
+      window.removeEventListener("focus", hydrate);
+    };
+  }, [getAllUsers]);
+
+  const roles = useMemo(
+    () => ["all", ...Array.from(new Set(team.map((member) => member.role)))],
+    [team]
+  );
   
   const filteredStaff = team.filter(member => {
     const matchesRole = filterRole === "all" || member.role === filterRole;
@@ -27,9 +62,9 @@ export default function StaffPage() {
         title="Staff Management"
         subtitle="Manage staff, roles, and assignments"
         actions={
-          <button className="h-11 rounded-full bg-[var(--accent)] px-5 text-sm font-semibold text-white hover:bg-orange-600">
+          <Link href="/admin" className="h-11 rounded-full bg-[var(--accent)] px-5 text-sm font-semibold text-white hover:bg-orange-600 inline-flex items-center">
             + Add Staff Member
-          </button>
+          </Link>
         }
       />
 
@@ -90,7 +125,7 @@ export default function StaffPage() {
           <tbody>
             {filteredStaff.map((member, index) => (
               <tr 
-                key={member.name}
+                key={member.id}
                 className={`border-b border-[var(--line)] hover:bg-[var(--surface-2)] ${index % 2 === 0 ? 'bg-[var(--surface)]' : 'bg-[var(--surface-2)]'}`}
               >
                 <td className="px-4 py-3">
@@ -103,7 +138,7 @@ export default function StaffPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-[var(--ink)]">{member.name}</p>
-                      <p className="text-xs text-[var(--muted)]">ID: {`STAFF-${String(index + 1).padStart(3, '0')}`}</p>
+                      <p className="text-xs text-[var(--muted)]">ID: {member.id}</p>
                     </div>
                   </div>
                 </td>
@@ -120,12 +155,12 @@ export default function StaffPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <button className="px-3 py-1 rounded text-xs font-semibold text-[var(--accent)] hover:bg-[var(--surface-2)]">
+                    <Link href="/team" className="px-3 py-1 rounded text-xs font-semibold text-[var(--accent)] hover:bg-[var(--surface-2)]">
                       View
-                    </button>
-                    <button className="px-3 py-1 rounded text-xs font-semibold text-[var(--muted)] hover:bg-[var(--surface-2)]">
+                    </Link>
+                    <Link href="/admin" className="px-3 py-1 rounded text-xs font-semibold text-[var(--muted)] hover:bg-[var(--surface-2)]">
                       Edit
-                    </button>
+                    </Link>
                   </div>
                 </td>
               </tr>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import PermissionGuard from "@/components/PermissionGuard";
 import OverviewStatGrid from "@/components/OverviewStatGrid";
 import OverviewTrendChart from "@/components/OverviewTrendChart";
@@ -109,9 +110,9 @@ export default function ProcurementOverviewPage() {
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Purchase Orders</p>
               <h2 className="mt-1 text-xl font-bold text-white">Recent Orders</h2>
             </div>
-            <button className="text-sm font-medium text-orange-500 hover:text-orange-400">
+            <Link href="/purchase-orders" className="text-sm font-medium text-orange-500 hover:text-orange-400">
               View all →
-            </button>
+            </Link>
           </div>
 
           <div className="overflow-x-auto">

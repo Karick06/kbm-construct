@@ -104,9 +104,9 @@ export default function HSOverviewPage() {
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Incidents</p>
               <h2 className="mt-1 text-xl font-bold text-white">Recent Activity</h2>
             </div>
-            <button className="text-sm font-medium text-orange-500 hover:text-orange-400">
+            <Link href="/incidents" className="text-sm font-medium text-orange-500 hover:text-orange-400">
               View all →
-            </button>
+            </Link>
           </div>
 
           <div className="overflow-x-auto">

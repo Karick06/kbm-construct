@@ -1,6 +1,7 @@
 "use client";
 
 import PermissionGuard from "@/components/PermissionGuard";
+import Link from "next/link";
 
 import { useState } from "react";
 
@@ -55,9 +56,9 @@ export default function FleetPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
-        <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+        <Link href="/fleet-overview" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 inline-flex items-center">
           + Add Vehicle
-        </button>
+        </Link>
       </div>
 
       {/* Key Metrics */}
@@ -140,9 +141,9 @@ export default function FleetPage() {
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Vehicles</p>
               <h2 className="mt-1 text-xl font-bold text-white">Fleet Status</h2>
             </div>
-            <button className="text-sm font-medium text-orange-500 hover:text-orange-400">
+            <Link href="/fleet-overview" className="text-sm font-medium text-orange-500 hover:text-orange-400">
               View all →
-            </button>
+            </Link>
           </div>
 
           <div className="overflow-x-auto">

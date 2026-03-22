@@ -120,7 +120,7 @@ export default function SupplierPortalListPage() {
           subtitle="Request quotes from multiple suppliers"
           actions={
             <div className="flex gap-2">
-              <button className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700">
+              <button onClick={() => router.push("/library-templates")} className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700">
                 Templates
               </button>
               <button

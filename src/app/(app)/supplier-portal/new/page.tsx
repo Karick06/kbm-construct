@@ -358,7 +358,7 @@ export default function NewSupplierEnquiryPage() {
         <section className="rounded-xl border border-gray-700/50 bg-gray-800/70 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-white">Enquiry Template</h2>
-            <button className="text-sm text-orange-400 hover:text-orange-300">Manage templates</button>
+            <button onClick={() => router.push("/library-templates")} className="text-sm text-orange-400 hover:text-orange-300">Manage templates</button>
           </div>
           <div className="flex flex-col gap-3 md:flex-row">
             <select

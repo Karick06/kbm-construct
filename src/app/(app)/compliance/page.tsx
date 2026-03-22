@@ -17,11 +17,33 @@ import {
   saveRAMSDocumentToAPI,
   deleteRAMSDocumentFromAPI,
 } from "@/lib/rams-data";
-import { projects } from "@/lib/sample-data";
+import { getProjectsFromStorage } from "@/lib/operations-data";
 
 const workTypes = FOCUSED_WORK_TYPES;
-const projectOptions = [...projects];
 const tier1Profiles = Object.keys(TIER1_PROFILE_REQUIREMENTS) as Tier1Profile[];
+
+type ComplianceProjectOption = {
+  id: string;
+  name: string;
+  manager: string;
+  phase: string;
+};
+
+function stageToPhase(stage: string): string {
+  return stage
+    .split("-")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
+function getComplianceProjectOptions(): ComplianceProjectOption[] {
+  return getProjectsFromStorage().map((project) => ({
+    id: project.id,
+    name: project.projectName,
+    manager: project.projectManager,
+    phase: stageToPhase(project.stage),
+  }));
+}
 
 function listToText(items: string[]): string {
   return items.join("\n");
@@ -450,15 +472,17 @@ function buildRAMSPrintableHtml(doc: RAMSDocument): string {
 
 export default function CompliancePage() {
   const [docs, setDocs] = useState<RAMSDocument[]>([]);
+  const [projectOptions, setProjectOptions] = useState<ComplianceProjectOption[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [filterWorkType, setFilterWorkType] = useState<"all" | WorkType>("all");
   const [filterProject, setFilterProject] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
 
   const [title, setTitle] = useState("");
-  const [projectName, setProjectName] = useState<string>(projectOptions[0]?.name ?? "");
-  const [projectManager, setProjectManager] = useState<string>(projectOptions[0]?.manager ?? "");
-  const [projectPhase, setProjectPhase] = useState<string>(projectOptions[0]?.phase ?? "");
+  const [projectId, setProjectId] = useState<string>("");
+  const [projectName, setProjectName] = useState<string>("");
+  const [projectManager, setProjectManager] = useState<string>("");
+  const [projectPhase, setProjectPhase] = useState<string>("");
   const [location, setLocation] = useState("");
   const [sitePostcode, setSitePostcode] = useState("");
   const [siteLat, setSiteLat] = useState<number | null>(null);
@@ -497,6 +521,41 @@ export default function CompliancePage() {
   }, []);
 
   useEffect(() => {
+    const hydrateProjects = () => {
+      setProjectOptions(getComplianceProjectOptions());
+    };
+
+    hydrateProjects();
+    window.addEventListener("storage", hydrateProjects);
+    window.addEventListener("focus", hydrateProjects);
+
+    return () => {
+      window.removeEventListener("storage", hydrateProjects);
+      window.removeEventListener("focus", hydrateProjects);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (projectOptions.length === 0) {
+      setProjectId("");
+      setProjectName("");
+      setProjectManager("");
+      setProjectPhase("");
+      return;
+    }
+
+    const selectedProject = projectOptions.find((project) => project.id === projectId);
+    const fallback = projectOptions[0];
+
+    if (!selectedProject && fallback) {
+      setProjectId(fallback.id);
+      setProjectName(fallback.name);
+      setProjectManager(fallback.manager);
+      setProjectPhase(fallback.phase);
+    }
+  }, [projectId, projectOptions]);
+
+  useEffect(() => {
     const selectedTemplate = getMergedTemplateForWorkTypes(selectedWorkTypes);
     setPpeText(listToText(selectedTemplate.ppeRequired));
     setPlantText(listToText(selectedTemplate.plantEquipment));
@@ -526,14 +585,16 @@ export default function CompliancePage() {
     });
   }, [docs, filterWorkType, filterProject, searchTerm]);
 
-  const handleProjectSelection = (nextProjectName: string) => {
-    setProjectName(nextProjectName);
-    const selectedProject = projectOptions.find((project) => project.name === nextProjectName);
+  const handleProjectSelection = (nextProjectId: string) => {
+    setProjectId(nextProjectId);
+    const selectedProject = projectOptions.find((project) => project.id === nextProjectId);
     if (!selectedProject) {
+      setProjectName("");
       setProjectManager("");
       setProjectPhase("");
       return;
     }
+    setProjectName(selectedProject.name);
     setProjectManager(selectedProject.manager);
     setProjectPhase(selectedProject.phase);
   };
@@ -550,7 +611,7 @@ export default function CompliancePage() {
 
     const generated = createRAMSDocument({
       title,
-      projectId: projectName,
+      projectId,
       projectName,
       projectManager,
       projectPhase,
@@ -768,9 +829,9 @@ export default function CompliancePage() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase text-gray-400">Project Name</label>
-              <select value={projectName} onChange={(e) => handleProjectSelection(e.target.value)} className="w-full rounded border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white">
+              <select value={projectId} onChange={(e) => handleProjectSelection(e.target.value)} className="w-full rounded border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white">
                 {projectOptions.map((project) => (
-                  <option key={project.name} value={project.name}>{project.name}</option>
+                  <option key={project.id} value={project.id}>{project.name}</option>
                 ))}
               </select>
             </div>

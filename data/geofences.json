@@ -1,0 +1,13 @@
+[
+  {
+    "id": "valescape-hq",
+    "name": "Valescape HQ",
+    "type": "office",
+    "latitude": 52.971783,
+    "longitude": -0.865318,
+    "radiusMeters": 100,
+    "address": "Smite Farm, Thoroton, Nottinghamshire, NG13 9DS",
+    "active": true,
+    "deleted": false
+  }
+]
