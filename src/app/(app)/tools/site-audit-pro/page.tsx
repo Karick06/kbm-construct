@@ -42,10 +42,15 @@ type AuditMeta = {
 };
 
 type SavedAuditState = {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
   meta: AuditMeta;
   responses: Record<string, QuestionResponse>;
   actions: AuditAction[];
 };
+
+type SiteAuditRecord = Required<SavedAuditState>;
 
 const STORAGE_KEY = "kbm_site_audit_pro_v1";
 
@@ -119,33 +124,118 @@ function formatActionStatusLabel(value: ActionStatus): string {
 }
 
 export default function SiteAuditProPage() {
+  const [auditId, setAuditId] = useState<string | null>(null);
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingFromServer, setIsLoadingFromServer] = useState(true);
+  const [recentAudits, setRecentAudits] = useState<SiteAuditRecord[]>([]);
   const [meta, setMeta] = useState<AuditMeta>(EMPTY_META);
   const [responses, setResponses] = useState<Record<string, QuestionResponse>>(buildDefaultResponses);
   const [actions, setActions] = useState<AuditAction[]>([]);
   const [savedStateMessage, setSavedStateMessage] = useState("");
 
+  const hydrateFromRecord = (record: SiteAuditRecord) => {
+    setAuditId(record.id);
+    setCreatedAt(record.createdAt);
+    setUpdatedAt(record.updatedAt);
+    setMeta({ ...EMPTY_META, ...record.meta });
+    setResponses({
+      ...buildDefaultResponses(),
+      ...record.responses,
+    });
+    setActions(Array.isArray(record.actions) ? record.actions : []);
+  };
+
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<SavedAuditState>;
-      if (parsed.meta) setMeta({ ...EMPTY_META, ...parsed.meta });
-      if (parsed.responses) {
-        setResponses({
-          ...buildDefaultResponses(),
-          ...parsed.responses,
-        });
+    const hydrate = async () => {
+      try {
+        const response = await fetch("/api/site-audits", { cache: "no-store" });
+        if (response.ok) {
+          const data = (await response.json()) as { audits?: SiteAuditRecord[] };
+          const audits = Array.isArray(data.audits) ? data.audits : [];
+          setRecentAudits(audits);
+          if (audits.length > 0) {
+            hydrateFromRecord(audits[0]);
+            setSavedStateMessage("Loaded latest audit from shared storage.");
+            setIsLoadingFromServer(false);
+            return;
+          }
+        }
+      } catch {
+        // fallback to local draft below
       }
-      if (Array.isArray(parsed.actions)) setActions(parsed.actions);
-    } catch {
-      // keep defaults
-    }
+
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw) as Partial<SavedAuditState>;
+        if (parsed.id) setAuditId(parsed.id);
+        if (parsed.createdAt) setCreatedAt(parsed.createdAt);
+        if (parsed.updatedAt) setUpdatedAt(parsed.updatedAt);
+        if (parsed.meta) setMeta({ ...EMPTY_META, ...parsed.meta });
+        if (parsed.responses) {
+          setResponses({
+            ...buildDefaultResponses(),
+            ...parsed.responses,
+          });
+        }
+        if (Array.isArray(parsed.actions)) setActions(parsed.actions);
+        setSavedStateMessage("Loaded local draft.");
+      } catch {
+        // keep defaults
+      } finally {
+        setIsLoadingFromServer(false);
+      }
+    };
+
+    void hydrate();
   }, []);
 
   useEffect(() => {
-    const payload: SavedAuditState = { meta, responses, actions };
+    if (isLoadingFromServer) return;
+    const payload: SavedAuditState = {
+      id: auditId || undefined,
+      createdAt: createdAt || undefined,
+      updatedAt: updatedAt || undefined,
+      meta,
+      responses,
+      actions,
+    };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [meta, responses, actions]);
+  }, [actions, auditId, createdAt, isLoadingFromServer, meta, responses, updatedAt]);
+
+  const saveAuditToServer = async () => {
+    try {
+      setIsSaving(true);
+      const response = await fetch("/api/site-audits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: auditId,
+          createdAt: createdAt || undefined,
+          meta,
+          responses,
+          actions,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save audit to shared storage");
+      }
+
+      const data = (await response.json()) as { audit: SiteAuditRecord; audits: SiteAuditRecord[] };
+      setAuditId(data.audit.id);
+      setCreatedAt(data.audit.createdAt);
+      setUpdatedAt(data.audit.updatedAt);
+      setRecentAudits(Array.isArray(data.audits) ? data.audits : []);
+      setSavedStateMessage("Audit saved to shared storage.");
+    } catch {
+      setSavedStateMessage("Save failed. Draft is still stored locally.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const score = useMemo(() => {
     const values = Object.values(responses);
@@ -237,6 +327,9 @@ export default function SiteAuditProPage() {
   };
 
   const resetAudit = () => {
+    setAuditId(null);
+    setCreatedAt(null);
+    setUpdatedAt(null);
     setMeta(EMPTY_META);
     setResponses(buildDefaultResponses());
     setActions([]);
@@ -246,6 +339,9 @@ export default function SiteAuditProPage() {
 
   const exportReport = () => {
     const payload = {
+      id: auditId,
+      createdAt,
+      updatedAt,
       generatedAt: new Date().toISOString(),
       meta,
       score,
@@ -279,6 +375,13 @@ export default function SiteAuditProPage() {
               Create actions from fails
             </button>
             <button
+              onClick={() => void saveAuditToServer()}
+              disabled={isSaving || isLoadingFromServer}
+              className="h-11 rounded-lg border border-green-700/50 bg-green-700/20 px-4 text-sm font-semibold text-green-200 hover:bg-green-700/35 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "Saving..." : "Save to shared storage"}
+            </button>
+            <button
               onClick={exportReport}
               className="h-11 rounded-lg bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-orange-600"
             >
@@ -309,6 +412,37 @@ export default function SiteAuditProPage() {
           <p className="text-xs uppercase tracking-wider text-gray-400">Audit score</p>
           <p className="mt-1 text-2xl font-semibold text-orange-400">{score.percent}%</p>
         </div>
+      </section>
+
+      <section className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-gray-300">
+            {isLoadingFromServer
+              ? "Loading audit from shared storage..."
+              : auditId
+                ? `Audit ID: ${auditId}`
+                : "New unsaved audit"}
+          </p>
+          {updatedAt && (
+            <p className="text-xs text-gray-500">
+              Last saved: {new Date(updatedAt).toLocaleString("en-GB")}
+            </p>
+          )}
+        </div>
+
+        {recentAudits.length > 1 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {recentAudits.slice(0, 5).map((audit) => (
+              <button
+                key={audit.id}
+                onClick={() => hydrateFromRecord(audit)}
+                className="rounded bg-gray-700 px-2 py-1 text-xs text-gray-200 hover:bg-gray-600"
+              >
+                {audit.meta.projectRef || audit.meta.siteName || audit.id}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-5">
