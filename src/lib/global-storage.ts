@@ -20,6 +20,7 @@ export type GlobalStorageHealth = {
   mode: GlobalStorageMode;
   driveIdConfigured: boolean;
   remoteBaseFolder: string;
+  missingEnvKeys?: string[];
   reason?: string;
 };
 
@@ -185,6 +186,23 @@ async function getOneDriveContext(): Promise<{ accessToken: string; driveId: str
 export async function getGlobalStorageHealth(): Promise<GlobalStorageHealth> {
   const driveId = getConfiguredDriveId();
   const remoteBaseFolder = getRemoteBaseFolder();
+  const requiredKeys = [
+    "MICROSOFT_CLIENT_ID",
+    "MICROSOFT_CLIENT_SECRET",
+    "MICROSOFT_TENANT_ID",
+    "SHAREPOINT_DRIVE_ID",
+  ] as const;
+  const missingEnvKeys = requiredKeys.filter((key) => !process.env[key]);
+
+  if (missingEnvKeys.length > 0) {
+    return {
+      mode: "fallback-local",
+      driveIdConfigured: Boolean(driveId),
+      remoteBaseFolder,
+      missingEnvKeys,
+      reason: `Missing required environment variables: ${missingEnvKeys.join(", ")}`,
+    };
+  }
 
   if (!driveId) {
     return {
@@ -217,6 +235,7 @@ export async function getGlobalStorageHealth(): Promise<GlobalStorageHealth> {
         mode: "fallback-local",
         driveIdConfigured: true,
         remoteBaseFolder,
+        missingEnvKeys,
         reason: message,
       };
     }
@@ -225,12 +244,14 @@ export async function getGlobalStorageHealth(): Promise<GlobalStorageHealth> {
       mode: "onedrive",
       driveIdConfigured: true,
       remoteBaseFolder,
+      missingEnvKeys,
     };
   } catch (error) {
     return {
       mode: "fallback-local",
       driveIdConfigured: true,
       remoteBaseFolder,
+      missingEnvKeys,
       reason: error instanceof Error ? error.message : "Failed to acquire Microsoft Graph app token",
     };
   }
