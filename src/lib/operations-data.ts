@@ -78,6 +78,23 @@ export const sampleHandovers: ProjectHandover[] = [
 const HANDOVERS_STORAGE_KEY = "kbm_operations_handovers";
 const PROJECTS_STORAGE_KEY = "kbm_operations_projects";
 
+const updateProjectMetrics = (
+  projectId: string,
+  updates: Partial<Pick<ConstructionProject, "documentCount" | "photoCount" | "siteDiaryCount">>
+): void => {
+  const projects = getProjectsFromStorage();
+  const projectIndex = projects.findIndex(project => project.id === projectId);
+  if (projectIndex < 0) return;
+
+  projects[projectIndex] = {
+    ...projects[projectIndex],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  saveProjectsToStorage(projects);
+};
+
 const parseCurrencyValue = (value: string): number => {
   const cleaned = value.replace(/[^0-9.KMk]/g, "");
   const base = parseFloat(cleaned.replace(/[MKmk]/g, ""));
@@ -1165,6 +1182,57 @@ export const sampleProjectDocuments: ProjectDocument[] = [
 ];
 
 // =============================================================================
+// PROJECT DOCUMENTS STORAGE
+// =============================================================================
+
+const PROJECT_DOCUMENTS_STORAGE_KEY = "kbm_operations_project_documents";
+
+export const getProjectDocumentsFromStorage = (): ProjectDocument[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(PROJECT_DOCUMENTS_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as ProjectDocument[]) : [];
+  } catch (error) {
+    console.error("Failed to load project documents:", error);
+    return [];
+  }
+};
+
+export const saveProjectDocumentsToStorage = (documents: ProjectDocument[]): void => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PROJECT_DOCUMENTS_STORAGE_KEY, JSON.stringify(documents));
+  } catch (error) {
+    console.error("Failed to save project documents:", error);
+  }
+};
+
+export const getProjectDocumentsForProject = (projectId: string): ProjectDocument[] => {
+  const sample = sampleProjectDocuments.filter(doc => doc.projectId === projectId);
+  const stored = getProjectDocumentsFromStorage().filter(doc => doc.projectId === projectId);
+  const merged = [...sample, ...stored];
+
+  return merged.sort((a, b) => new Date(b.uploadedDate).getTime() - new Date(a.uploadedDate).getTime());
+};
+
+export const addProjectDocument = (document: Omit<ProjectDocument, "id" | "uploadedDate">): ProjectDocument => {
+  const stored = getProjectDocumentsFromStorage();
+  const newDocument: ProjectDocument = {
+    ...document,
+    id: `DOC-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    uploadedDate: new Date().toISOString(),
+  };
+
+  stored.push(newDocument);
+  saveProjectDocumentsToStorage(stored);
+
+  const totalDocumentCount = getProjectDocumentsForProject(document.projectId).length;
+  updateProjectMetrics(document.projectId, { documentCount: totalDocumentCount });
+
+  return newDocument;
+};
+
+// =============================================================================
 // SITE DIARIES STORAGE
 // =============================================================================
 
@@ -1199,6 +1267,10 @@ export const addSiteDiaryEntry = (entry: Omit<SiteDiaryEntry, "id" | "enteredAt"
   };
   diaries.push(newEntry);
   saveSiteDiariesToStorage(diaries);
+
+  const totalSiteDiaryCount = diaries.filter(item => item.projectId === entry.projectId).length;
+  updateProjectMetrics(entry.projectId, { siteDiaryCount: totalSiteDiaryCount });
+
   return newEntry;
 };
 
@@ -1240,6 +1312,10 @@ export const addSitePhoto = (photo: Omit<SitePhoto, "id">): SitePhoto => {
   };
   photos.push(newPhoto);
   saveSitePhotosToStorage(photos);
+
+  const totalPhotoCount = photos.filter(item => item.projectId === photo.projectId).length;
+  updateProjectMetrics(photo.projectId, { photoCount: totalPhotoCount });
+
   return newPhoto;
 };
 

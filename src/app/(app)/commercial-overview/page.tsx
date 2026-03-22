@@ -324,7 +324,7 @@ export default function CommercialOverviewPage() {
             onClick={() => setShowVariationModal(true)}
             className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
           >
-            Log Variation
+            Variations
           </button>
         </div>
       </div>

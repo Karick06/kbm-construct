@@ -22,6 +22,7 @@ import { syncEstimateToIntegratedProject, updateProjectFromEstimate } from "@/li
 import { createHandoverFromEstimate, getHandoversFromStorage, saveHandoversToStorage } from "@/lib/operations-data";
 import type { ProjectHandover } from "@/lib/operations-models";
 import { PRODUCTIVITY_TEMPLATES, type ProductivityRateTemplate } from '@/lib/productivity-outputs';
+import CorrespondencePanel from "@/components/CorrespondencePanel";
 
 interface TreeNode {
   id: string;
@@ -323,6 +324,7 @@ export default function EstimatingOverviewPage() {
   const [selectedEstimatorFilter, setSelectedEstimatorFilter] = useState<string | null>(null);
   const [showWorkloadView, setShowWorkloadView] = useState(false);
   const [sortBy, setSortBy] = useState<'dueDate' | 'value' | 'client'>('dueDate');
+  const [selectedCorrespondenceEstimateId, setSelectedCorrespondenceEstimateId] = useState('');
 
   // Load estimate jobs from localStorage (on mount and when enquiry param changes)
   const enquiryParam = searchParams.get('enquiry');
@@ -2173,6 +2175,26 @@ export default function EstimatingOverviewPage() {
     }
   }, [workingOnJob]);
 
+  useEffect(() => {
+    if (workingOnJob?.id) {
+      setSelectedCorrespondenceEstimateId(workingOnJob.id);
+      return;
+    }
+
+    if (selectedJob?.id) {
+      setSelectedCorrespondenceEstimateId(selectedJob.id);
+      return;
+    }
+
+    setSelectedCorrespondenceEstimateId((current) => {
+      if (current && jobs.some((job) => job.id === current)) {
+        return current;
+      }
+
+      return jobs[0]?.id || '';
+    });
+  }, [jobs, selectedJob, workingOnJob]);
+
   // Import calculator results into rate buildup if available
   useEffect(() => {
     const importParam = searchParams.get('import');
@@ -2191,6 +2213,8 @@ export default function EstimatingOverviewPage() {
       }
     }
   }, [searchParams]);
+
+  const correspondenceEstimate = jobs.find((job) => job.id === selectedCorrespondenceEstimateId) || null;
 
   const addSMM7Item = (description: string, unit: string, quantity: number, rate: number = 0) => {
     if (quantity > 0) {
@@ -2373,6 +2397,47 @@ export default function EstimatingOverviewPage() {
           </button>
         </div>
       </div>
+
+      <section className="rounded-lg border border-gray-800 bg-gray-900/60 p-6">
+        <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Estimate correspondence</h2>
+            <p className="text-sm text-gray-400">
+              Surface linked email threads against each tender so estimators can review client communication without leaving the estimating workflow.
+            </p>
+          </div>
+          <div className="w-full max-w-md">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+              Active estimate
+            </label>
+            <select
+              value={selectedCorrespondenceEstimateId}
+              onChange={(e) => setSelectedCorrespondenceEstimateId(e.target.value)}
+              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              {jobs.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.id} · {job.projectName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {correspondenceEstimate ? (
+          <CorrespondencePanel
+            recordType="estimate"
+            recordId={correspondenceEstimate.id}
+            title={`Linked emails for ${correspondenceEstimate.projectName}`}
+            subtitle={`Track bid clarifications, pricing requests, and commercial correspondence linked to ${correspondenceEstimate.id}.`}
+            emptyMessage="No emails have been linked to this estimate yet."
+          />
+        ) : (
+          <div className="rounded-lg border border-dashed border-gray-700 bg-gray-800/40 p-6 text-sm text-gray-400">
+            No estimate is currently available for correspondence review.
+          </div>
+        )}
+      </section>
 
       {/* Workload Management Section */}
       {showWorkloadView && (
@@ -2933,6 +2998,16 @@ export default function EstimatingOverviewPage() {
                         ? "Won"
                         : "Lost"}
                     </span>
+                  </div>
+
+                  <div className="mb-4">
+                    <CorrespondencePanel
+                      recordType="estimate"
+                      recordId={selectedJob.id}
+                      title="Bid correspondence"
+                      subtitle="Open linked emails, RFIs, and tender clarifications directly from this estimate record."
+                      emptyMessage="No emails have been linked to this estimate yet."
+                    />
                   </div>
 
                   {/* Estimate Job Information */}

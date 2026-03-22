@@ -142,6 +142,7 @@ export function formatBoQAsHTML(doc: TraditionalBoQDocument): string {
     height: 40px;
     width: auto;
     display: block;
+    filter: invert() hue-rotate(180deg);
   }
   .header h1 {
     font-size: 20px;

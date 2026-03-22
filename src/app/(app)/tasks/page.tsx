@@ -2,8 +2,9 @@
 
 import PermissionGuard from "@/components/PermissionGuard";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatDate } from "@/lib/date-utils";
+import { getTasksFromStorage, type TaskItem } from "@/lib/tasks-store";
 
 type Task = {
   id: string;
@@ -85,6 +86,27 @@ const priorityBgColors = {
 
 export default function TasksPage() {
   const [view, setView] = useState<"board" | "list">("board");
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+
+  useEffect(() => {
+    const refresh = () => setTasks(getTasksFromStorage());
+    refresh();
+    window.addEventListener("storage", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
+
+  const tasksByStatus = useMemo(
+    () => ({
+      backlog: tasks.filter((task) => task.status === "backlog"),
+      "in-progress": tasks.filter((task) => task.status === "in-progress"),
+      done: tasks.filter((task) => task.status === "done"),
+    }),
+    [tasks]
+  );
 
   return (
     <PermissionGuard permission="projects">

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createUser, listUsers, normalizeEmail, updateUser } from "@/lib/remote-user-store";
+import { requireApiPermission } from "@/lib/api-permissions";
 
 type LocalUserPayload = {
 	id?: string;
@@ -15,6 +16,9 @@ type LocalUserPayload = {
 
 export async function POST(request: Request) {
 	try {
+		const permissionCheck = await requireApiPermission("user_management");
+		if (!permissionCheck.ok) return permissionCheck.response;
+
 		const body = (await request.json()) as {
 			users?: LocalUserPayload[];
 			passwords?: Record<string, string>;

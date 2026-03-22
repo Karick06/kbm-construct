@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createUser, deleteUserById, listUsers, mapUser, updateUser } from "@/lib/remote-user-store";
+import { requireApiPermission } from "@/lib/api-permissions";
 
 export async function GET() {
 	try {
+		const permissionCheck = await requireApiPermission("user_management");
+		if (!permissionCheck.ok) return permissionCheck.response;
+
 		const users = await listUsers();
 		return NextResponse.json(users.map((row) => mapUser(row as Record<string, unknown>)));
 	} catch (error) {
@@ -16,6 +20,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
 	try {
+		const permissionCheck = await requireApiPermission("user_management");
+		if (!permissionCheck.ok) return permissionCheck.response;
+
 		const payload = await request.json();
 		const normalizedEmail = String(payload.email || "").trim().toLowerCase();
 
@@ -50,6 +57,9 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
 	try {
+		const permissionCheck = await requireApiPermission("user_management");
+		if (!permissionCheck.ok) return permissionCheck.response;
+
 		const payload = await request.json();
 		if (!payload.id) {
 			return NextResponse.json({ error: "User id is required" }, { status: 400 });
@@ -82,6 +92,9 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
 	try {
+		const permissionCheck = await requireApiPermission("user_management");
+		if (!permissionCheck.ok) return permissionCheck.response;
+
 		const payload = await request.json();
 		if (!payload.id) {
 			return NextResponse.json({ error: "User id is required" }, { status: 400 });

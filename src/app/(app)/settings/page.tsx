@@ -1,11 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/lib/auth-context";
 
 export default function SettingsPage() {
-  const { user, updateUser, changePassword } = useAuth();
+  const { user, updateUser, changePassword, hasPermission } = useAuth();
+  const searchParams = useSearchParams();
+  const canManageEmailSetup = hasPermission("user_management");
   const [activeTab, setActiveTab] = useState("profile");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
@@ -62,6 +66,18 @@ export default function SettingsPage() {
       }
     }
   }, [user]);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "admin" && canManageEmailSetup) {
+      setActiveTab("admin");
+      return;
+    }
+
+    if (tabParam && ["profile", "security", "notifications", "preferences"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [canManageEmailSetup, searchParams]);
 
   const handleSaveProfile = () => {
     setIsSaving(true);
@@ -143,6 +159,7 @@ export default function SettingsPage() {
     { id: "security", label: "Security", icon: "🔒" },
     { id: "notifications", label: "Notifications", icon: "🔔" },
     { id: "preferences", label: "Preferences", icon: "⚙️" },
+    ...(canManageEmailSetup ? [{ id: "admin", label: "Admin Controls", icon: "🛡️" }] : []),
   ];
 
   return (
@@ -535,6 +552,36 @@ export default function SettingsPage() {
             <button className="rounded border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/20">
               Delete Account
             </button>
+          </div>
+        </section>
+      )}
+
+      {/* Admin Controls Tab */}
+      {activeTab === "admin" && canManageEmailSetup && (
+        <section className="space-y-6">
+          <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+            <h2 className="text-lg font-semibold text-white mb-2">System Administration</h2>
+            <p className="text-sm text-gray-400 mb-5">
+              Central place for admin-only setup. Configure who has email access in User Management and maintain shared mailboxes in Mail Settings.
+            </p>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <Link
+                href="/admin"
+                className="rounded-lg border border-gray-700 bg-gray-900/60 p-4 transition hover:border-orange-500/60"
+              >
+                <p className="text-sm font-semibold text-white">User Management</p>
+                <p className="mt-1 text-xs text-gray-400">Set email permissions and role access for users.</p>
+              </Link>
+
+              <Link
+                href="/mail-settings"
+                className="rounded-lg border border-gray-700 bg-gray-900/60 p-4 transition hover:border-orange-500/60"
+              >
+                <p className="text-sm font-semibold text-white">Mail Settings</p>
+                <p className="mt-1 text-xs text-gray-400">Configure shared mailboxes, rules, approvals, and audit controls.</p>
+              </Link>
+            </div>
           </div>
         </section>
       )}

@@ -92,7 +92,7 @@ export default function LoginPage() {
           <div className="mb-8 flex justify-center">
             <div className="bg-black rounded p-4">
               <Image
-                src="/valescape-logo.png"
+                src="/valescape-logo-white.png"
                 alt="Valescape"
                 width={200}
                 height={33}

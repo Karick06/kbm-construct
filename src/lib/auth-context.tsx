@@ -105,11 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("kbm_user");
 
-      if (MICROSOFT_AUTH_ENABLED) {
+      if (REMOTE_AUTH_ENABLED) {
         try {
-          await fetch("/api/auth/microsoft/logout", { method: "POST" });
+          await fetch("/api/auth/logout", { method: "POST" });
         } catch (error) {
-          console.error("Failed to clear Microsoft session:", error);
+          console.error("Failed to clear auth session:", error);
         }
       }
     }

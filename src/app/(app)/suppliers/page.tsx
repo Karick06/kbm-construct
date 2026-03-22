@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import PermissionGuard from "@/components/PermissionGuard";
 import StatusPill from "@/components/StatusPill";
 import PageHeader from "@/components/PageHeader";
 import type { StatusTone } from "@/components/StatusPill";
+import { getEmailActivityForRecord } from "@/lib/email-insights";
 
 type Supplier = {
   id: string;
@@ -31,6 +34,7 @@ const statusTone: Record<Supplier["status"], StatusTone> = { Active: "on-track",
 const ratingStars = (r: number) => "★".repeat(r) + "☆".repeat(5 - r);
 
 export default function SuppliersPage() {
+  const router = useRouter();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -72,6 +76,7 @@ export default function SuppliersPage() {
 
   const active = suppliers.filter(s => s.status === "Active").length;
   const onHold = suppliers.filter(s => s.status === "On Hold").length;
+  const awaitingReply = suppliers.filter((supplier) => getEmailActivityForRecord("supplier", supplier.id).awaitingResponse).length;
 
   return (
     <PermissionGuard permission="procurement">
@@ -79,11 +84,16 @@ export default function SuppliersPage() {
         <PageHeader
           title="Suppliers"
           subtitle="Procurement"
-          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Add Supplier</button>}
+          actions={
+            <div className="flex gap-2">
+              <button onClick={() => router.push("/supplier-portal")} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Open Supplier Portal</button>
+              <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ Add Supplier</button>
+            </div>
+          }
         />
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[{ label: "Total", value: suppliers.length, icon: "🏭" }, { label: "Active", value: active, icon: "✅" }, { label: "On Hold", value: onHold, icon: "⏸️" }].map(stat => (
+        <div className="grid gap-4 sm:grid-cols-4">
+          {[{ label: "Total", value: suppliers.length, icon: "🏭" }, { label: "Active", value: active, icon: "✅" }, { label: "On Hold", value: onHold, icon: "⏸️" }, { label: "Awaiting Reply", value: awaitingReply, icon: "📧" }].map(stat => (
             <div key={stat.label} className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-4 flex items-center gap-4">
               <span className="text-3xl">{stat.icon}</span>
               <div><p className="text-xs text-gray-400">{stat.label}</p><p className="text-2xl font-bold text-white">{stat.value}</p></div>
@@ -112,18 +122,27 @@ export default function SuppliersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
-                {filtered.length === 0 ? (
+                  {filtered.length === 0 ? (
                   <tr><td colSpan={8} className="py-12 text-center text-gray-400">
                     <p className="text-4xl mb-2">🏭</p>
                     <p>{search || categoryFilter !== "All" ? "No suppliers match your filters" : "No suppliers yet — add your first"}</p>
                   </td></tr>
-                ) : filtered.map(s => (
+                ) : filtered.map(s => {
+                  const emailActivity = getEmailActivityForRecord("supplier", s.id);
+                  return (
                   <tr key={s.id} className="hover:bg-gray-700/30">
                     <td className="px-4 py-3"><p className="text-sm font-semibold text-white">{s.name}</p><p className="text-xs text-gray-500">{s.id}</p></td>
                     <td className="px-4 py-3 text-sm text-gray-300">{s.category}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{s.contact}</td>
                     <td className="px-4 py-3 text-sm text-gray-300">{s.phone}</td>
-                    <td className="px-4 py-3 text-sm text-gray-300">{s.email}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300">
+                      <div>
+                        <p>{s.email}</p>
+                        <Link href={`/mail?recordType=supplier&recordId=${encodeURIComponent(s.id)}`} className="text-xs text-orange-300 hover:text-orange-200">
+                          {emailActivity.total} emails · {emailActivity.awaitingResponse ? "awaiting reply" : "up to date"}
+                        </Link>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-sm text-yellow-400">{ratingStars(s.rating)}</td>
                     <td className="px-4 py-3"><StatusPill label={s.status} tone={statusTone[s.status]} /></td>
                     <td className="px-4 py-3">
@@ -133,7 +152,7 @@ export default function SuppliersPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>

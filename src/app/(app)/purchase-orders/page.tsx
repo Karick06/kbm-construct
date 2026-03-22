@@ -3,8 +3,10 @@
 import PermissionGuard from "@/components/PermissionGuard";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { getProjectsFromStorage } from "@/lib/operations-data";
 import { getCostReportsFromStorage, saveCostReportsToStorage } from "@/lib/commercial-data";
+import { getEmailActivityForRecord } from "@/lib/email-insights";
 
 type RequisitionStatus = "draft" | "pending" | "approved" | "rejected" | "ordered";
 type OrderStatus = "draft" | "pending_approval" | "approved" | "sent" | "acknowledged" | "partial" | "delivered" | "cancelled" | "rejected";
@@ -519,6 +521,8 @@ export default function PurchaseOrdersPage() {
           <div className="text-right">
             <p className="text-xs text-gray-400">Auto-Approved</p>
             <p className="text-xl font-bold text-green-400">≤ £5k</p>
+            <p className="mt-3 text-xs text-gray-400">Awaiting email reply</p>
+            <p className="text-lg font-bold text-sky-300">{orders.filter((po) => getEmailActivityForRecord("purchase-order", po.id).awaitingResponse).length}</p>
           </div>
         </div>
       </div>
@@ -671,7 +675,9 @@ export default function PurchaseOrdersPage() {
               </button>
             </div>
           ) : (
-            filteredOrders.map((po) => (
+            filteredOrders.map((po) => {
+              const emailActivity = getEmailActivityForRecord("purchase-order", po.id);
+              return (
               <div key={po.id} className="rounded-lg border border-gray-700 bg-gray-800 p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -726,6 +732,18 @@ export default function PurchaseOrdersPage() {
                         </p>
                       </div>
                     )}
+
+                    <div className="mt-3 rounded border border-sky-500/20 bg-sky-500/10 p-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-sky-100">Email activity</p>
+                          <p className="text-xs text-sky-100/80">{emailActivity.total} linked emails · {emailActivity.unread} unread{emailActivity.awaitingResponse ? " · awaiting supplier reply" : ""}</p>
+                        </div>
+                        <Link href={`/mail?recordType=purchase-order&recordId=${encodeURIComponent(po.id)}`} className="text-xs font-semibold text-sky-100 underline">
+                          Open mail
+                        </Link>
+                      </div>
+                    </div>
 
                     <div className="mt-4">
                       <p className="text-xs font-semibold uppercase text-gray-400">Items ({po.items.length})</p>
@@ -797,7 +815,7 @@ export default function PurchaseOrdersPage() {
                   </div>
                 </div>
               </div>
-            ))
+            )})
           )}
         </div>
       )}

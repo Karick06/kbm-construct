@@ -2,10 +2,41 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getProjectsFromStorage, sampleProjects, sampleProjectDocuments, samplePhotos, sampleDiaryEntries, sampleInvoices, sampleVariations, sampleDefects, getPaymentApplicationsFromStorage, getPlantAllocationsFromStorage, getMaterialDeliveriesFromStorage, getMaterialStockpilesFromStorage, getQualityTestsFromStorage, getSurveyRecordsFromStorage, getProjectBoQLineItemsForProject, saveProjectBoQLineItemsToStorage, getProjectBoQLineItemsFromStorage } from '@/lib/operations-data';
+import {
+  getProjectsFromStorage,
+  saveProjectsToStorage,
+  sampleProjects,
+  samplePhotos,
+  sampleDiaryEntries,
+  sampleInvoices,
+  sampleVariations,
+  sampleDefects,
+  getPaymentApplicationsFromStorage,
+  getPlantAllocationsFromStorage,
+  savePlantAllocationsToStorage,
+  getMaterialDeliveriesFromStorage,
+  getMaterialStockpilesFromStorage,
+  getQualityTestsFromStorage,
+  getSurveyRecordsFromStorage,
+  saveProjectBoQLineItemsToStorage,
+  getProjectBoQLineItemsFromStorage,
+  getProjectDocumentsForProject,
+  addProjectDocument,
+  getSitePhotosForProject,
+  getSiteDiariesForProject,
+  addSitePhoto,
+  addSiteDiaryEntry,
+} from '@/lib/operations-data';
 import { sampleValuations, sampleVariations as sampleCommercialVariations, sampleContracts, sampleCostReports } from '@/lib/commercial-data';
 import { getStageLabel, getStageColor, calculateProjectHealth, formatCurrency } from '@/lib/operations-models';
 import type { DocumentCategory, ConstructionProject } from '@/lib/operations-models';
+import CorrespondencePanel from '@/components/CorrespondencePanel';
+import {
+  getLinkedEventsForRecord,
+  addLinkToCalendarEvent,
+  syncCalendarLinksFromServer,
+  type CalendarEventSnapshot,
+} from '@/lib/calendar-links';
 
 // Helper to format file sizes
 function formatFileSize(bytes: number): string {
@@ -55,7 +86,7 @@ export default function ProjectDetailPage() {
 
   const [projects, setProjects] = useState<ConstructionProject[]>(sampleProjects);
   const [projectsLoaded, setProjectsLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'photos' | 'diary' | 'financials' | 'defects' | 'commercial' | 'payment-apps' | 'plant' | 'materials' | 'quality' | 'surveys' | 'team' | 'boq' | 'valuations' | 'wip' | 'budget'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'photos' | 'diary' | 'financials' | 'defects' | 'commercial' | 'payment-apps' | 'plant' | 'materials' | 'quality' | 'surveys' | 'team' | 'boq' | 'valuations' | 'wip' | 'budget' | 'correspondence' | 'calendar'>('overview');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [showDiaryModal, setShowDiaryModal] = useState(false);
@@ -89,11 +120,75 @@ export default function ProjectDetailPage() {
   const [qualityTests, setQualityTests] = useState<any[]>([]);
   const [surveyRecords, setSurveyRecords] = useState<any[]>([]);
   const [boqLineItems, setBoqLineItems] = useState<any[]>([]);
+  const [projectDocuments, setProjectDocuments] = useState<any[]>([]);
+  const [projectPhotos, setProjectPhotos] = useState<any[]>([]);
+  const [projectDiary, setProjectDiary] = useState<any[]>([]);
+
+  const [uploadDocumentCategory, setUploadDocumentCategory] = useState<DocumentCategory>('contract');
+  const [uploadDocumentTitle, setUploadDocumentTitle] = useState('');
+  const [uploadDocumentFile, setUploadDocumentFile] = useState<File | null>(null);
+
+  const [uploadPhotoTitle, setUploadPhotoTitle] = useState('');
+  const [uploadPhotoDescription, setUploadPhotoDescription] = useState('');
+  const [uploadPhotoFiles, setUploadPhotoFiles] = useState<FileList | null>(null);
+
+  const [diaryDateTime, setDiaryDateTime] = useState(new Date().toISOString().slice(0, 16));
+  const [diaryWeather, setDiaryWeather] = useState<'dry' | 'rain' | 'snow' | 'wind' | 'frost'>('dry');
+  const [diaryTemperature, setDiaryTemperature] = useState('');
+  const [diaryWork, setDiaryWork] = useState('');
+  const [diaryOwnStaff, setDiaryOwnStaff] = useState('0');
+  const [diarySubcontractors, setDiarySubcontractors] = useState('0');
+  const [diaryVisitors, setDiaryVisitors] = useState('0');
+  const [diaryTomorrowWork, setDiaryTomorrowWork] = useState('');
+
+  const [operativeName, setOperativeName] = useState('');
+  const [operativeRole, setOperativeRole] = useState('');
+
+  const [equipmentType, setEquipmentType] = useState('');
+  const [equipmentId, setEquipmentId] = useState('');
+  const [equipmentStartDate, setEquipmentStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [equipmentEndDate, setEquipmentEndDate] = useState('');
+  const [equipmentDailyRate, setEquipmentDailyRate] = useState('');
+  const [equipmentStatus, setEquipmentStatus] = useState<'allocated' | 'on-site' | 'off-hired'>('allocated');
+  const [equipmentOperatorRequired, setEquipmentOperatorRequired] = useState(false);
+  const [equipmentNotes, setEquipmentNotes] = useState('');
+
+  const [linkedCalendarEvents, setLinkedCalendarEvents] = useState<CalendarEventSnapshot[]>([]);
+  const [correspondenceRefreshKey, setCorrespondenceRefreshKey] = useState(0);
+  const [showMeetingForm, setShowMeetingForm] = useState(false);
+  const [meetingSubject, setMeetingSubject] = useState('');
+  const [meetingStart, setMeetingStart] = useState('');
+  const [meetingEnd, setMeetingEnd] = useState('');
+  const [meetingLocation, setMeetingLocation] = useState('');
+  const [meetingAttendees, setMeetingAttendees] = useState('');
+  const [meetingNotes, setMeetingNotes] = useState('');
+  const [creatingMeeting, setCreatingMeeting] = useState(false);
 
   useEffect(() => {
     setProjects(getProjectsFromStorage());
     setProjectsLoaded(true);
   }, []);
+
+  // Sync calendar links and load linked events
+  useEffect(() => {
+    const loadEvents = () => {
+      setLinkedCalendarEvents(getLinkedEventsForRecord('project', projectId));
+    };
+
+    loadEvents();
+    void syncCalendarLinksFromServer().then(loadEvents);
+
+    const handleStorage = () => {
+      loadEvents();
+      setCorrespondenceRefreshKey((k) => k + 1);
+    };
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleStorage);
+    };
+  }, [projectId]);
 
   // Read tab from URL search parameter
   useEffect(() => {
@@ -107,11 +202,20 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     setPaymentApps(getPaymentApplicationsFromStorage().filter(app => app.projectId === projectId));
     setPlantAllocations(getPlantAllocationsFromStorage().filter(pa => pa.projectId === projectId));
+    setProjectDocuments(getProjectDocumentsForProject(projectId));
+    setProjectPhotos([
+      ...samplePhotos.filter(photo => photo.projectId === projectId),
+      ...getSitePhotosForProject(projectId),
+    ]);
+    setProjectDiary([
+      ...sampleDiaryEntries.filter(entry => entry.projectId === projectId),
+      ...getSiteDiariesForProject(projectId),
+    ]);
     setMaterialDeliveries(getMaterialDeliveriesFromStorage().filter(md => md.projectId === projectId));
     setMaterialStockpiles(getMaterialStockpilesFromStorage().filter(ms => ms.projectId === projectId));
     setQualityTests(getQualityTestsFromStorage().filter(qt => qt.projectId === projectId));
     setSurveyRecords(getSurveyRecordsFromStorage().filter(sr => sr.projectId === projectId));
-    const allBoQItems = getProjectBoQLineItemsFromStorage();
+    const allBoQItems = getProjectBoQLineItemsFromStorage().filter(item => item.projectId === projectId);
     setBoqLineItems(
       allBoQItems.map(item => ({
         ...item,
@@ -205,9 +309,6 @@ export default function ProjectDetailPage() {
   };
 
   // Get documents, photos, diary, invoices, variations, and defects for this project
-  const projectDocuments = sampleProjectDocuments.filter(doc => doc.projectId === projectId);
-  const projectPhotos = samplePhotos.filter(photo => photo.projectId === projectId);
-  const projectDiary = sampleDiaryEntries.filter(entry => entry.projectId === projectId);
   const projectInvoices = localInvoices.filter(inv => inv.projectId === projectId);
   const projectVariations = localVariations.filter(vo => vo.projectId === projectId);
   const projectDefects = localDefects.filter(defect => defect.projectId === projectId);
@@ -217,6 +318,219 @@ export default function ProjectDetailPage() {
     const id = Math.random().toString(36).substr(2, 9);
     setToast({ message, type, id });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleDocumentUpload = () => {
+    if (!uploadDocumentTitle.trim() || !uploadDocumentFile) {
+      showToast('Please provide a title and select a file', 'error');
+      return;
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('kbm_user') || '{"name":"Operations User"}');
+
+    addProjectDocument({
+      projectId,
+      category: uploadDocumentCategory,
+      title: uploadDocumentTitle.trim(),
+      description: '',
+      fileName: uploadDocumentFile.name,
+      fileSize: uploadDocumentFile.size,
+      mimeType: uploadDocumentFile.type || 'application/octet-stream',
+      uploadedBy: currentUser.name,
+      tags: [],
+      status: 'draft',
+    });
+
+    setProjectDocuments(getProjectDocumentsForProject(projectId));
+    setProjects(getProjectsFromStorage());
+    setUploadDocumentTitle('');
+    setUploadDocumentFile(null);
+    setShowUploadModal(false);
+    showToast('Document uploaded successfully');
+  };
+
+  const handlePhotoUpload = async () => {
+    if (!uploadPhotoFiles || uploadPhotoFiles.length === 0) {
+      showToast('Please select at least one photo', 'error');
+      return;
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('kbm_user') || '{"name":"Operations User"}');
+
+    const promises = Array.from(uploadPhotoFiles).map((file) => {
+      return new Promise<void>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          addSitePhoto({
+            projectId,
+            title: uploadPhotoTitle.trim() || file.name,
+            description: uploadPhotoDescription.trim() || undefined,
+            fileName: file.name,
+            fileSize: file.size,
+            takenBy: currentUser.name,
+            takenDate: new Date().toISOString(),
+            tags: [],
+            thumbnail: reader.result as string,
+          });
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    await Promise.all(promises);
+    setProjectPhotos([
+      ...samplePhotos.filter(photo => photo.projectId === projectId),
+      ...getSitePhotosForProject(projectId),
+    ]);
+    setProjects(getProjectsFromStorage());
+    setUploadPhotoTitle('');
+    setUploadPhotoDescription('');
+    setUploadPhotoFiles(null);
+    setShowPhotoModal(false);
+    showToast('Photos uploaded successfully');
+  };
+
+  const handleSaveDiaryEntry = () => {
+    if (!diaryWork.trim()) {
+      showToast('Please enter work carried out', 'error');
+      return;
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('kbm_user') || '{"name":"Operations User"}');
+
+    addSiteDiaryEntry({
+      projectId,
+      date: new Date(diaryDateTime).toISOString(),
+      weather: {
+        condition: diaryWeather,
+        temperature: diaryTemperature ? Number(diaryTemperature) : undefined,
+      },
+      labour: {
+        ownStaff: Number(diaryOwnStaff) || 0,
+        subcontractors: Number(diarySubcontractors) || 0,
+        visitors: Number(diaryVisitors) || 0,
+      },
+      plant: {
+        onSite: [],
+        offSite: [],
+      },
+      workCarriedOut: diaryWork,
+      tomorrowsWork: diaryTomorrowWork || undefined,
+      photosAttached: [],
+      enteredBy: currentUser.name,
+    });
+
+    setProjectDiary([
+      ...sampleDiaryEntries.filter(entry => entry.projectId === projectId),
+      ...getSiteDiariesForProject(projectId),
+    ]);
+    setProjects(getProjectsFromStorage());
+    setDiaryWork('');
+    setDiaryTomorrowWork('');
+    setShowDiaryModal(false);
+    showToast('Diary entry saved successfully');
+  };
+
+  const handleAssignOperative = () => {
+    if (!operativeName.trim() || !operativeRole.trim()) {
+      showToast('Operative name and role are required', 'error');
+      return;
+    }
+
+    const updatedProjects = getProjectsFromStorage().map(item => {
+      if (item.id !== projectId) return item;
+      return {
+        ...item,
+        team: [
+          ...(item.team || []),
+          {
+            userId: `USR-${Date.now()}`,
+            name: operativeName.trim(),
+            role: operativeRole,
+          },
+        ],
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    saveProjectsToStorage(updatedProjects);
+    setProjects(updatedProjects);
+    setOperativeName('');
+    setOperativeRole('');
+    setShowAssignOperativeModal(false);
+    showToast('Operative assigned successfully');
+  };
+
+  const handleRemoveOperative = (userId: string) => {
+    const updatedProjects = getProjectsFromStorage().map(item => {
+      if (item.id !== projectId) return item;
+      return {
+        ...item,
+        team: (item.team || []).filter(member => member.userId !== userId),
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    saveProjectsToStorage(updatedProjects);
+    setProjects(updatedProjects);
+    showToast('Operative removed');
+  };
+
+  const handleAssignEquipment = () => {
+    if (!equipmentType.trim() || !equipmentId.trim()) {
+      showToast('Equipment type and ID are required', 'error');
+      return;
+    }
+
+    const allocations = getPlantAllocationsFromStorage();
+    const entry = {
+      id: `PLANT-${Date.now()}`,
+      projectId,
+      plantId: equipmentId.trim(),
+      plantName: equipmentType.trim(),
+      plantType: equipmentType.trim(),
+      allocatedFrom: equipmentStartDate,
+      allocatedTo: equipmentEndDate || equipmentStartDate,
+      status: equipmentStatus,
+      hireRate: Number(equipmentDailyRate) || 0,
+      operatorRequired: equipmentOperatorRequired,
+      notes: equipmentNotes || undefined,
+      allocatedBy: 'Operations Team',
+      allocatedDate: new Date().toISOString(),
+    };
+
+    const updated = [...allocations, entry];
+    savePlantAllocationsToStorage(updated);
+    setPlantAllocations(updated.filter(item => item.projectId === projectId));
+    setShowAssignEquipmentModal(false);
+    setEquipmentType('');
+    setEquipmentId('');
+    setEquipmentEndDate('');
+    setEquipmentDailyRate('');
+    setEquipmentNotes('');
+    setEquipmentOperatorRequired(false);
+    showToast('Equipment assigned successfully');
+  };
+
+  const handleRemoveEquipment = (allocationId: string) => {
+    const updated = getPlantAllocationsFromStorage().filter(item => item.id !== allocationId);
+    savePlantAllocationsToStorage(updated);
+    setPlantAllocations(updated.filter(item => item.projectId === projectId));
+    showToast('Equipment removed');
+  };
+
+  const handleCycleEquipmentStatus = (allocationId: string) => {
+    const updated = getPlantAllocationsFromStorage().map(item => {
+      if (item.id !== allocationId) return item;
+      const nextStatus: 'allocated' | 'on-site' | 'off-hired' | 'returned' =
+        item.status === 'allocated' ? 'on-site' : item.status === 'on-site' ? 'off-hired' : 'allocated';
+      return { ...item, status: nextStatus };
+    });
+
+    savePlantAllocationsToStorage(updated);
+    setPlantAllocations(updated.filter(item => item.projectId === projectId));
+    showToast('Equipment status updated');
   };
   
   // Validation functions
@@ -324,7 +638,7 @@ export default function ProjectDetailPage() {
     }
     acc[doc.category].push(doc);
     return acc;
-  }, {} as Record<string, typeof projectDocuments>);
+  }, {} as Record<string, any[]>);
 
   return (
     <div className="space-y-6">
@@ -391,9 +705,11 @@ export default function ProjectDetailPage() {
       {/* Tabs */}
       <div className="border-b border-gray-700/50">
         <div className="flex gap-4 overflow-x-auto">
-          {['overview', 'documents', 'photos', 'diary', 'team', 'boq', 'valuations', 'wip', 'budget', 'payment-apps', 'plant', 'materials', 'quality', 'surveys', 'financials', 'defects', 'commercial'].map((tab) => {
+          {['overview', 'correspondence', 'calendar', 'documents', 'photos', 'diary', 'team', 'boq', 'valuations', 'wip', 'budget', 'payment-apps', 'plant', 'materials', 'quality', 'surveys', 'financials', 'defects', 'commercial'].map((tab) => {
             const tabLabels: Record<string, string> = {
               'overview': 'Overview',
+              'correspondence': '📧 Correspondence',
+              'calendar': '📅 Calendar',
               'documents': 'Documents',
               'photos': 'Photos',
               'diary': 'Site Diary',
@@ -463,6 +779,14 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
               </div>
+
+              <CorrespondencePanel
+                recordType="project"
+                recordId={project.id}
+                title="Project Correspondence"
+                subtitle="Emails linked to this live project"
+                emptyMessage="No emails have been linked to this project yet. Link them from the Mail workspace."
+              />
 
               {(project.orderNumber || project.contractFileName || project.invoiceAddress || project.paymentTerms || project.handoverNotes) && (
                 <div className="rounded-lg border border-blue-700/30 bg-blue-900/10 p-6">
@@ -560,7 +884,7 @@ export default function ProjectDetailPage() {
             {/* Documents by Category */}
             {Object.keys(documentsByCategory).length > 0 ? (
               <div className="space-y-4">
-                {Object.entries(documentsByCategory).map(([category, docs]) => (
+                {(Object.entries(documentsByCategory) as Array<[string, any[]]>).map(([category, docs]) => (
                   <div key={category} className="rounded-lg border border-gray-700/50 bg-gray-800/50 overflow-hidden">
                     <div className={`px-6 py-3 font-semibold border-b border-gray-700/50 ${getCategoryColor(category as DocumentCategory).split(' ').slice(0, 2).join(' ')}`}>
                       {category.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} ({docs.length})
@@ -623,7 +947,11 @@ export default function ProjectDetailPage() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Document Category</label>
-                      <select className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm">
+                      <select
+                        value={uploadDocumentCategory}
+                        onChange={(event) => setUploadDocumentCategory(event.target.value as DocumentCategory)}
+                        className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm"
+                      >
                         <option value="contract">Contracts</option>
                         <option value="design">Design & Drawings</option>
                         <option value="method-statement">Method Statements</option>
@@ -643,6 +971,8 @@ export default function ProjectDetailPage() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">Document Title</label>
                       <input
                         type="text"
+                        value={uploadDocumentTitle}
+                        onChange={(event) => setUploadDocumentTitle(event.target.value)}
                         placeholder="Enter document title"
                         className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
                       />
@@ -651,6 +981,7 @@ export default function ProjectDetailPage() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">Select File</label>
                       <input
                         type="file"
+                        onChange={(event) => setUploadDocumentFile(event.target.files?.[0] || null)}
                         className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-gray-300 text-sm file:mr-2 file:rounded file:border-0 file:bg-orange-500 file:px-2 file:py-1 file:text-white file:text-xs file:font-medium file:cursor-pointer"
                       />
                     </div>
@@ -662,7 +993,7 @@ export default function ProjectDetailPage() {
                         Cancel
                       </button>
                       <button
-                        onClick={() => setShowUploadModal(false)}
+                        onClick={handleDocumentUpload}
                         className="flex-1 rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition"
                       >
                         Upload
@@ -735,7 +1066,7 @@ export default function ProjectDetailPage() {
                           
                           {photo.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {photo.tags.map((tag) => (
+                              {photo.tags.map((tag: string) => (
                                 <span key={tag} className="px-2 py-1 rounded bg-gray-700/50 text-gray-300 text-xs">
                                   {tag}
                                 </span>
@@ -774,6 +1105,8 @@ export default function ProjectDetailPage() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">Photo Title</label>
                       <input
                         type="text"
+                        value={uploadPhotoTitle}
+                        onChange={(event) => setUploadPhotoTitle(event.target.value)}
                         placeholder="e.g., Site overview - Week 5"
                         className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
                       />
@@ -781,6 +1114,8 @@ export default function ProjectDetailPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
                       <textarea
+                        value={uploadPhotoDescription}
+                        onChange={(event) => setUploadPhotoDescription(event.target.value)}
                         placeholder="Optional description of the photo"
                         rows={3}
                         className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
@@ -799,6 +1134,7 @@ export default function ProjectDetailPage() {
                         type="file"
                         multiple
                         accept="image/*"
+                        onChange={(event) => setUploadPhotoFiles(event.target.files)}
                         className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-gray-300 text-sm file:mr-2 file:rounded file:border-0 file:bg-orange-500 file:px-2 file:py-1 file:text-white file:text-xs file:font-medium file:cursor-pointer"
                       />
                     </div>
@@ -810,7 +1146,7 @@ export default function ProjectDetailPage() {
                         Cancel
                       </button>
                       <button
-                        onClick={() => setShowPhotoModal(false)}
+                        onClick={handlePhotoUpload}
                         className="flex-1 rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition"
                       >
                         Upload
@@ -960,12 +1296,18 @@ export default function ProjectDetailPage() {
                         <label className="block text-sm font-medium text-gray-300 mb-2">Date & Time</label>
                         <input
                           type="datetime-local"
+                          value={diaryDateTime}
+                          onChange={(event) => setDiaryDateTime(event.target.value)}
                           className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm"
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Weather</label>
-                        <select className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm">
+                        <select
+                          value={diaryWeather}
+                          onChange={(event) => setDiaryWeather(event.target.value as 'dry' | 'rain' | 'snow' | 'wind' | 'frost')}
+                          className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm"
+                        >
                           <option value="dry">Dry</option>
                           <option value="rain">Rain</option>
                           <option value="snow">Snow</option>
@@ -979,6 +1321,8 @@ export default function ProjectDetailPage() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">Temperature (°C) - Optional</label>
                       <input
                         type="number"
+                        value={diaryTemperature}
+                        onChange={(event) => setDiaryTemperature(event.target.value)}
                         placeholder="e.g., 12"
                         className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
                       />
@@ -987,6 +1331,8 @@ export default function ProjectDetailPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Work Carried Out</label>
                       <textarea
+                        value={diaryWork}
+                        onChange={(event) => setDiaryWork(event.target.value)}
                         placeholder="Describe the work carried out on site today..."
                         rows={6}
                         className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
@@ -998,6 +1344,8 @@ export default function ProjectDetailPage() {
                         <label className="block text-sm font-medium text-gray-300 mb-2">Own Staff</label>
                         <input
                           type="number"
+                          value={diaryOwnStaff}
+                          onChange={(event) => setDiaryOwnStaff(event.target.value)}
                           placeholder="0"
                           className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
                         />
@@ -1006,6 +1354,8 @@ export default function ProjectDetailPage() {
                         <label className="block text-sm font-medium text-gray-300 mb-2">Subcontractors</label>
                         <input
                           type="number"
+                          value={diarySubcontractors}
+                          onChange={(event) => setDiarySubcontractors(event.target.value)}
                           placeholder="0"
                           className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
                         />
@@ -1014,6 +1364,8 @@ export default function ProjectDetailPage() {
                         <label className="block text-sm font-medium text-gray-300 mb-2">Visitors</label>
                         <input
                           type="number"
+                          value={diaryVisitors}
+                          onChange={(event) => setDiaryVisitors(event.target.value)}
                           placeholder="0"
                           className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
                         />
@@ -1023,6 +1375,8 @@ export default function ProjectDetailPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Tomorrow's Work - Optional</label>
                       <textarea
+                        value={diaryTomorrowWork}
+                        onChange={(event) => setDiaryTomorrowWork(event.target.value)}
                         placeholder="Brief description of planned work for the next day..."
                         rows={3}
                         className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white text-sm placeholder-gray-500"
@@ -1047,7 +1401,7 @@ export default function ProjectDetailPage() {
                         Cancel
                       </button>
                       <button
-                        onClick={() => setShowDiaryModal(false)}
+                        onClick={handleSaveDiaryEntry}
                         className="flex-1 rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition"
                       >
                         Save Entry
@@ -1562,14 +1916,22 @@ export default function ProjectDetailPage() {
                                 <p className="text-xs text-gray-400">{member.role}</p>
                               </div>
                             </div>
-                            <button className="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                            <button
+                              onClick={() => handleRemoveOperative(member.userId)}
+                              className="text-red-400 hover:text-red-300 text-sm"
+                            >
+                              Remove
+                            </button>
                           </div>
                         ))}
                       </div>
                     ) : (
                       <div className="mt-4 rounded-lg border border-gray-700/50 bg-gray-800/30 p-6 text-center">
                         <p className="text-gray-400 text-sm">No operatives assigned yet</p>
-                        <button className="mt-2 text-sm text-orange-400 hover:text-orange-300">
+                        <button
+                          onClick={() => setShowAssignOperativeModal(true)}
+                          className="mt-2 text-sm text-orange-400 hover:text-orange-300"
+                        >
                           + Assign first operative
                         </button>
                       </div>
@@ -1612,7 +1974,7 @@ export default function ProjectDetailPage() {
                         <div key={pa.id} className="rounded border border-gray-700/50 bg-gray-800 p-4">
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <p className="font-bold text-white">{pa.equipmentType}</p>
+                              <p className="font-bold text-white">{pa.plantName || pa.plantType}</p>
                               <p className="text-xs text-gray-400 mt-1">ID: {pa.plantId}</p>
                             </div>
                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -1630,7 +1992,9 @@ export default function ProjectDetailPage() {
                             </div>
                             <div>
                               <p className="text-gray-500">Duration</p>
-                              <p className="font-semibold text-white">{pa.totalDays || 0} days</p>
+                              <p className="font-semibold text-white">
+                                {Math.max(1, Math.ceil((new Date(pa.allocatedTo).getTime() - new Date(pa.allocatedFrom).getTime()) / (1000 * 60 * 60 * 24)))} days
+                              </p>
                             </div>
                           </div>
                           {pa.operatorRequired && (
@@ -1641,10 +2005,16 @@ export default function ProjectDetailPage() {
                             </div>
                           )}
                           <div className="mt-3 flex gap-2">
-                            <button className="flex-1 rounded bg-gray-700 px-3 py-1 text-xs text-white hover:bg-gray-600 transition">
+                            <button
+                              onClick={() => handleCycleEquipmentStatus(pa.id)}
+                              className="flex-1 rounded bg-gray-700 px-3 py-1 text-xs text-white hover:bg-gray-600 transition"
+                            >
                               Edit
                             </button>
-                            <button className="flex-1 rounded bg-red-900/30 px-3 py-1 text-xs text-red-400 hover:bg-red-900/50 transition">
+                            <button
+                              onClick={() => handleRemoveEquipment(pa.id)}
+                              className="flex-1 rounded bg-red-900/30 px-3 py-1 text-xs text-red-400 hover:bg-red-900/50 transition"
+                            >
                               Remove
                             </button>
                           </div>
@@ -1654,7 +2024,10 @@ export default function ProjectDetailPage() {
                   ) : (
                     <div className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6 text-center">
                       <p className="text-gray-400 text-sm">No equipment assigned yet</p>
-                      <button className="mt-2 text-sm text-orange-400 hover:text-orange-300">
+                      <button
+                        onClick={() => setShowAssignEquipmentModal(true)}
+                        className="mt-2 text-sm text-orange-400 hover:text-orange-300"
+                      >
                         + Assign first equipment
                       </button>
                     </div>
@@ -2773,6 +3146,234 @@ export default function ProjectDetailPage() {
             )}
           </div>
         )}
+
+        {activeTab === 'correspondence' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Project Correspondence</h2>
+                <p className="mt-1 text-sm text-gray-400">
+                  All emails linked to this project in chronological order. Link new emails from the Mail workspace.
+                </p>
+              </div>
+              <a
+                href={`/mail?recordType=project&recordId=${project.id}`}
+                className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700"
+              >
+                Open in Mail
+              </a>
+            </div>
+            <CorrespondencePanel
+              key={correspondenceRefreshKey}
+              recordType="project"
+              recordId={project.id}
+              title="Linked emails"
+              subtitle="Full correspondence history for this project"
+              emptyMessage="No emails have been linked to this project yet. Open the Mail workspace and link emails using the 'Add link' panel on the right."
+            />
+          </div>
+        )}
+
+        {activeTab === 'calendar' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Project Calendar</h2>
+                <p className="mt-1 text-sm text-gray-400">
+                  Microsoft 365 calendar events linked to this project — site meetings, client calls, inspections.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  const now = new Date();
+                  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+                  setMeetingSubject(`${project.projectName} – `);
+                  setMeetingStart(now.toISOString().slice(0, 16));
+                  setMeetingEnd(oneHourLater.toISOString().slice(0, 16));
+                  setMeetingLocation(project.siteAddress ? `${project.siteAddress.line1}, ${project.siteAddress.city}` : '');
+                  setShowMeetingForm(true);
+                }}
+                className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+              >
+                + Create Meeting
+              </button>
+            </div>
+
+            {showMeetingForm && (
+              <div className="rounded-xl border border-orange-400/30 bg-orange-500/5 p-6">
+                <h3 className="mb-4 text-lg font-bold text-white">New calendar event</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-gray-400">Subject *</label>
+                    <input
+                      value={meetingSubject}
+                      onChange={(e) => setMeetingSubject(e.target.value)}
+                      placeholder="Meeting subject"
+                      className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-400">Start *</label>
+                    <input
+                      type="datetime-local"
+                      value={meetingStart}
+                      onChange={(e) => setMeetingStart(e.target.value)}
+                      className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-400">End *</label>
+                    <input
+                      type="datetime-local"
+                      value={meetingEnd}
+                      onChange={(e) => setMeetingEnd(e.target.value)}
+                      className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-400">Location</label>
+                    <input
+                      value={meetingLocation}
+                      onChange={(e) => setMeetingLocation(e.target.value)}
+                      placeholder="Site address or Teams link"
+                      className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-400">Attendees (comma-separated emails)</label>
+                    <input
+                      value={meetingAttendees}
+                      onChange={(e) => setMeetingAttendees(e.target.value)}
+                      placeholder="john@example.com, jane@example.com"
+                      className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-gray-400">Meeting notes</label>
+                    <textarea
+                      value={meetingNotes}
+                      onChange={(e) => setMeetingNotes(e.target.value)}
+                      rows={3}
+                      placeholder="Agenda, notes, or objectives"
+                      className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    onClick={() => setShowMeetingForm(false)}
+                    className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={creatingMeeting || !meetingSubject.trim() || !meetingStart || !meetingEnd}
+                    onClick={async () => {
+                      setCreatingMeeting(true);
+                      try {
+                        const attendees = meetingAttendees
+                          .split(/[,;]/)
+                          .map((a) => a.trim())
+                          .filter(Boolean)
+                          .map((address) => ({ address }));
+
+                        const res = await fetch('/api/calendar/events', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            subject: meetingSubject,
+                            start: new Date(meetingStart).toISOString(),
+                            end: new Date(meetingEnd).toISOString(),
+                            location: meetingLocation || undefined,
+                            body: meetingNotes || undefined,
+                            attendees,
+                          }),
+                        });
+
+                        if (res.ok) {
+                          // Auto-link to this project using a synthetic event ID
+                          const syntheticEventId = `proj-meeting-${Date.now()}`;
+                          addLinkToCalendarEvent(
+                            syntheticEventId,
+                            {
+                              subject: meetingSubject,
+                              start: new Date(meetingStart).toISOString(),
+                              end: new Date(meetingEnd).toISOString(),
+                              location: meetingLocation || undefined,
+                              bodyPreview: meetingNotes || undefined,
+                            },
+                            {
+                              type: 'project',
+                              recordId: project.id,
+                              label: `${project.id} · ${project.projectName}`,
+                              href: `/projects/${project.id}`,
+                            }
+                          );
+                          setLinkedCalendarEvents(getLinkedEventsForRecord('project', projectId));
+                          setShowMeetingForm(false);
+                          setMeetingSubject('');
+                          setMeetingStart('');
+                          setMeetingEnd('');
+                          setMeetingLocation('');
+                          setMeetingAttendees('');
+                          setMeetingNotes('');
+                        } else {
+                          const err = await res.json();
+                          alert(err.error || 'Failed to create calendar event');
+                        }
+                      } catch {
+                        alert('Failed to create calendar event');
+                      } finally {
+                        setCreatingMeeting(false);
+                      }
+                    }}
+                    className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    {creatingMeeting ? 'Creating…' : 'Create & link to project'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {linkedCalendarEvents.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-700 bg-gray-800/40 p-8 text-center text-sm text-gray-400">
+                No calendar events linked to this project yet. Use the "Create Meeting" button to create and auto-link a Microsoft 365 event.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {linkedCalendarEvents.map((event) => (
+                  <div key={event.eventId} className="rounded-xl border border-gray-700 bg-gray-800/50 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-base font-semibold text-white">{event.subject}</h3>
+                        {event.location && (
+                          <p className="mt-1 text-sm text-gray-400">📍 {event.location}</p>
+                        )}
+                        {event.bodyPreview && (
+                          <p className="mt-2 line-clamp-2 text-sm text-gray-300">{event.bodyPreview}</p>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0 text-right text-xs text-gray-400">
+                        {event.start && (
+                          <p className="font-semibold text-white">
+                            {new Date(event.start).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        )}
+                        {event.start && event.end && (
+                          <p className="mt-1">
+                            {new Date(event.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                            {' – '}
+                            {new Date(event.end).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}
@@ -3148,6 +3749,8 @@ export default function ProjectDetailPage() {
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Operative Name *</label>
                 <input
                   type="text"
+                  value={operativeName}
+                  onChange={(event) => setOperativeName(event.target.value)}
                   placeholder="e.g., John Smith"
                   className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none"
                 />
@@ -3155,7 +3758,11 @@ export default function ProjectDetailPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Role *</label>
-                <select className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none">
+                <select
+                  value={operativeRole}
+                  onChange={(event) => setOperativeRole(event.target.value)}
+                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none"
+                >
                   <option value="">Select role...</option>
                   <option value="General Labourer">General Labourer</option>
                   <option value="Skilled Labourer">Skilled Labourer</option>
@@ -3215,10 +3822,7 @@ export default function ProjectDetailPage() {
                 Cancel
               </button>
               <button 
-                onClick={() => {
-                  showToast('Operative assigned successfully', 'success');
-                  setShowAssignOperativeModal(false);
-                }}
+                onClick={handleAssignOperative}
                 className="rounded bg-orange-500 px-6 py-2 text-sm font-semibold text-white hover:bg-orange-600"
               >
                 Assign to Project
@@ -3243,7 +3847,11 @@ export default function ProjectDetailPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Equipment Type *</label>
-                <select className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none">
+                <select
+                  value={equipmentType}
+                  onChange={(event) => setEquipmentType(event.target.value)}
+                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none"
+                >
                   <option value="">Select equipment...</option>
                   <option value="Excavator">Excavator</option>
                   <option value="Dumper">Dumper</option>
@@ -3262,6 +3870,8 @@ export default function ProjectDetailPage() {
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Equipment ID/Registration *</label>
                 <input
                   type="text"
+                  value={equipmentId}
+                  onChange={(event) => setEquipmentId(event.target.value)}
                   placeholder="e.g., PLT-001 or ABC123"
                   className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none"
                 />
@@ -3272,6 +3882,8 @@ export default function ProjectDetailPage() {
                   <label className="block text-sm font-semibold text-gray-300 mb-2">Start Date *</label>
                   <input
                     type="date"
+                    value={equipmentStartDate}
+                    onChange={(event) => setEquipmentStartDate(event.target.value)}
                     className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none"
                   />
                 </div>
@@ -3279,6 +3891,8 @@ export default function ProjectDetailPage() {
                   <label className="block text-sm font-semibold text-gray-300 mb-2">End Date</label>
                   <input
                     type="date"
+                    value={equipmentEndDate}
+                    onChange={(event) => setEquipmentEndDate(event.target.value)}
                     className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none"
                   />
                 </div>
@@ -3291,6 +3905,8 @@ export default function ProjectDetailPage() {
                     <span className="absolute left-3 top-2.5 text-gray-400">£</span>
                     <input
                       type="number"
+                      value={equipmentDailyRate}
+                      onChange={(event) => setEquipmentDailyRate(event.target.value)}
                       placeholder="0.00"
                       step="0.01"
                       className="w-full rounded-lg border border-gray-700 bg-gray-800 pl-8 pr-4 py-2 text-white focus:border-orange-500 focus:outline-none"
@@ -3299,7 +3915,11 @@ export default function ProjectDetailPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2">Status</label>
-                  <select className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none">
+                  <select
+                    value={equipmentStatus}
+                    onChange={(event) => setEquipmentStatus(event.target.value as 'allocated' | 'on-site' | 'off-hired')}
+                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none"
+                  >
                     <option value="allocated">Allocated</option>
                     <option value="on-site">On-Site</option>
                     <option value="off-hired">Off-Hired</option>
@@ -3311,6 +3931,8 @@ export default function ProjectDetailPage() {
                 <input
                   type="checkbox"
                   id="operatorRequired"
+                  checked={equipmentOperatorRequired}
+                  onChange={(event) => setEquipmentOperatorRequired(event.target.checked)}
                   className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-orange-500 focus:ring-orange-500"
                 />
                 <label htmlFor="operatorRequired" className="text-sm text-gray-300">
@@ -3322,6 +3944,8 @@ export default function ProjectDetailPage() {
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Notes</label>
                 <textarea
                   rows={2}
+                  value={equipmentNotes}
+                  onChange={(event) => setEquipmentNotes(event.target.value)}
                   placeholder="Additional information..."
                   className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-orange-500 focus:outline-none resize-none"
                 />
@@ -3333,10 +3957,7 @@ export default function ProjectDetailPage() {
                 Cancel
               </button>
               <button 
-                onClick={() => {
-                  showToast('Equipment assigned successfully', 'success');
-                  setShowAssignEquipmentModal(false);
-                }}
+                onClick={handleAssignEquipment}
                 className="rounded bg-orange-500 px-6 py-2 text-sm font-semibold text-white hover:bg-orange-600"
               >
                 Assign to Project

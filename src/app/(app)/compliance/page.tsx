@@ -127,7 +127,7 @@ function buildRAMSPrintableHtml(doc: RAMSDocument): string {
       print-color-adjust: exact;
       color-adjust: exact;
     }
-    .header-logo img { height: 60px; max-width: 200px; object-fit: contain; display: block; }
+    .header-logo img { height: 60px; max-width: 200px; object-fit: contain; display: block; filter: invert() hue-rotate(180deg); }
     .header-subtitle { font-size: 12px; color: #666; margin-top: 4px; }
     .rev-status {
       display: flex;

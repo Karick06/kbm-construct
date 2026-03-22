@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import PermissionGuard from "@/components/PermissionGuard";
+import OverviewStatGrid from "@/components/OverviewStatGrid";
+import OverviewTrendChart from "@/components/OverviewTrendChart";
 
-import { useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 
 const hrStats = [
@@ -51,68 +53,33 @@ const trainingPrograms = [
 ];
 
 export default function HROverviewPage() {
-  const maxStaff = Math.max(...staffData.map(d => d.value));
-
   return (
     <PermissionGuard permission="leave">
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
-        <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+      <div className="flex items-center justify-end gap-2">
+        <Link href="/team" className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700">
+          Team
+        </Link>
+        <Link href="/staff" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
           + New Hire
-        </button>
+        </Link>
       </div>
 
       {/* Key Metrics */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {hrStats.map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-3 rounded-lg border border-gray-700/50 border-l-4 border-l-orange-500 bg-gray-800/80 px-5 py-4">
-            <div className="flex items-start justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                {stat.label}
-              </p>
-              <span className="text-xl">{stat.icon}</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{stat.value}</p>
-            <p className="text-xs text-gray-400">{stat.change}</p>
-          </div>
-        ))}
-      </section>
+      <OverviewStatGrid items={hrStats} />
 
       {/* Staffing Trend & Leave Status */}
       <section className="grid gap-6 lg:grid-cols-3">
         {/* Staffing Chart */}
-        <div className="lg:col-span-2 rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Headcount</p>
-                <h2 className="mt-1 text-xl font-bold text-white">Last 6 Months</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-white">156</p>
-                <p className="text-xs text-green-400">↑ 14 employees this period</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-end justify-between gap-3 h-48 mt-12">
-            {staffData.map((item) => (
-              <div key={item.month} className="flex flex-col items-center flex-1 gap-2">
-                <div className="relative w-full">
-                  <div 
-                    className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t-lg transition-all hover:from-orange-400 hover:to-orange-300"
-                    style={{ height: `${(item.value / maxStaff) * 180}px` }}
-                  />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-semibold text-white">{item.label}</p>
-                  <p className="text-xs text-gray-500">{item.month}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <OverviewTrendChart
+          eyebrow="Headcount"
+          title="Last 6 Months"
+          summaryValue="156"
+          summaryChange="↑ 14 employees this period"
+          summaryToneClassName="text-green-400"
+          points={staffData}
+        />
 
         {/* Leave Status Breakdown */}
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">

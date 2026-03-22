@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import PermissionGuard from "@/components/PermissionGuard";
-
-import { useState } from "react";
+import OverviewStatGrid from "@/components/OverviewStatGrid";
+import OverviewTrendChart from "@/components/OverviewTrendChart";
 
 const fleetStats = [
   { label: "Total Assets", value: "42", change: "+4 this quarter", icon: "📊", subtitle: "28 vehicles, 14 plant" },
@@ -58,69 +59,33 @@ const maintenanceAlerts = [
 ];
 
 export default function FleetOverviewPage() {
-  const maxUtilization = Math.max(...utilizationData.map(d => d.value));
-
   return (
     <PermissionGuard permission="fleet">
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
-        <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+      <div className="flex items-center justify-end gap-2">
+        <Link href="/maintenance" className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700">
+          Maintenance
+        </Link>
+        <Link href="/fleet" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
           + Add Asset
-        </button>
+        </Link>
       </div>
 
       {/* Key Metrics */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {fleetStats.map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-3 rounded-lg border border-gray-700/50 border-l-4 border-l-orange-500 bg-gray-800/80 px-5 py-4">
-            <div className="flex items-start justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                {stat.label}
-              </p>
-              <span className="text-xl">{stat.icon}</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{stat.value}</p>
-            <p className="text-xs text-gray-400">{stat.change}</p>
-            {stat.subtitle && <p className="text-xs text-gray-500">{stat.subtitle}</p>}
-          </div>
-        ))}
-      </section>
+      <OverviewStatGrid items={fleetStats} />
 
       {/* Utilization Trend & Status */}
       <section className="grid gap-6 lg:grid-cols-3">
         {/* Utilization Chart */}
-        <div className="lg:col-span-2 rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Fleet Utilisation</p>
-                <h2 className="mt-1 text-xl font-bold text-white">Last 6 Months</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-white">86%</p>
-                <p className="text-xs text-green-400">↑ 4% vs previous period</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-end justify-between gap-3 h-48 mt-12">
-            {utilizationData.map((item) => (
-              <div key={item.month} className="flex flex-col items-center flex-1 gap-2">
-                <div className="relative w-full">
-                  <div 
-                    className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t-lg transition-all hover:from-orange-400 hover:to-orange-300"
-                    style={{ height: `${(item.value / maxUtilization) * 180}px` }}
-                  />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-semibold text-white">{item.label}</p>
-                  <p className="text-xs text-gray-500">{item.month}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <OverviewTrendChart
+          eyebrow="Fleet Utilisation"
+          title="Last 6 Months"
+          summaryValue="86%"
+          summaryChange="↑ 4% vs previous period"
+          summaryToneClassName="text-green-400"
+          points={utilizationData}
+        />
 
         {/* Vehicle Status Breakdown */}
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">

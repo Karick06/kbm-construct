@@ -1,0 +1,207 @@
+{
+  "id": "RAMS-1774003097157",
+  "title": "RAMS - The Avenue Stoke - Sub-base replacement",
+  "projectId": "Arbor Park build",
+  "projectName": "Arbor Park build",
+  "projectManager": "Bruce Cooper",
+  "projectPhase": "Civils",
+  "location": "The Avenue",
+  "sitePostcode": "ST4 6BW",
+  "siteLat": 53.007885,
+  "siteLon": -2.210047,
+  "nearestHospitalName": "Royal Stoke University Hospital",
+  "nearestHospitalAddress": "Newcastle Road, ST4 6QG",
+  "nearestHospitalDistanceKm": 0.6,
+  "nearestHospitalPhone": "+44 1782 715444",
+  "hospitalLat": 53.0031261,
+  "hospitalLon": -2.2135279,
+  "workType": "Excavation & Groundworks",
+  "workTypes": [
+    "Excavation & Groundworks",
+    "Subbase & Capping Installation",
+    "Utility Ducting & Service Crossings",
+    "Ironwork Raise & Reset"
+  ],
+  "author": "Mick Morrison",
+  "approver": "Jordan Marsden",
+  "issueDate": "2026-03-20",
+  "tier1Profile": "Standard",
+  "revision": 1,
+  "approvalStatus": "Pending Approval",
+  "ppeRequired": [
+    "Hard hat",
+    "Hi-vis (Class 2 minimum)",
+    "Safety boots with midsole protection",
+    "Cut-resistant gloves",
+    "Eye protection",
+    "Hearing protection",
+    "Task-specific RPE (FFP3 where required)",
+    "Hi-vis",
+    "Safety boots",
+    "Gloves",
+    "Hi-vis (Class 3)"
+  ],
+  "plantEquipment": [
+    "Tracked excavator",
+    "Dumper",
+    "CAT & Genny",
+    "Compaction roller / plate compactor",
+    "Plate compactor",
+    "Mini excavator",
+    "Compaction equipment",
+    "Lifting keys",
+    "Cutting tools",
+    "Rapid-set materials",
+    "Compaction tools"
+  ],
+  "riskAssessment": [
+    {
+      "hazard": "Service strike from buried utilities",
+      "initialRisk": "High",
+      "controls": "Permit to dig, service plans verification, CAT & Genny sweep, scan-and-mark protocol, hand dig trial holes, exclusion zone for HV assets",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Trench collapse",
+      "initialRisk": "High",
+      "controls": "Temporary works design, shoring/boxing, safe battering, appointed excavation supervisor inspections at start-of-shift and after weather/load changes",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Plant and pedestrian interface",
+      "initialRisk": "High",
+      "controls": "Segregated routes, physical barriers, plant marshal/banksman, one-way plan, reversing controls, speed limits",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Ground instability near existing structures",
+      "initialRisk": "High",
+      "controls": "Pre-works structural survey, set stand-off distances, engineer approval for deep excavations, vibration monitoring",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Flooding / water ingress",
+      "initialRisk": "High",
+      "controls": "Dewatering plan, pumps and backup, weather monitoring, emergency egress route, stop-work trigger levels",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Confined access/egress in deep excavation",
+      "initialRisk": "High",
+      "controls": "Ladder access at controlled intervals, rescue plan, gas testing where required, no lone working",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Dust and silica exposure",
+      "initialRisk": "Medium",
+      "controls": "Damping down, local suppression, RPE, exposure time controls, occupational hygiene monitoring",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Manual handling injuries",
+      "initialRisk": "Medium",
+      "controls": "Mechanical lifting aids, task rotation, team lifts, briefing and supervision",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Insufficient compaction leading to failure",
+      "initialRisk": "High",
+      "controls": "Layer thickness control, compaction testing and hold-point sign-off",
+      "residualRisk": "Medium"
+    },
+    {
+      "hazard": "Dust generation in dry conditions",
+      "initialRisk": "Medium",
+      "controls": "Water suppression and speed controls",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Live service damage during crossing works",
+      "initialRisk": "High",
+      "controls": "Service verification, hand dig/vac-ex near assets and permit-to-dig controls",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Backfill settlement over crossings",
+      "initialRisk": "Medium",
+      "controls": "Specified bedding/backfill and compaction testing",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Manual handling injuries when moving covers/frames",
+      "initialRisk": "Medium",
+      "controls": "Mechanical lifting keys and team lifts where required",
+      "residualRisk": "Low"
+    },
+    {
+      "hazard": "Trips/open chamber risk during reset",
+      "initialRisk": "High",
+      "controls": "Immediate guarding, barrier controls and supervised access",
+      "residualRisk": "Low"
+    }
+  ],
+  "methodStatementSteps": [
+    "Pre-start briefing including RAMS, permits, emergency plan, service drawings and hold points.",
+    "Establish traffic management, pedestrian segregation, exclusion zones and welfare/emergency access routes.",
+    "Complete utility detection and trial pits to verify asset positions before machine excavation.",
+    "Excavate in planned sequence with competent operator and banksman supervision at all times.",
+    "Install temporary works / support systems as excavation progresses, with supervisor sign-off.",
+    "Control groundwater and surface water using approved dewatering and discharge arrangements.",
+    "Complete inspections and quality checks at defined hold points before follow-on works.",
+    "Reinstate/backfill in layers to specification with compaction testing and records.",
+    "Remove temporary controls safely, leave area in stable condition, complete close-out checks.",
+    "Verify formation and geotextile requirements before placement.",
+    "Place capping/subbase in controlled layer depths.",
+    "Grade and compact to line/level and density requirements.",
+    "Complete testing regime and release for next layer.",
+    "Confirm crossing locations and isolate if required.",
+    "Excavate in controlled stages around live services.",
+    "Install ducts, marker tape and protection slabs as required.",
+    "Backfill, compact and complete compliance records.",
+    "Set local traffic management and isolate work area.",
+    "Remove and prepare existing frame and surrounding surfacing.",
+    "Raise/reset frame to finished level and reinstate surround.",
+    "Verify level tolerance and reopen on cure completion."
+  ],
+  "emergencyProcedures": [
+    "Stop work and make plant safe immediately.",
+    "Raise emergency alarm and initiate incident command hierarchy.",
+    "Rescue from excavation only by trained personnel using approved rescue kit.",
+    "Contact emergency services and provide precise access coordinates.",
+    "Preserve scene for investigation after casualty care is complete.",
+    "Stop plant movement",
+    "Provide first aid where required",
+    "Report to site management",
+    "Stop work and isolate area",
+    "Escalate service strike protocol immediately",
+    "Secure open chamber immediately",
+    "Stop traffic interface works and escalate incidents"
+  ],
+  "environmentalControls": [
+    "Dust suppression and air quality checks",
+    "Wheel wash and mud-on-road controls",
+    "Silt fences and runoff capture",
+    "Spill prevention and fuel storage controls",
+    "Segregated spoil and waste tracking",
+    "Dust suppression",
+    "Material stockpile control",
+    "Runoff management",
+    "Spoil segregation",
+    "Dust and runoff controls",
+    "Material traceability",
+    "Waste asphalt/concrete segregation",
+    "Spill control"
+  ],
+  "permitsRequired": [
+    "Permit to Dig",
+    "Temporary Works Permit",
+    "Excavation Permit",
+    "Environmental Discharge Consent (if required)",
+    "Permit to Work",
+    "Service Isolation Permit (where applicable)",
+    "Traffic Management Permit",
+    "Road Space Permit"
+  ],
+  "createdDate": "2026-03-20T10:38:17.157Z",
+  "lastModifiedDate": "2026-03-20T10:39:23.455Z"
+}

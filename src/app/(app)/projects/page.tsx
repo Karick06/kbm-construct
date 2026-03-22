@@ -6,7 +6,10 @@ import { useEffect, useMemo, useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 import { formatCurrency, type ConstructionProject } from "@/lib/operations-models";
 import { getProjectsFromStorage, sampleProjects, saveProjectsToStorage } from "@/lib/operations-data";
+import { getEmailLinksFromStorage } from "@/lib/email-links";
+import Link from "next/link";
 import MobileCard from "@/components/MobileCard";
+import { createProjectGeofence } from "@/lib/geofence";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import PullToRefresh from "@/components/PullToRefresh";
 
@@ -76,6 +79,32 @@ export default function ProjectsPage() {
   const [invoiceAddress, setInvoiceAddress] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
   const [mobileFilter, setMobileFilter] = useState<string>("all");
+  const [emailLinkCounts, setEmailLinkCounts] = useState<Record<string, number>>({});
+
+  const computeLinkCounts = () => {
+    const store = getEmailLinksFromStorage();
+    const counts: Record<string, number> = {};
+    Object.values(store).forEach((entry) => {
+      entry.links.forEach((link) => {
+        if (link.type === "project") {
+          counts[link.recordId] = (counts[link.recordId] || 0) + 1;
+        }
+      });
+    });
+    setEmailLinkCounts(counts);
+  };
+
+  useEffect(() => {
+    computeLinkCounts();
+    const handle = () => computeLinkCounts();
+    window.addEventListener("storage", handle);
+    window.addEventListener("focus", handle);
+    return () => {
+      window.removeEventListener("storage", handle);
+      window.removeEventListener("focus", handle);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setProjects(getProjectsFromStorage());
@@ -156,6 +185,77 @@ export default function ProjectsPage() {
     closeEditModal();
   };
 
+  const handleCreateProject = async () => {
+    const now = new Date();
+    const start = new Date(now);
+    const completion = new Date(now);
+    completion.setDate(completion.getDate() + 84);
+    const sequence = projects.length + 1;
+    const newProjectId = `PRJ-${Date.now()}`;
+
+    const newProject: ConstructionProject = {
+      id: newProjectId,
+      projectCode: `OPS-${String(sequence).padStart(3, "0")}`,
+      estimateId: `EST-MANUAL-${String(sequence).padStart(3, "0")}`,
+      projectName: `New Project ${sequence}`,
+      client: "Unassigned Client",
+      clientContact: {
+        name: "",
+        email: "",
+        phone: "",
+      },
+      siteAddress: {
+        line1: "",
+        city: "",
+        postcode: "",
+      },
+      contractValue: 0,
+      contractType: "lump-sum",
+      contractStartDate: start.toISOString().slice(0, 10),
+      contractCompletionDate: completion.toISOString().slice(0, 10),
+      contractDuration: 12,
+      retentionPercentage: 5,
+      stage: "handover",
+      overallProgress: 0,
+      daysToCompletion: 84,
+      onProgramme: true,
+      projectManager: "Operations Team",
+      team: [],
+      valuationToDate: 0,
+      costToDate: 0,
+      forecastFinalCost: 0,
+      grossProfit: 0,
+      grossProfitPercentage: 0,
+      invoiceStage: "not-started",
+      milestones: [],
+      documentCount: 0,
+      photoCount: 0,
+      siteDiaryCount: 0,
+      riskLevel: "low",
+      hasVariations: false,
+      hasDelays: false,
+      hasDefects: false,
+      requiresAttention: false,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+
+    const updatedProjects = [...projects, newProject];
+    setProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+
+    try {
+      await createProjectGeofence({
+        id: newProject.id,
+        projectName: newProject.projectName,
+        siteAddress: newProject.siteAddress,
+      });
+    } catch (error) {
+      console.error("Failed to create project geofence:", error);
+    }
+    openEditModal(newProjectId);
+  };
+
   const handleRefresh = async () => {
     setProjects(getProjectsFromStorage());
   };
@@ -194,7 +294,6 @@ export default function ProjectsPage() {
             {/* Mobile Filter Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2" style={{ scrollbarWidth: 'none' }}>
               {[
-                { key: "all", label: "All", count: allProjects.length },
                 { key: "mobilizing", label: "Mobilizing", count: projectsByStatus.mobilizing.length },
                 { key: "active", label: "Active", count: projectsByStatus.active.length },
                 { key: "review", label: "Review", count: projectsByStatus.review.length },
@@ -206,7 +305,7 @@ export default function ProjectsPage() {
                   className={`flex-shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${
                     mobileFilter === tab.key
                       ? "bg-[var(--accent)] text-white"
-                      : "bg-[var(--surface)] text-[var(--sidebar-muted)] active:scale-95"
+                      : "bg-gray-700/50 text-gray-400 hover:bg-gray-700"
                   }`}
                 >
                   {tab.label} {tab.count > 0 && `(${tab.count})`}
@@ -318,7 +417,7 @@ export default function ProjectsPage() {
         </PullToRefresh>
 
         <FloatingActionButton 
-          onClick={() => undefined}
+          onClick={handleCreateProject}
           label="New"
           icon="+"
         />
@@ -348,6 +447,12 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-end">
         <div className="flex gap-2">
+          <Link
+            href="/geofences"
+            className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700"
+          >
+            Geofences
+          </Link>
           <button
             onClick={() => setView("board")}
             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
@@ -364,7 +469,10 @@ export default function ProjectsPage() {
           >
             List View
           </button>
-          <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+          <button
+            onClick={handleCreateProject}
+            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+          >
             + New Project
           </button>
         </div>
@@ -427,7 +535,14 @@ export default function ProjectsPage() {
                         Edit
                       </button>
                     </div>
-                    <p className="text-xs text-gray-400 mb-3">{p.client}</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-400">{p.client}</p>
+                      {emailLinkCounts[p.id] > 0 && (
+                        <Link href={`/mail?recordType=project&recordId=${p.id}`} onClick={(e) => e.stopPropagation()} className="rounded-full border border-orange-400/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-300">
+                          📧 {emailLinkCounts[p.id]}
+                        </Link>
+                      )}
+                    </div>
                     <div className="mb-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-gray-400">Setup</span>
@@ -497,7 +612,14 @@ export default function ProjectsPage() {
                         Edit
                       </button>
                     </div>
-                    <p className="text-xs text-gray-400 mb-3">{p.client}</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-400">{p.client}</p>
+                      {emailLinkCounts[p.id] > 0 && (
+                        <Link href={`/mail?recordType=project&recordId=${p.id}`} onClick={(e) => e.stopPropagation()} className="rounded-full border border-orange-400/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-300">
+                          📧 {emailLinkCounts[p.id]}
+                        </Link>
+                      )}
+                    </div>
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-700/30 text-xs">
                       <div>
                         <p className="text-gray-500">Team</p>
@@ -559,7 +681,14 @@ export default function ProjectsPage() {
                         Edit
                       </button>
                     </div>
-                    <p className="text-xs text-gray-400 mb-3">{p.client}</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-400">{p.client}</p>
+                      {emailLinkCounts[p.id] > 0 && (
+                        <Link href={`/mail?recordType=project&recordId=${p.id}`} onClick={(e) => e.stopPropagation()} className="rounded-full border border-orange-400/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-300">
+                          📧 {emailLinkCounts[p.id]}
+                        </Link>
+                      )}
+                    </div>
                     <div className="mb-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-gray-400">Progress</span>
@@ -616,7 +745,14 @@ export default function ProjectsPage() {
                         Edit
                       </button>
                     </div>
-                    <p className="text-xs text-gray-400 mb-3">{p.client}</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-400">{p.client}</p>
+                      {emailLinkCounts[p.id] > 0 && (
+                        <Link href={`/mail?recordType=project&recordId=${p.id}`} onClick={(e) => e.stopPropagation()} className="rounded-full border border-orange-400/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-300">
+                          📧 {emailLinkCounts[p.id]}
+                        </Link>
+                      )}
+                    </div>
                     <div className="mb-3">
                       <div className="h-1.5 bg-gray-600/50 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400" style={{ width: `${p.progress}%` }} />
@@ -669,7 +805,14 @@ export default function ProjectsPage() {
                         Edit
                       </button>
                     </div>
-                    <p className="text-xs text-gray-400 mb-3">{p.client}</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-400">{p.client}</p>
+                      {emailLinkCounts[p.id] > 0 && (
+                        <Link href={`/mail?recordType=project&recordId=${p.id}`} onClick={(e) => e.stopPropagation()} className="rounded-full border border-orange-400/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-300">
+                          📧 {emailLinkCounts[p.id]}
+                        </Link>
+                      )}
+                    </div>
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-700/30 text-xs">
                       <div>
                         <p className="text-gray-500">Team</p>

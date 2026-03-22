@@ -1,0 +1,72 @@
+{
+  "enquiries": [
+    {
+      "title": "test",
+      "category": "materials",
+      "linkedRecordType": "estimate",
+      "linkedRecordId": "EST-2026-050",
+      "linkedRecordName": "EST-2026-050 - Sports Facility",
+      "requiredBy": "2026-03-24",
+      "items": [
+        {
+          "id": "eaefd3f0-da1b-4ef7-a223-36f6b2521009",
+          "description": "SMA10",
+          "unit": "ton",
+          "quantity": 124
+        }
+      ],
+      "documents": [],
+      "id": "cdc470d4-369c-4a46-8184-3a335e010f00",
+      "reference": "SEQ-0002",
+      "createdAt": "2026-03-18T15:43:02.382Z",
+      "status": "sent",
+      "responses": [],
+      "invites": [
+        {
+          "id": "3a8f5e98-f69f-4a43-b6bb-b7b1f31a1102",
+          "supplierId": "SUP-006",
+          "supplierName": "test",
+          "supplierEmail": "mick@valescape.co.uk",
+          "inviteToken": "449748029933ca09604afdbb304873e4e1426002",
+          "status": "viewed",
+          "sentAt": "2026-03-18T15:43:02.428Z",
+          "viewedAt": "2026-03-18T16:35:54.591Z"
+        }
+      ],
+      "sentAt": "2026-03-18T15:43:02.428Z"
+    },
+    {
+      "title": ";ojk;",
+      "category": "materials",
+      "linkedRecordType": "estimate",
+      "linkedRecordId": "EST-2026-050",
+      "linkedRecordName": "EST-2026-050 - Sports Facility",
+      "requiredBy": "2026-03-26",
+      "items": [
+        {
+          "id": "dd721b21-f489-4a67-a361-47937a7a83e9",
+          "description": "sma",
+          "unit": "ton",
+          "quantity": 64
+        }
+      ],
+      "documents": [],
+      "id": "0c0e96b8-cbc3-43ca-80ca-b7d4aaadd01f",
+      "reference": "SEQ-0001",
+      "createdAt": "2026-03-18T15:41:10.221Z",
+      "status": "sent",
+      "responses": [],
+      "invites": [
+        {
+          "id": "1688fc50-61e1-48e6-9c27-b2be30e0fb03",
+          "supplierName": "Peak Plant Hire",
+          "supplierEmail": "mike@peakplant.co.uk",
+          "inviteToken": "ea79da338787401a02713080eab83289b710c03d",
+          "status": "pending",
+          "sentAt": "2026-03-18T15:42:16.580Z"
+        }
+      ],
+      "sentAt": "2026-03-18T15:42:16.580Z"
+    }
+  ]
+}

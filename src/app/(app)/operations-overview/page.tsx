@@ -30,6 +30,7 @@ import {
   createOrUpdateBillOfQuantities,
 } from "@/lib/operations-data";
 import { getEstimateJobsFromStorage } from "@/lib/enquiries-store";
+import { createProjectGeofence } from "@/lib/geofence";
 
 type ViewMode = "dashboard" | "kanban" | "gantt" | "map";
 
@@ -177,6 +178,17 @@ export default function OperationsOverviewPage() {
     saveHandoversToStorage(updatedHandovers);
     setProjects(updatedProjects);
     saveProjectsToStorage(updatedProjects);
+
+    if (!existingProject) {
+      void createProjectGeofence({
+        id: newProject.id,
+        projectName: newProject.projectName,
+        siteAddress: newProject.siteAddress,
+      }).catch((error) => {
+        console.error("Failed to create project geofence:", error);
+      });
+    }
+
     alert("Handover accepted - Project created with BoQ items!");
   };
 
@@ -306,7 +318,7 @@ export default function OperationsOverviewPage() {
             className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition"
           >
             <span>📍</span>
-            <span>Team Locations</span>
+            <span>Geofences</span>
           </button>
           <button 
             onClick={() => router.push("/projects")}
@@ -320,7 +332,10 @@ export default function OperationsOverviewPage() {
           >
             Sync BOQ from Estimating
           </button>
-          <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition">
+          <button
+            onClick={() => router.push("/projects")}
+            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition"
+          >
             + New Project
           </button>
         </div>
@@ -441,6 +456,7 @@ export default function OperationsOverviewPage() {
       {showSiteDiaryModal && (
         <SiteDiaryModal
           projects={projects}
+          onSaved={() => setProjects(getProjectsFromStorage())}
           onClose={() => setShowSiteDiaryModal(false)}
         />
       )}
@@ -448,6 +464,7 @@ export default function OperationsOverviewPage() {
       {showPhotoUploadModal && (
         <PhotoUploadModal
           projects={projects}
+          onSaved={() => setProjects(getProjectsFromStorage())}
           onClose={() => setShowPhotoUploadModal(false)}
         />
       )}
@@ -1050,9 +1067,11 @@ function HandoverModal({
 
 function SiteDiaryModal({
   projects,
+  onSaved,
   onClose,
 }: {
   projects: ConstructionProject[];
+  onSaved: () => void;
   onClose: () => void;
 }) {
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -1093,6 +1112,7 @@ function SiteDiaryModal({
     });
 
     alert("Site diary entry saved successfully!");
+    onSaved();
     onClose();
   };
 
@@ -1259,9 +1279,11 @@ function SiteDiaryModal({
 
 function PhotoUploadModal({
   projects,
+  onSaved,
   onClose,
 }: {
   projects: ConstructionProject[];
+  onSaved: () => void;
   onClose: () => void;
 }) {
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -1305,6 +1327,7 @@ function PhotoUploadModal({
 
     await Promise.all(filePromises);
     alert(`${selectedFiles.length} photo(s) uploaded successfully!`);
+    onSaved();
     onClose();
   };
 

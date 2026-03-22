@@ -3,6 +3,8 @@ import PermissionGuard from "@/components/PermissionGuard";
 import PageHeader from "@/components/PageHeader";
 import StatusPill from "@/components/StatusPill";
 import { invoices } from "@/lib/sample-data";
+import Link from "next/link";
+import { getEmailActivityForRecord } from "@/lib/email-insights";
 
 export default function InvoicesPage() {
   return (
@@ -64,20 +66,28 @@ export default function InvoicesPage() {
 
         <div className="mt-6 space-y-3">
           {invoices.map((invoice) => (
-            <div
-              key={invoice.id}
-              className="grid gap-2 rounded-lg border border-gray-700/50 bg-gray-700/30 px-4 py-3 text-sm md:grid-cols-[0.6fr_1.2fr_0.6fr_0.6fr]"
-            >
-              <p className="font-semibold text-white">{invoice.id}</p>
-              <p className="text-gray-400">{invoice.client}</p>
-              <p className="font-semibold text-white">{invoice.amount}</p>
-              <div className="flex items-center justify-between gap-2">
-                <StatusPill label={invoice.status} tone={invoice.status} />
-                <span className="text-xs text-gray-400">
-                  {invoice.due}
-                </span>
-              </div>
-            </div>
+            (() => {
+              const emailActivity = getEmailActivityForRecord("invoice", invoice.id);
+              return (
+                <div
+                  key={invoice.id}
+                  className="grid gap-2 rounded-lg border border-gray-700/50 bg-gray-700/30 px-4 py-3 text-sm md:grid-cols-[0.6fr_1.2fr_0.6fr_0.8fr_0.8fr]"
+                >
+                  <p className="font-semibold text-white">{invoice.id}</p>
+                  <p className="text-gray-400">{invoice.client}</p>
+                  <p className="font-semibold text-white">{invoice.amount}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <StatusPill label={invoice.status} tone={invoice.status} />
+                    <span className="text-xs text-gray-400">
+                      {invoice.due}
+                    </span>
+                  </div>
+                  <Link href={`/mail?recordType=invoice&recordId=${encodeURIComponent(invoice.id)}`} className="text-xs text-orange-300 hover:text-orange-200">
+                    {emailActivity.total} emails · {emailActivity.unread} unread{emailActivity.awaitingResponse ? " · awaiting reply" : ""}
+                  </Link>
+                </div>
+              );
+            })()
           ))}
         </div>
       </section>

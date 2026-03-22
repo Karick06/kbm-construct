@@ -12,12 +12,12 @@ type StatusPillProps = {
 };
 
 const toneClasses: Record<StatusTone, string> = {
-  "on-track": "bg-[var(--accent-2-soft)] text-[var(--accent-2)]",
-  risk: "bg-[var(--accent-3-soft)] text-[var(--accent-3)]",
-  late: "bg-[var(--accent-soft)] text-[var(--accent)]",
-  draft: "bg-[var(--surface-2)] text-[var(--muted)]",
-  paid: "bg-[var(--accent-2-soft)] text-[var(--accent-2)]",
-  open: "bg-[var(--accent-3-soft)] text-[var(--accent-3)]",
+  "on-track": "border border-emerald-400/30 bg-emerald-500/15 text-emerald-300",
+  risk: "border border-sky-400/30 bg-sky-500/15 text-sky-300",
+  late: "border border-amber-400/30 bg-amber-500/15 text-amber-300",
+  draft: "border border-gray-400/30 bg-gray-500/15 text-gray-200",
+  paid: "border border-emerald-400/30 bg-emerald-500/15 text-emerald-300",
+  open: "border border-sky-400/30 bg-sky-500/15 text-sky-300",
 };
 
 export default function StatusPill({ label, tone }: StatusPillProps) {

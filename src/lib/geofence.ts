@@ -12,7 +12,17 @@ export interface Geofence {
   radiusMeters: number;
   address: string;
   active: boolean;
+  deleted?: boolean;
 }
+
+type ProjectSiteAddress = {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  postcode?: string;
+  lat?: number;
+  lng?: number;
+};
 
 export const DEFAULT_GEOFENCES: Geofence[] = [
   {
@@ -109,4 +119,52 @@ export function getGeofencesAtLocation(
   return geofences.filter((geofence) =>
     isWithinGeofence(latitude, longitude, geofence)
   );
+}
+
+export function buildProjectGeofence(project: {
+  id: string;
+  projectName: string;
+  siteAddress?: ProjectSiteAddress;
+}): Geofence {
+  const lat = project.siteAddress?.lat ?? 51.5074;
+  const lng = project.siteAddress?.lng ?? -0.1278;
+  const hasCoordinates = typeof project.siteAddress?.lat === "number" && typeof project.siteAddress?.lng === "number";
+  const address = [
+    project.siteAddress?.line1,
+    project.siteAddress?.line2,
+    project.siteAddress?.city,
+    project.siteAddress?.postcode,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return {
+    id: `project-${project.id}`,
+    name: project.projectName,
+    type: "project-site",
+    latitude: lat,
+    longitude: lng,
+    radiusMeters: 200,
+    address: address || "Project address to be confirmed",
+    active: hasCoordinates,
+  };
+}
+
+export async function createProjectGeofence(project: {
+  id: string;
+  projectName: string;
+  siteAddress?: ProjectSiteAddress;
+}): Promise<void> {
+  const geofence = buildProjectGeofence(project);
+
+  const response = await fetch("/api/geofences", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(geofence),
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    throw new Error(errorPayload?.error || "Failed to create project geofence");
+  }
 }

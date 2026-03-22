@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kbm-construct-v4';
+const CACHE_NAME = 'kbm-construct-v5';
 const API_CACHE_NAME = 'kbm-api-cache-v1';
 const DB_NAME = 'kbm-offline-db';
 const DB_VERSION = 1;
@@ -15,6 +15,7 @@ const PRECACHE_ASSETS = [
   '/chat',
   '/manifest.json',
   '/valescape-logo.png',
+  '/valescape-logo-white.png',
   '/icon-192.svg',
   '/icon-512.svg',
 ];

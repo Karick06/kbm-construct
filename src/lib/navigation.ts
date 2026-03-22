@@ -6,16 +6,94 @@ export type NavItem = {
 
 export type NavSection = {
 	label: string;
-	items: NavItem[];
+	href?: string;
+	permission?: string;
+	activeMatchPrefixes?: string[];
+	items?: NavItem[];
 };
 
 export const appNavSections: NavSection[] = [
 	{
 		label: "Business Overview",
-		items: [
-			{ label: "Dashboard", href: "/" },
-			{ label: "Chat", href: "/chat" },
+		href: "/",
+	},
+	{
+		label: "Email",
+		href: "/mail",
+		activeMatchPrefixes: ["/mail-settings", "/approvals"],
+	},
+	{
+		label: "Operations",
+		href: "/operations-overview",
+		permission: "projects",
+		activeMatchPrefixes: [
+			"/projects",
+			"/tasks",
+			"/schedule",
+			"/geofences",
+			"/site-diary",
+			"/quality-inspections",
+			"/permits-to-work",
+			"/toolbox-talks",
+			"/variation-orders",
+			"/rfis",
+			"/defects",
+			"/photos",
+			"/as-built-drawings",
+			"/handover-documentation",
+			"/lessons-learned",
+			"/plant-booking",
+			"/material-reconciliation",
+			"/weather-logging",
 		],
+	},
+	{
+		label: "Commercial",
+		href: "/commercial-overview",
+		permission: "invoices",
+		activeMatchPrefixes: ["/commercial/", "/invoices", "/payments", "/contracts"],
+	},
+	{
+		label: "Procurement",
+		href: "/procurement-overview",
+		permission: "procurement",
+		activeMatchPrefixes: ["/suppliers", "/purchase-orders", "/supplier-portal", "/supplier-respond"],
+	},
+	{
+		label: "Resources",
+		href: "/resources-overview",
+		permission: "resources",
+		activeMatchPrefixes: ["/staff", "/skills", "/allocation", "/timesheets-overview", "/my-timesheets"],
+	},
+	{
+		label: "Finance & QS",
+		href: "/qs-overview",
+		permission: "invoices",
+		activeMatchPrefixes: ["/payment-documents"],
+	},
+	{
+		label: "Estimating",
+		href: "/estimating-overview",
+		permission: "estimates",
+		activeMatchPrefixes: ["/labour-rates", "/plant-rates", "/material-rates", "/archive"],
+	},
+	{
+		label: "Safety",
+		href: "/hs-overview",
+		permission: "compliance",
+		activeMatchPrefixes: ["/incidents", "/compliance", "/training"],
+	},
+	{
+		label: "Fleet",
+		href: "/fleet-overview",
+		permission: "fleet",
+		activeMatchPrefixes: ["/fleet", "/maintenance", "/bookings"],
+	},
+	{
+		label: "HR",
+		href: "/hr-overview",
+		permission: "leave",
+		activeMatchPrefixes: ["/team", "/leave", "/payroll"],
 	},
 	{
 		label: "Business Development",
@@ -24,98 +102,6 @@ export const appNavSections: NavSection[] = [
 			{ label: "Campaigns", href: "/campaigns", permission: "clients" },
 			{ label: "Clients", href: "/clients", permission: "clients" },
 			{ label: "Tender Portal", href: "/tender-portal", permission: "clients" },
-		],
-	},
-	{
-		label: "Estimating",
-		items: [
-			{ label: "Estimating Overview", href: "/estimating-overview", permission: "estimates" },
-			{ label: "Labour Rates", href: "/labour-rates", permission: "estimates" },
-			{ label: "Plant Rates", href: "/plant-rates", permission: "estimates" },
-			{ label: "Material Rates", href: "/material-rates", permission: "estimates" },
-			{ label: "Archive", href: "/archive", permission: "estimates" },
-		],
-	},
-	{
-		label: "Operations",
-		items: [
-			{ label: "Operations Overview", href: "/operations-overview", permission: "projects" },
-			{ label: "Projects", href: "/projects", permission: "projects" },
-			{ label: "Tasks", href: "/tasks", permission: "projects" },
-			{ label: "Schedule", href: "/schedule", permission: "projects" },
-		],
-	},
-	{
-		label: "Commercial",
-		items: [
-			{ label: "Commercial Overview", href: "/commercial-overview", permission: "invoices" },
-			{ label: "Invoices", href: "/invoices", permission: "invoices" },
-			{ label: "Payments", href: "/payments", permission: "payments" },
-			{ label: "Contracts", href: "/contracts", permission: "contracts" },
-		],
-	},
-	{
-		label: "Finance & QS",
-		items: [
-			{ label: "QS Overview", href: "/qs-overview", permission: "invoices" },
-			{ label: "Payment Documents", href: "/payment-documents", permission: "payments" },
-		],
-	},
-	{
-		label: "Procurement",
-		items: [
-			{ label: "Procurement Overview", href: "/procurement-overview", permission: "procurement" },
-			{ label: "Suppliers", href: "/suppliers", permission: "procurement" },
-			{ label: "Purchase Orders", href: "/purchase-orders", permission: "procurement" },
-		],
-	},
-	{
-		label: "Resources",
-		items: [
-			{ label: "Resources Overview", href: "/resources-overview", permission: "resources" },
-			{ label: "Staff", href: "/staff", permission: "staff" },
-			{ label: "Skills", href: "/skills", permission: "staff" },
-			{ label: "Allocation", href: "/allocation", permission: "resources" },
-			{ label: "Timesheets", href: "/timesheets-overview", permission: "timesheets" },
-			{ label: "My Timesheets", href: "/my-timesheets" },
-			{ label: "Geofences", href: "/geofences", permission: "timesheets" },
-		],
-	},
-	{
-		label: "Project Management",
-		items: [
-			{ label: "Site Diary", href: "/site-diary", permission: "projects" },
-			{ label: "Quality Inspections", href: "/quality-inspections", permission: "projects" },
-			{ label: "Permits to Work", href: "/permits-to-work", permission: "projects" },
-			{ label: "Toolbox Talks", href: "/toolbox-talks", permission: "projects" },
-			{ label: "Variation Orders", href: "/variation-orders", permission: "projects" },
-			{ label: "RFIs", href: "/rfis", permission: "projects" },
-			{ label: "Defects/Snagging", href: "/defects", permission: "projects" },
-			{ label: "Photo Documentation", href: "/photos", permission: "projects" },
-			{ label: "As-Built Drawings", href: "/as-built-drawings", permission: "projects" },
-			{ label: "Handover Documentation", href: "/handover-documentation", permission: "projects" },
-			{ label: "Lessons Learned", href: "/lessons-learned", permission: "projects" },
-			{ label: "Plant Booking", href: "/plant-booking", permission: "projects" },
-			{ label: "Material Reconciliation", href: "/material-reconciliation", permission: "projects" },
-			{ label: "Weather Logging", href: "/weather-logging", permission: "projects" },
-		],
-	},
-	{
-		label: "H&S",
-		items: [
-			{ label: "H&S Overview", href: "/hs-overview", permission: "compliance" },
-			{ label: "Incidents", href: "/incidents", permission: "compliance" },
-			{ label: "Compliance & RAMS", href: "/compliance", permission: "compliance" },
-			{ label: "Training", href: "/training", permission: "training" },
-		],
-	},
-	{
-		label: "Vehicles / Plant",
-		items: [
-			{ label: "Fleet Overview", href: "/fleet-overview", permission: "fleet" },
-			{ label: "Fleet", href: "/fleet", permission: "fleet" },
-			{ label: "Maintenance", href: "/maintenance", permission: "fleet" },
-			{ label: "Bookings", href: "/bookings", permission: "fleet" },
 		],
 	},
 	{
@@ -135,15 +121,6 @@ export const appNavSections: NavSection[] = [
 		],
 	},
 	{
-		label: "HR",
-		items: [
-			{ label: "HR Overview", href: "/hr-overview", permission: "leave" },
-			{ label: "Team", href: "/team", permission: "staff" },
-			{ label: "Leave", href: "/leave", permission: "leave" },
-			{ label: "Payroll", href: "/payroll", permission: "payroll" },
-		],
-	},
-	{
 		label: "Settings",
 		items: [
 			{ label: "User Settings", href: "/settings" },
@@ -157,7 +134,10 @@ export function getVisibleNavSections(hasPermission: (permission: string) => boo
 	return appNavSections
 		.map((section) => ({
 			...section,
-			items: section.items.filter((item) => !item.permission || hasPermission(item.permission)),
+			items: (section.items || []).filter((item) => !item.permission || hasPermission(item.permission)),
 		}))
-		.filter((section) => section.items.length > 0);
+		.filter((section) => {
+			const canViewSection = !section.permission || hasPermission(section.permission);
+			return (section.href && canViewSection) || section.items.length > 0;
+		});
 }

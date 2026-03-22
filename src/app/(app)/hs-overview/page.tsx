@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import PermissionGuard from "@/components/PermissionGuard";
+import OverviewStatGrid from "@/components/OverviewStatGrid";
+import OverviewTrendChart from "@/components/OverviewTrendChart";
 
-import { useState } from "react";
 import { formatDate } from "@/lib/date-utils";
 
 const hsStats = [
@@ -45,68 +47,33 @@ const trainingStatus = [
 ];
 
 export default function HSOverviewPage() {
-  const maxIncidents = Math.max(...incidentData.map(d => d.value), 1);
-
   return (
     <PermissionGuard permission="compliance">
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
-        <button className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+      <div className="flex items-center justify-end gap-2">
+        <Link href="/compliance" className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700">
+          Compliance
+        </Link>
+        <Link href="/incidents" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
           + Report Incident
-        </button>
+        </Link>
       </div>
 
       {/* Key Metrics */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {hsStats.map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-3 rounded-lg border border-gray-700/50 border-l-4 border-l-orange-500 bg-gray-800/80 px-5 py-4">
-            <div className="flex items-start justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                {stat.label}
-              </p>
-              <span className="text-xl">{stat.icon}</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{stat.value}</p>
-            <p className="text-xs text-gray-400">{stat.change}</p>
-          </div>
-        ))}
-      </section>
+      <OverviewStatGrid items={hsStats} />
 
       {/* Incident Trend & Type */}
       <section className="grid gap-6 lg:grid-cols-3">
         {/* Incident Trend Chart */}
-        <div className="lg:col-span-2 rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Incident Trend</p>
-                <h2 className="mt-1 text-xl font-bold text-white">Last 6 Months</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-white">8</p>
-                <p className="text-xs text-red-400">→ 2 reported this month</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-end justify-between gap-3 h-48 mt-12">
-            {incidentData.map((item) => (
-              <div key={item.month} className="flex flex-col items-center flex-1 gap-2">
-                <div className="relative w-full">
-                  <div 
-                    className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t-lg transition-all hover:from-orange-400 hover:to-orange-300"
-                    style={{ height: `${(item.value / maxIncidents) * 180}px` || '0px' }}
-                  />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-semibold text-white">{item.label}</p>
-                  <p className="text-xs text-gray-500">{item.month}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <OverviewTrendChart
+          eyebrow="Incident Trend"
+          title="Last 6 Months"
+          summaryValue="8"
+          summaryChange="→ 2 reported this month"
+          summaryToneClassName="text-red-400"
+          points={incidentData}
+        />
 
         {/* Incident Type Breakdown */}
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">

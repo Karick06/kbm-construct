@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 		if (!isValid) {
 			return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
 		}
-		return NextResponse.json({
+		const response = NextResponse.json({
 			id: data.id,
 			name: data.name,
 			email: data.email,
@@ -34,6 +34,24 @@ export async function POST(request: Request) {
 			department: data.department ?? undefined,
 			jobTitle: data.job_title ?? undefined,
 		});
+
+		response.cookies.set("user_email", data.email, {
+			httpOnly: false,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: 60 * 60 * 24 * 30,
+			path: "/",
+		});
+
+		response.cookies.set("user_name", data.name, {
+			httpOnly: false,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: 60 * 60 * 24 * 30,
+			path: "/",
+		});
+
+		return response;
 	} catch (error) {
 		if (error instanceof Error && error.message === "Not authenticated") {
 			return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

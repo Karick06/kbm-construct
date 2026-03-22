@@ -1,6 +1,7 @@
 "use client";
 
 import PermissionGuard from "@/components/PermissionGuard";
+import EmailActivityPanel from "@/components/EmailActivityPanel";
 
 import { useState, useEffect } from "react";
 import {
@@ -878,6 +879,8 @@ export default function ClientsPage() {
               <div className="grid gap-6 md:grid-cols-3">
                 {/* Company Information */}
                 <div className="md:col-span-2 space-y-6">
+                  <EmailActivityPanel recordType="client" recordId={selectedClient.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")} title="Client email timeline" />
+
                   <div className="rounded-lg border border-gray-700/50 bg-gray-800/50 p-5">
                     <h3 className="text-lg font-bold text-white mb-4">Company Information</h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">

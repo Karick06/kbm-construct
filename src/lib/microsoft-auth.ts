@@ -20,6 +20,17 @@ export interface UserInfo {
 	refreshToken?: string;
 }
 
+const MICROSOFT_SCOPES = [
+	"User.Read",
+	"Mail.ReadWrite",
+	"Mail.Send",
+	"Calendars.ReadWrite",
+	"Contacts.ReadWrite",
+	"offline_access",
+	"Sites.ReadWrite.All",
+	"Files.ReadWrite.All",
+];
+
 let msalInstance: ConfidentialClientApplication | null = null;
 let cachedClientId: string | undefined;
 let cachedClientSecret: string | undefined;
@@ -73,12 +84,7 @@ export async function getAuthorizationUrl(redirectUri: string): Promise<string> 
 	const msal = getMsalInstance();
 	
 	const authCodeUrlParameters = {
-		scopes: [
-			"User.Read",
-			"Sites.ReadWrite.All",
-			"Files.ReadWrite.All",
-			"offline_access",
-		],
+		scopes: MICROSOFT_SCOPES,
 		redirectUri,
 	};
 
@@ -96,12 +102,7 @@ export async function getTokenFromCode(
 
 	const tokenRequest = {
 		code,
-		scopes: [
-			"User.Read",
-			"Sites.ReadWrite.All",
-			"Files.ReadWrite.All",
-			"offline_access",
-		],
+		scopes: MICROSOFT_SCOPES,
 		redirectUri,
 	};
 
@@ -150,12 +151,7 @@ export async function refreshAccessToken(
 
 	const refreshRequest = {
 		refreshToken,
-		scopes: [
-			"User.Read",
-			"Sites.ReadWrite.All",
-			"Files.ReadWrite.All",
-			"offline_access",
-		],
+		scopes: MICROSOFT_SCOPES,
 		account: {
 			homeAccountId: accountId,
 		} as any,

@@ -10,7 +10,7 @@ interface ResponsiveCardProps {
  */
 export default function ResponsiveCard({ children, className = '' }: ResponsiveCardProps) {
   return (
-    <div className={`rounded-lg border border-gray-700/50 bg-gray-800/80 p-4 shadow-[var(--shadow)] sm:p-6 ${className}`}>
+    <div className={`app-panel rounded-lg p-4 sm:p-6 ${className}`}>
       {children}
     </div>
   );
