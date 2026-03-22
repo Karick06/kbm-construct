@@ -36,8 +36,21 @@ export default function AppShell({ children }: AppShellProps) {
   const visibleNavSections = getVisibleNavSections(hasPermission);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [expandedSectionLabel, setExpandedSectionLabel] = useState<string>("");
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const activeSection = visibleNavSections.find((section) =>
+      Boolean(
+        section.href &&
+          (pathname === section.href ||
+            (section.activeMatchPrefixes || []).some((prefix) => pathname.startsWith(prefix)))
+      )
+    );
+
+    setExpandedSectionLabel(activeSection?.label || "");
+  }, [pathname, visibleNavSections]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -213,30 +226,52 @@ export default function AppShell({ children }: AppShellProps) {
                   (pathname === section.href ||
                     (section.activeMatchPrefixes || []).some((prefix) => pathname.startsWith(prefix)))
               );
+              const sectionItems = section.items || [];
+              const hasItems = sectionItems.length > 0;
+              const isExpanded = hasItems && expandedSectionLabel === section.label;
               return (
                 <div
                   key={section.label}
                   className={`pb-2 ${sectionIndex < visibleNavSections.length - 1 ? "border-b border-[var(--line)]/40" : ""}`}
                 >
-                  {section.href ? (
-                    <Link
-                      href={section.href}
-                      className={`mb-2.5 block rounded-r-md border-l-2 px-2 py-1 text-sm font-bold uppercase tracking-wide transition ${
-                        sectionActive
-                          ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                          : "border-[var(--accent)] text-[var(--sidebar-text)]/90 hover:text-[var(--sidebar-text)]"
-                      }`}
-                    >
-                      {section.label}
-                    </Link>
-                  ) : (
-                    <p className="mb-2.5 rounded-r-md border-l-2 border-[var(--accent)] px-2 py-1 text-sm font-bold uppercase tracking-wide text-[var(--sidebar-text)]/90">
-                      {section.label}
-                    </p>
-                  )}
-                  {section.items && section.items.length > 0 && sectionActive && (
+                  <div className="mb-2.5 flex items-center gap-2">
+                    {section.href ? (
+                      <Link
+                        href={section.href}
+                        className={`flex-1 rounded-r-md border-l-2 px-2 py-1 text-sm font-bold uppercase tracking-wide transition ${
+                          sectionActive
+                            ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                            : "border-[var(--accent)] text-[var(--sidebar-text)]/90 hover:text-[var(--sidebar-text)]"
+                        }`}
+                      >
+                        {section.label}
+                      </Link>
+                    ) : (
+                      <p className="flex-1 rounded-r-md border-l-2 border-[var(--accent)] px-2 py-1 text-sm font-bold uppercase tracking-wide text-[var(--sidebar-text)]/90">
+                        {section.label}
+                      </p>
+                    )}
+                    {hasItems && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSectionLabel((current) => (current === section.label ? "" : section.label))}
+                        className="rounded px-1 py-1 text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-text)]"
+                        aria-label={`Toggle ${section.label} links`}
+                        aria-expanded={isExpanded}
+                      >
+                        <svg
+                          className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : "rotate-0"}`}
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {hasItems && isExpanded && (
                     <div className="ml-2 space-y-1.5">
-                      {section.items.map((item) => {
+                      {sectionItems.map((item) => {
                       const isActive = pathname === item.href;
                       return (
                         <Link
