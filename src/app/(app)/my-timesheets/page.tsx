@@ -28,6 +28,7 @@ type TimesheetFormState = {
 export default function MyTimesheetsPage() {
   const [timesheets, setTimesheets] = useState<DailyTimesheet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showFormDrawer, setShowFormDrawer] = useState(false);
   const [editingEntry, setEditingEntry] = useState<{ timesheetId: string; entryId: string } | null>(null);
   const [formState, setFormState] = useState<TimesheetFormState>({
@@ -110,7 +111,7 @@ export default function MyTimesheetsPage() {
   const fetchTimesheets = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/timesheets');
+      const response = await fetch(`/api/timesheets?employeeId=${encodeURIComponent(DEFAULT_EMPLOYEE_ID)}`);
       const data = await response.json();
       const serverTimesheets = data.success ? (data.data as DailyTimesheet[]) : [];
       const localTimesheets = getLocalTimesheets();
@@ -121,6 +122,21 @@ export default function MyTimesheetsPage() {
       setTimesheets(getLocalTimesheets());
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveTimesheetToApi = async (timesheet: DailyTimesheet) => {
+    const response = await fetch('/api/timesheets', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(timesheet),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.error || 'Failed to save timesheet to server');
     }
   };
 
@@ -151,6 +167,7 @@ export default function MyTimesheetsPage() {
     }
 
     const nextTimesheets = [...timesheets];
+    let changedTimesheet: DailyTimesheet | null = null;
 
     if (editingEntry) {
       const timesheetIndex = nextTimesheets.findIndex((item) => item.id === editingEntry.timesheetId);
@@ -167,6 +184,7 @@ export default function MyTimesheetsPage() {
           totalHours: Number((totalMinutes / 60).toFixed(2)),
           submissionStatus: 'draft',
         };
+        changedTimesheet = nextTimesheets[timesheetIndex];
       }
     } else {
       const newEntry = buildEntryFromForm();
@@ -181,8 +199,9 @@ export default function MyTimesheetsPage() {
           totalHours: Number((totalMinutes / 60).toFixed(2)),
           submissionStatus: 'draft',
         };
+        changedTimesheet = nextTimesheets[existingIndex];
       } else {
-        nextTimesheets.push({
+        const createdTimesheet: DailyTimesheet = {
           id: `ts-${Date.now()}`,
           employeeId: DEFAULT_EMPLOYEE_ID,
           employeeName: DEFAULT_EMPLOYEE_NAME,
@@ -190,7 +209,10 @@ export default function MyTimesheetsPage() {
           entries: [newEntry],
           totalHours: Number((newEntry.duration / 60).toFixed(2)),
           submissionStatus: 'draft',
-        });
+        };
+
+        nextTimesheets.push(createdTimesheet);
+        changedTimesheet = createdTimesheet;
       }
     }
 
@@ -199,6 +221,14 @@ export default function MyTimesheetsPage() {
     saveLocalTimesheets(sorted);
     setShowFormDrawer(false);
     resetForm();
+
+    if (changedTimesheet && navigator.onLine) {
+      setSaveError(null);
+      void saveTimesheetToApi(changedTimesheet).catch((error) => {
+        console.error('Failed to persist timesheet to API:', error);
+        setSaveError('Saved locally, but failed to sync to server. Will retry on refresh.');
+      });
+    }
   };
 
   if (loading) {
@@ -223,6 +253,12 @@ export default function MyTimesheetsPage() {
       
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="space-y-3 pb-24 lg:pb-8 lg:space-y-4">
+          {saveError ? (
+            <div className="rounded-lg border border-amber-700/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
+              {saveError}
+            </div>
+          ) : null}
+
           {/* Mobile Header - Only show on mobile */}
           <div className="lg:hidden mb-4">
             <h1 className="text-2xl font-bold text-[var(--sidebar-text)]">My Timesheets</h1>
