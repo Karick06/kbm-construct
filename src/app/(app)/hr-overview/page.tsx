@@ -58,6 +58,9 @@ export default function HROverviewPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end gap-2">
+        <Link href="/hr-live-presence" className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700">
+          Live Presence
+        </Link>
         <Link href="/team" className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700">
           Team
         </Link>

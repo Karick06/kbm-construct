@@ -163,11 +163,12 @@ export const appNavSections: NavSection[] = [
 		label: "HR",
 		href: "/hr-overview",
 		permission: "leave",
-		activeMatchPrefixes: ["/team", "/leave", "/payroll"],
+		activeMatchPrefixes: ["/team", "/leave", "/payroll", "/hr-live-presence"],
 		items: [
 			{ label: "Overview", href: "/hr-overview" },
 			{ label: "Team", href: "/team" },
 			{ label: "Leave", href: "/leave" },
+			{ label: "Live Presence", href: "/hr-live-presence" },
 			{ label: "Payroll", href: "/payroll" },
 		],
 	},
