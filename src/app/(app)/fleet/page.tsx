@@ -8,6 +8,8 @@ import { useState } from "react";
 type FleetVehicle = {
   id: string;
   reg: string;
+  brand: string;
+  model: string;
   type: string;
   status: "In Use" | "Available" | "Maintenance" | "Reserved";
   allocated: string;
@@ -29,6 +31,17 @@ const VEHICLE_TYPE_OPTIONS = [
   "Specialist HGV",
 ] as const;
 
+const REGISTRATION_LOOKUP: Record<string, { brand: string; model: string; type: string }> = {
+  TS24KBM: { brand: "Ford", model: "Transit", type: "Panel Van" },
+  TS24OPS: { brand: "Ford", model: "Transit", type: "Panel Van" },
+  TS24BDV: { brand: "BMW", model: "X3", type: "SUV / 4x4" },
+  TS24MGT: { brand: "BMW", model: "3 Series", type: "Saloon Car" },
+};
+
+function normalizeRegistration(value: string): string {
+  return value.replace(/\s+/g, "").toUpperCase();
+}
+
 const fleetStats = [
   { label: "Total Vehicles", value: "28", change: "+2 this quarter", icon: "🚗" },
   { label: "Available", value: "24", change: "86% utilisation", icon: "✓" },
@@ -37,10 +50,10 @@ const fleetStats = [
 ];
 
 const initialActiveVehicles: FleetVehicle[] = [
-  { id: "VH-001", reg: "TS24 KBM", type: "Panel Van", status: "In Use", allocated: "Thames Site", mileage: "45,230", nextService: "18 Feb" },
-  { id: "VH-002", reg: "TS24 OPS", type: "Panel Van", status: "In Use", allocated: "Premier Site", mileage: "32,450", nextService: "25 Feb" },
-  { id: "VH-003", reg: "TS24 BDV", type: "SUV / 4x4", status: "Available", allocated: "Unallocated", mileage: "28,120", nextService: "10 Mar" },
-  { id: "VH-004", reg: "TS24 MGT", type: "Saloon Car", status: "In Use", allocated: "HQ", mileage: "12,340", nextService: "20 Feb" },
+  { id: "VH-001", reg: "TS24 KBM", brand: "Ford", model: "Transit", type: "Panel Van", status: "In Use", allocated: "Thames Site", mileage: "45,230", nextService: "18 Feb" },
+  { id: "VH-002", reg: "TS24 OPS", brand: "Ford", model: "Transit", type: "Panel Van", status: "In Use", allocated: "Premier Site", mileage: "32,450", nextService: "25 Feb" },
+  { id: "VH-003", reg: "TS24 BDV", brand: "BMW", model: "X3", type: "SUV / 4x4", status: "Available", allocated: "Unallocated", mileage: "28,120", nextService: "10 Mar" },
+  { id: "VH-004", reg: "TS24 MGT", brand: "BMW", model: "3 Series", type: "Saloon Car", status: "In Use", allocated: "HQ", mileage: "12,340", nextService: "20 Feb" },
 ];
 
 const vehicles = [
@@ -75,8 +88,11 @@ const maintenanceAlerts = [
 export default function FleetPage() {
   const [activeVehicles, setActiveVehicles] = useState<FleetVehicle[]>(initialActiveVehicles);
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [lookupMessage, setLookupMessage] = useState("");
   const [newVehicle, setNewVehicle] = useState({
     reg: "",
+    brand: "",
+    model: "",
     type: "Panel Van",
     status: "Available" as FleetVehicle["status"],
     allocated: "Unallocated",
@@ -86,15 +102,37 @@ export default function FleetPage() {
 
   const maxUtilization = Math.max(...utilizationData.map(d => d.value));
 
+  const handleRegistrationChange = (value: string) => {
+    const normalized = normalizeRegistration(value);
+    const lookup = REGISTRATION_LOOKUP[normalized];
+
+    if (lookup) {
+      setNewVehicle((current) => ({
+        ...current,
+        reg: value,
+        brand: current.brand || lookup.brand,
+        model: current.model || lookup.model,
+        type: lookup.type,
+      }));
+      setLookupMessage(`Auto-filled: ${lookup.brand} ${lookup.model}`);
+      return;
+    }
+
+    setNewVehicle((current) => ({ ...current, reg: value }));
+    setLookupMessage("");
+  };
+
   const handleAddVehicle = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!newVehicle.reg.trim()) return;
+    if (!newVehicle.reg.trim() || !newVehicle.brand.trim() || !newVehicle.model.trim()) return;
 
     const nextId = `VH-${String(activeVehicles.length + 1).padStart(3, "0")}`;
     const vehicle: FleetVehicle = {
       id: nextId,
-      reg: newVehicle.reg.trim().toUpperCase(),
+      reg: normalizeRegistration(newVehicle.reg.trim()),
+      brand: newVehicle.brand.trim(),
+      model: newVehicle.model.trim(),
       type: newVehicle.type,
       status: newVehicle.status,
       allocated: newVehicle.allocated.trim() || "Unallocated",
@@ -105,12 +143,15 @@ export default function FleetPage() {
     setActiveVehicles((current) => [vehicle, ...current]);
     setNewVehicle({
       reg: "",
+      brand: "",
+      model: "",
       type: "Panel Van",
       status: "Available",
       allocated: "Unallocated",
       mileage: "",
       nextService: "",
     });
+    setLookupMessage("");
     setShowAddVehicleModal(false);
   };
 
@@ -218,6 +259,7 @@ export default function FleetPage() {
                 <tr className="border-b border-gray-700/50">
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">ID</th>
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Registration</th>
+                  <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Vehicle</th>
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Type</th>
                   <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Status</th>
                   <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">Next Service</th>
@@ -228,6 +270,7 @@ export default function FleetPage() {
                   <tr key={vehicle.id} className="hover:bg-gray-700/30">
                     <td className="py-3 text-sm font-medium text-white">{vehicle.id}</td>
                     <td className="py-3 text-sm text-gray-300">{vehicle.reg}</td>
+                    <td className="py-3 text-sm text-white">{vehicle.brand} {vehicle.model}</td>
                     <td className="py-3 text-sm text-white">{vehicle.type}</td>
                     <td className="py-3">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -326,8 +369,25 @@ export default function FleetPage() {
             <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleAddVehicle}>
               <input
                 value={newVehicle.reg}
-                onChange={(event) => setNewVehicle((current) => ({ ...current, reg: event.target.value }))}
+                onChange={(event) => handleRegistrationChange(event.target.value)}
                 placeholder="Registration (e.g. AB12 CDE)"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
+                {lookupMessage || "Brand/model will auto-fill for known registrations"}
+              </div>
+              <input
+                value={newVehicle.brand}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, brand: event.target.value }))}
+                placeholder="Brand (e.g. Ford, BMW)"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <input
+                value={newVehicle.model}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, model: event.target.value }))}
+                placeholder="Model (e.g. Transit, 3 Series)"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                 required
               />
