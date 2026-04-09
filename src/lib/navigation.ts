@@ -139,10 +139,11 @@ export const appNavSections: NavSection[] = [
 		label: "Safety",
 		href: "/hs-overview",
 		permission: "compliance",
-		activeMatchPrefixes: ["/incidents", "/compliance", "/training"],
+		activeMatchPrefixes: ["/incidents", "/compliance", "/rams", "/training"],
 		items: [
 			{ label: "Overview", href: "/hs-overview" },
 			{ label: "Compliance", href: "/compliance" },
+			{ label: "RAMS", href: "/rams" },
 			{ label: "Incidents", href: "/incidents" },
 			{ label: "Training", href: "/training" },
 		],

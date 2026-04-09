@@ -181,6 +181,8 @@ export default function FleetPage() {
   const [vehicleToDelete, setVehicleToDelete] = useState<FleetVehicle | null>(null);
   const [editingAsset, setEditingAsset] = useState<EditableNonVehicleAsset | null>(null);
   const [assetToDelete, setAssetToDelete] = useState<EditableNonVehicleAsset | null>(null);
+  const [assetFormError, setAssetFormError] = useState("");
+  const [assetEditError, setAssetEditError] = useState("");
   const [lookupMessage, setLookupMessage] = useState("");
   const [isLookingUpRegistration, setIsLookingUpRegistration] = useState(false);
   const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -449,6 +451,16 @@ export default function FleetPage() {
 
     if (!newAsset.name.trim()) return;
 
+    const requestedAssetNumber = normalizeAssetNumber(newAsset.assetNumber);
+    const isDuplicateAssetNumber =
+      requestedAssetNumber.length > 0 &&
+      [...plantAssets, ...toolAssets].some((asset) => normalizeAssetNumber(asset.assetNumber) === requestedAssetNumber);
+
+    if (isDuplicateAssetNumber) {
+      setAssetFormError(`Asset number ${requestedAssetNumber} already exists. Please use a unique number.`);
+      return;
+    }
+
     const selectedType = newAsset.customType.trim() || newAsset.type;
     const value = Number(newAsset.value || "0");
     if (newAsset.category === "Plant") {
@@ -480,6 +492,7 @@ export default function FleetPage() {
     }
 
     setNewAsset(defaultNonVehicleForm);
+    setAssetFormError("");
     setShowAddAssetModal(false);
   };
 
@@ -502,6 +515,18 @@ export default function FleetPage() {
   const handleUpdateAsset = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingAsset) return;
+
+    const requestedAssetNumber = normalizeAssetNumber(editingAsset.assetNumber);
+    const isDuplicateAssetNumber =
+      requestedAssetNumber.length > 0 &&
+      [...plantAssets, ...toolAssets].some(
+        (asset) => asset.id !== editingAsset.id && normalizeAssetNumber(asset.assetNumber) === requestedAssetNumber,
+      );
+
+    if (isDuplicateAssetNumber) {
+      setAssetEditError(`Asset number ${requestedAssetNumber} already exists. Please use a unique number.`);
+      return;
+    }
 
     const nextValue = Number(editingAsset.value || "0");
     if (editingAsset.category === "Plant") {
@@ -540,6 +565,7 @@ export default function FleetPage() {
       );
     }
 
+    setAssetEditError("");
     setEditingAsset(null);
   };
 
@@ -569,6 +595,7 @@ export default function FleetPage() {
   const closeAddAssetModal = () => {
     setShowAddAssetModal(false);
     setNewAsset(defaultNonVehicleForm);
+    setAssetFormError("");
   };
 
   return (
@@ -1051,10 +1078,14 @@ export default function FleetPage() {
               />
               <input
                 value={newAsset.assetNumber}
-                onChange={(event) => setNewAsset((current) => ({ ...current, assetNumber: event.target.value }))}
+                onChange={(event) => {
+                  setAssetFormError("");
+                  setNewAsset((current) => ({ ...current, assetNumber: event.target.value }));
+                }}
                 placeholder="Asset number (e.g. PL-014)"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
               />
+              {assetFormError && <p className="text-xs text-red-300 md:col-span-2">{assetFormError}</p>}
               <input
                 list={newAsset.category === "Plant" ? "plant-type-options" : "tool-type-options"}
                 value={newAsset.type}
@@ -1244,10 +1275,14 @@ export default function FleetPage() {
             <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleUpdateAsset}>
               <input
                 value={editingAsset.assetNumber}
-                onChange={(event) => setEditingAsset((current) => (current ? { ...current, assetNumber: event.target.value } : current))}
+                onChange={(event) => {
+                  setAssetEditError("");
+                  setEditingAsset((current) => (current ? { ...current, assetNumber: event.target.value } : current));
+                }}
                 placeholder="Asset number"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
               />
+              {assetEditError && <p className="text-xs text-red-300 md:col-span-2">{assetEditError}</p>}
               <input
                 value={editingAsset.name}
                 onChange={(event) => setEditingAsset((current) => (current ? { ...current, name: event.target.value } : current))}

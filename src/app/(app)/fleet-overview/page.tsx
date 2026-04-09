@@ -155,6 +155,8 @@ export default function FleetOverviewPage() {
   const [newVehicle, setNewVehicle] = useState<FleetVehicleForm>(defaultVehicleForm);
   const [editingAsset, setEditingAsset] = useState<EditableOverviewAsset | null>(null);
   const [assetToDelete, setAssetToDelete] = useState<EditableOverviewAsset | null>(null);
+  const [assetFormError, setAssetFormError] = useState("");
+  const [assetEditError, setAssetEditError] = useState("");
   const [lookupMessage, setLookupMessage] = useState("");
   const [isLookingUpRegistration, setIsLookingUpRegistration] = useState(false);
   const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -417,6 +419,15 @@ export default function FleetOverviewPage() {
     } else if (newVehicle.category === "Plant") {
       if (!newVehicle.model.trim()) return;
 
+      const requestedAssetNumber = normalizeAssetNumber(newVehicle.assetNumber);
+      const isDuplicateAssetNumber =
+        requestedAssetNumber.length > 0 &&
+        [...plantAssets, ...toolAssets].some((asset) => normalizeAssetNumber(asset.assetNumber) === requestedAssetNumber);
+      if (isDuplicateAssetNumber) {
+        setAssetFormError(`Asset number ${requestedAssetNumber} already exists. Please use a unique number.`);
+        return;
+      }
+
       const internalId = createNextPlantId(plantAssets);
 
       const created: PlantAsset = {
@@ -433,6 +444,15 @@ export default function FleetOverviewPage() {
       setPlantAssets((current) => [created, ...current]);
     } else {
       if (!newVehicle.model.trim()) return;
+
+      const requestedAssetNumber = normalizeAssetNumber(newVehicle.assetNumber);
+      const isDuplicateAssetNumber =
+        requestedAssetNumber.length > 0 &&
+        [...plantAssets, ...toolAssets].some((asset) => normalizeAssetNumber(asset.assetNumber) === requestedAssetNumber);
+      if (isDuplicateAssetNumber) {
+        setAssetFormError(`Asset number ${requestedAssetNumber} already exists. Please use a unique number.`);
+        return;
+      }
 
       const internalId = createNextToolId(toolAssets);
 
@@ -451,6 +471,7 @@ export default function FleetOverviewPage() {
     }
 
     setNewVehicle(defaultVehicleForm);
+    setAssetFormError("");
     setLookupMessage("");
     setShowAddAssetModal(false);
   };
@@ -525,6 +546,7 @@ export default function FleetOverviewPage() {
   const closeAddAssetModal = () => {
     setShowAddAssetModal(false);
     setNewVehicle(defaultVehicleForm);
+    setAssetFormError("");
     setLookupMessage("");
     setIsLookingUpRegistration(false);
     if (lookupTimerRef.current) {
@@ -536,6 +558,20 @@ export default function FleetOverviewPage() {
   const handleUpdateAsset = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingAsset) return;
+
+    if (editingAsset.category !== "Vehicle") {
+      const requestedAssetNumber = normalizeAssetNumber(editingAsset.assetNumber || "");
+      const isDuplicateAssetNumber =
+        requestedAssetNumber.length > 0 &&
+        [...plantAssets, ...toolAssets].some(
+          (asset) => asset.id !== editingAsset.id && normalizeAssetNumber(asset.assetNumber) === requestedAssetNumber,
+        );
+
+      if (isDuplicateAssetNumber) {
+        setAssetEditError(`Asset number ${requestedAssetNumber} already exists. Please use a unique number.`);
+        return;
+      }
+    }
 
     if (editingAsset.category === "Vehicle") {
       setVehicles((current) =>
@@ -593,6 +629,7 @@ export default function FleetOverviewPage() {
       );
     }
 
+    setAssetEditError("");
     setEditingAsset(null);
   };
 
@@ -1064,11 +1101,15 @@ export default function FleetOverviewPage() {
               {newVehicle.category !== "Vehicle" && (
                 <input
                   value={newVehicle.assetNumber}
-                  onChange={(event) => setNewVehicle((current) => ({ ...current, assetNumber: event.target.value }))}
+                  onChange={(event) => {
+                    setAssetFormError("");
+                    setNewVehicle((current) => ({ ...current, assetNumber: event.target.value }));
+                  }}
                   placeholder="Asset number (e.g. PL-014 / TL-022)"
                   className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                 />
               )}
+              {assetFormError && <p className="text-xs text-red-300 md:col-span-2">{assetFormError}</p>}
 
               {newVehicle.category === "Vehicle" ? (
                 <>
@@ -1211,10 +1252,14 @@ export default function FleetOverviewPage() {
                 <>
                   <input
                     value={editingAsset.assetNumber || ""}
-                    onChange={(event) => setEditingAsset((current) => (current ? { ...current, assetNumber: event.target.value } : current))}
+                    onChange={(event) => {
+                      setAssetEditError("");
+                      setEditingAsset((current) => (current ? { ...current, assetNumber: event.target.value } : current));
+                    }}
                     placeholder="Asset number"
                     className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                   />
+                  {assetEditError && <p className="text-xs text-red-300 md:col-span-2">{assetEditError}</p>}
                   <input
                     value={editingAsset.name || ""}
                     onChange={(event) => setEditingAsset((current) => (current ? { ...current, name: event.target.value } : current))}
