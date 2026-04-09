@@ -33,12 +33,33 @@ export default function PayrollPage() {
   const [editing, setEditing] = useState<PayrollRun | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportWeekStart, setExportWeekStart] = useState("");
+  const [buildLabel, setBuildLabel] = useState("Build: loading...");
   const [form, setForm] = useState<Omit<PayrollRun, "id">>({ period: "", runDate: "", employees: 0, grossPay: 0, deductions: 0, netPay: 0, status: "Draft" });
 
   useEffect(() => {
     const stored = localStorage.getItem("kbm_payroll");
     setRuns(stored ? JSON.parse(stored) : defaultPayrollRuns);
     setExportWeekStart(toDateKey(mondayOfCurrentWeek()));
+
+    const loadBuildLabel = async () => {
+      try {
+        const response = await fetch("/api/version", { cache: "no-store" });
+        const payload = await response.json();
+
+        if (!response.ok || !payload?.success || !payload?.data) {
+          throw new Error("Version endpoint unavailable");
+        }
+
+        const commit = payload.data.commit || "unknown";
+        const branch = payload.data.branch || "unknown";
+        const environment = payload.data.environment || "unknown";
+        setBuildLabel(`Build: ${commit} (${branch}, ${environment})`);
+      } catch {
+        setBuildLabel("Build: unavailable");
+      }
+    };
+
+    void loadBuildLabel();
   }, []);
 
   const save = (updated: PayrollRun[]) => { setRuns(updated); localStorage.setItem("kbm_payroll", JSON.stringify(updated)); };
@@ -115,6 +136,10 @@ export default function PayrollPage() {
             </div>
           }
         />
+
+        <div className="rounded-lg border border-gray-700/50 bg-gray-800/60 px-4 py-2 text-xs text-gray-400">
+          {buildLabel}
+        </div>
 
         <div className="rounded-lg border border-orange-500/40 bg-orange-500/10 p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
