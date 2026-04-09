@@ -31,6 +31,7 @@ export default function PayrollPage() {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<PayrollRun | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [form, setForm] = useState<Omit<PayrollRun, "id">>({ period: "", runDate: "", employees: 0, grossPay: 0, deductions: 0, netPay: 0, status: "Draft" });
 
   useEffect(() => {
@@ -54,13 +55,70 @@ export default function PayrollPage() {
   const filtered = runs.filter(r => r.period.toLowerCase().includes(search.toLowerCase()));
   const totalGross = runs.reduce((s, r) => s + r.grossPay, 0);
 
+  const toDateKey = (value: Date) => {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const mondayOfCurrentWeek = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  };
+
+  const handleExportTimesheetPayroll = async () => {
+    try {
+      setIsExporting(true);
+      const weekStart = toDateKey(mondayOfCurrentWeek());
+      const response = await fetch(`/api/payroll/timesheet-export?weekStart=${encodeURIComponent(weekStart)}`, {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to export payroll timesheet data");
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `payroll-timesheet-export-${weekStart}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Payroll export failed:", error);
+      window.alert("Unable to export payroll data right now. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <PermissionGuard permission="payroll">
       <div className="space-y-6">
         <PageHeader
           title="Payroll"
           subtitle="HR & Finance"
-          actions={<button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Payroll Run</button>}
+          actions={
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportTimesheetPayroll}
+                disabled={isExporting}
+                className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700 disabled:opacity-60"
+              >
+                {isExporting ? "Exporting..." : "Export Timesheet Payroll"}
+              </button>
+              <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Payroll Run</button>
+            </div>
+          }
         />
 
         <div className="grid gap-4 sm:grid-cols-3">
