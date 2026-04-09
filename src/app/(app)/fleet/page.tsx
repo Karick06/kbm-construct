@@ -3,7 +3,7 @@
 import PermissionGuard from "@/components/PermissionGuard";
 import Link from "next/link";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type FleetVehicle = {
   id: string;
@@ -89,6 +89,8 @@ export default function FleetPage() {
   const [activeVehicles, setActiveVehicles] = useState<FleetVehicle[]>(initialActiveVehicles);
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
   const [lookupMessage, setLookupMessage] = useState("");
+  const [isLookingUpRegistration, setIsLookingUpRegistration] = useState(false);
+  const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [newVehicle, setNewVehicle] = useState({
     reg: "",
     brand: "",
@@ -102,24 +104,71 @@ export default function FleetPage() {
 
   const maxUtilization = Math.max(...utilizationData.map(d => d.value));
 
+  const applyLocalLookup = (registration: string) => {
+    const local = REGISTRATION_LOOKUP[registration];
+    if (!local) return false;
+
+    setNewVehicle((current) => ({
+      ...current,
+      brand: current.brand || local.brand,
+      model: current.model || local.model,
+      type: local.type,
+    }));
+    setLookupMessage(`Auto-filled from local data: ${local.brand} ${local.model}`);
+    return true;
+  };
+
   const handleRegistrationChange = (value: string) => {
     const normalized = normalizeRegistration(value);
-    const lookup = REGISTRATION_LOOKUP[normalized];
+    setNewVehicle((current) => ({ ...current, reg: value }));
+    setLookupMessage("");
 
-    if (lookup) {
-      setNewVehicle((current) => ({
-        ...current,
-        reg: value,
-        brand: current.brand || lookup.brand,
-        model: current.model || lookup.model,
-        type: lookup.type,
-      }));
-      setLookupMessage(`Auto-filled: ${lookup.brand} ${lookup.model}`);
+    if (lookupTimerRef.current) {
+      clearTimeout(lookupTimerRef.current);
+    }
+
+    if (normalized.length < 5) {
       return;
     }
 
-    setNewVehicle((current) => ({ ...current, reg: value }));
-    setLookupMessage("");
+    lookupTimerRef.current = setTimeout(async () => {
+      setIsLookingUpRegistration(true);
+      try {
+        const response = await fetch(`/api/fleet/vehicle-lookup?registration=${encodeURIComponent(normalized)}`, {
+          cache: "no-store",
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as {
+            found?: boolean;
+            brand?: string;
+            model?: string;
+            type?: string;
+          };
+
+          if (data.found && (data.brand || data.model || data.type)) {
+            setNewVehicle((current) => ({
+              ...current,
+              brand: data.brand || current.brand,
+              model: data.model || current.model,
+              type: data.type || current.type,
+            }));
+            setLookupMessage(`Auto-filled from registration lookup${data.model ? `: ${data.brand} ${data.model}` : ""}`);
+            return;
+          }
+        }
+
+        if (!applyLocalLookup(normalized)) {
+          setLookupMessage("No registration match found. Please enter brand/model manually.");
+        }
+      } catch {
+        if (!applyLocalLookup(normalized)) {
+          setLookupMessage("Lookup unavailable right now. Please enter brand/model manually.");
+        }
+      } finally {
+        setIsLookingUpRegistration(false);
+      }
+    }, 350);
   };
 
   const handleAddVehicle = (event: React.FormEvent<HTMLFormElement>) => {
@@ -375,7 +424,9 @@ export default function FleetPage() {
                 required
               />
               <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
-                {lookupMessage || "Brand/model will auto-fill for known registrations"}
+                {isLookingUpRegistration
+                  ? "Looking up registration..."
+                  : lookupMessage || "Brand/model will auto-fill for known registrations"}
               </div>
               <input
                 value={newVehicle.brand}
