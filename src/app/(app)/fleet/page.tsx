@@ -5,6 +5,16 @@ import Link from "next/link";
 
 import { useState } from "react";
 
+type FleetVehicle = {
+  id: string;
+  reg: string;
+  type: string;
+  status: "In Use" | "Available" | "Maintenance" | "Reserved";
+  allocated: string;
+  mileage: string;
+  nextService: string;
+};
+
 const fleetStats = [
   { label: "Total Vehicles", value: "28", change: "+2 this quarter", icon: "🚗" },
   { label: "Available", value: "24", change: "86% utilisation", icon: "✓" },
@@ -12,7 +22,7 @@ const fleetStats = [
   { label: "Total Fleet Value", value: "£1.2M", change: "Average age 4.2 yrs", icon: "💷" },
 ];
 
-const activeVehicles = [
+const initialActiveVehicles: FleetVehicle[] = [
   { id: "VH-001", reg: "TS24 KBM", type: "Transit Van", status: "In Use", allocated: "Thames Site", mileage: "45,230", nextService: "18 Feb" },
   { id: "VH-002", reg: "TS24 OPS", type: "Transit Van", status: "In Use", allocated: "Premier Site", mileage: "32,450", nextService: "25 Feb" },
   { id: "VH-003", reg: "TS24 BDV", type: "Captur", status: "Available", allocated: "Unallocated", mileage: "28,120", nextService: "10 Mar" },
@@ -49,16 +59,58 @@ const maintenanceAlerts = [
 ];
 
 export default function FleetPage() {
+  const [activeVehicles, setActiveVehicles] = useState<FleetVehicle[]>(initialActiveVehicles);
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [newVehicle, setNewVehicle] = useState({
+    reg: "",
+    type: "Transit Van",
+    status: "Available" as FleetVehicle["status"],
+    allocated: "Unallocated",
+    mileage: "",
+    nextService: "",
+  });
+
   const maxUtilization = Math.max(...utilizationData.map(d => d.value));
+
+  const handleAddVehicle = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!newVehicle.reg.trim()) return;
+
+    const nextId = `VH-${String(activeVehicles.length + 1).padStart(3, "0")}`;
+    const vehicle: FleetVehicle = {
+      id: nextId,
+      reg: newVehicle.reg.trim().toUpperCase(),
+      type: newVehicle.type,
+      status: newVehicle.status,
+      allocated: newVehicle.allocated.trim() || "Unallocated",
+      mileage: newVehicle.mileage.trim() || "0",
+      nextService: newVehicle.nextService || "TBC",
+    };
+
+    setActiveVehicles((current) => [vehicle, ...current]);
+    setNewVehicle({
+      reg: "",
+      type: "Transit Van",
+      status: "Available",
+      allocated: "Unallocated",
+      mileage: "",
+      nextService: "",
+    });
+    setShowAddVehicleModal(false);
+  };
 
   return (
     <PermissionGuard permission="fleet">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
-        <Link href="/fleet-overview" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 inline-flex items-center">
+        <button
+          onClick={() => setShowAddVehicleModal(true)}
+          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 inline-flex items-center"
+        >
           + Add Vehicle
-        </Link>
+        </button>
       </div>
 
       {/* Key Metrics */}
@@ -250,6 +302,80 @@ export default function FleetPage() {
           </div>
         </div>
       </section>
+
+      {showAddVehicleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-gray-700/60 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Add Vehicle</h3>
+            <p className="mt-1 text-sm text-gray-400">Register a new fleet asset for allocation and maintenance tracking.</p>
+
+            <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleAddVehicle}>
+              <input
+                value={newVehicle.reg}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, reg: event.target.value }))}
+                placeholder="Registration (e.g. AB12 CDE)"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <select
+                value={newVehicle.type}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                <option>Transit Van</option>
+                <option>Captur</option>
+                <option>Insignia</option>
+                <option>Pickup</option>
+                <option>Specialist</option>
+              </select>
+              <select
+                value={newVehicle.status}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, status: event.target.value as FleetVehicle["status"] }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                <option value="Available">Available</option>
+                <option value="In Use">In Use</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Reserved">Reserved</option>
+              </select>
+              <input
+                value={newVehicle.allocated}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, allocated: event.target.value }))}
+                placeholder="Allocated site"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                value={newVehicle.mileage}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, mileage: event.target.value }))}
+                placeholder="Mileage"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                type="date"
+                value={newVehicle.nextService}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, nextService: event.target.value }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+
+              <div className="mt-2 flex gap-2 md:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddVehicleModal(false)}
+                  className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+                >
+                  Save Vehicle
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
     </PermissionGuard>
   );
