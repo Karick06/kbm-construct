@@ -12,7 +12,7 @@ import {
   saveFleetVehiclesToStorage,
   VEHICLE_TYPE_OPTIONS,
 } from "@/lib/fleet-data";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type FleetVehicleForm = {
   reg: string;
@@ -34,6 +34,13 @@ const defaultVehicleForm: FleetVehicleForm = {
   allocated: "Unallocated",
   mileage: "",
   nextService: "",
+};
+
+const REGISTRATION_LOOKUP: Record<string, { brand: string; model: string; type: string }> = {
+  TS24KBM: { brand: "Ford", model: "Transit", type: "Panel Van" },
+  TS24OPS: { brand: "Ford", model: "Transit", type: "Panel Van" },
+  TS24BDV: { brand: "BMW", model: "X3", type: "SUV / 4x4" },
+  TS24MGT: { brand: "BMW", model: "3 Series", type: "Saloon Car" },
 };
 
 function parseServiceDate(value: string): Date | null {
@@ -118,6 +125,9 @@ export default function FleetOverviewPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [showAddAssetModal, setShowAddAssetModal] = useState(false);
   const [newVehicle, setNewVehicle] = useState<FleetVehicleForm>(defaultVehicleForm);
+  const [lookupMessage, setLookupMessage] = useState("");
+  const [isLookingUpRegistration, setIsLookingUpRegistration] = useState(false);
+  const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const syncVehicles = () => {
@@ -138,6 +148,14 @@ export default function FleetOverviewPage() {
     if (!isHydrated) return;
     saveFleetVehiclesToStorage(vehicles);
   }, [vehicles, isHydrated]);
+
+  useEffect(() => {
+    return () => {
+      if (lookupTimerRef.current) {
+        clearTimeout(lookupTimerRef.current);
+      }
+    };
+  }, []);
 
   const totalVehicles = vehicles.length;
   const inUseCount = vehicles.filter((vehicle) => vehicle.status === "In Use").length;
@@ -270,12 +288,86 @@ export default function FleetOverviewPage() {
 
     setVehicles((current) => [created, ...current]);
     setNewVehicle(defaultVehicleForm);
+    setLookupMessage("");
     setShowAddAssetModal(false);
+  };
+
+  const applyLocalLookup = (registration: string) => {
+    const local = REGISTRATION_LOOKUP[registration];
+    if (!local) return false;
+
+    setNewVehicle((current) => ({
+      ...current,
+      brand: current.brand || local.brand,
+      model: current.model || local.model,
+      type: local.type,
+    }));
+    setLookupMessage(`Auto-filled from local data: ${local.brand} ${local.model}`);
+    return true;
+  };
+
+  const handleRegistrationChange = (value: string) => {
+    const normalized = normalizeRegistration(value);
+    setNewVehicle((current) => ({ ...current, reg: value }));
+    setLookupMessage("");
+
+    if (lookupTimerRef.current) {
+      clearTimeout(lookupTimerRef.current);
+    }
+
+    if (normalized.length < 5) {
+      return;
+    }
+
+    lookupTimerRef.current = setTimeout(async () => {
+      setIsLookingUpRegistration(true);
+      try {
+        const response = await fetch(`/api/fleet/vehicle-lookup?registration=${encodeURIComponent(normalized)}`, {
+          cache: "no-store",
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as {
+            found?: boolean;
+            brand?: string;
+            model?: string;
+            type?: string;
+          };
+
+          if (data.found && (data.brand || data.model || data.type)) {
+            setNewVehicle((current) => ({
+              ...current,
+              brand: data.brand || current.brand,
+              model: data.model || current.model,
+              type: data.type || current.type,
+            }));
+            setLookupMessage(`Auto-filled from registration lookup${data.model ? `: ${data.brand} ${data.model}` : ""}`);
+            return;
+          }
+        }
+
+        if (!applyLocalLookup(normalized)) {
+          setLookupMessage("No registration match found. Please enter brand/model manually.");
+        }
+      } catch {
+        if (!applyLocalLookup(normalized)) {
+          setLookupMessage("Lookup unavailable right now. Please enter brand/model manually.");
+        }
+      } finally {
+        setIsLookingUpRegistration(false);
+      }
+    }, 350);
   };
 
   const closeAddAssetModal = () => {
     setShowAddAssetModal(false);
     setNewVehicle(defaultVehicleForm);
+    setLookupMessage("");
+    setIsLookingUpRegistration(false);
+    if (lookupTimerRef.current) {
+      clearTimeout(lookupTimerRef.current);
+      lookupTimerRef.current = null;
+    }
   };
 
   return (
@@ -470,11 +562,16 @@ export default function FleetOverviewPage() {
             <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleAddAsset}>
               <input
                 value={newVehicle.reg}
-                onChange={(event) => setNewVehicle((current) => ({ ...current, reg: event.target.value }))}
+                onChange={(event) => handleRegistrationChange(event.target.value)}
                 placeholder="Registration"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                 required
               />
+              <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
+                {isLookingUpRegistration
+                  ? "Looking up registration..."
+                  : lookupMessage || "Brand/model will auto-fill for known registrations"}
+              </div>
               <select
                 value={newVehicle.type}
                 onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
