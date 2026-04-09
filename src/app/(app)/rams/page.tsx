@@ -1,5 +1,1 @@
-import { redirect } from "next/navigation";
-
-export default function RAMSPage() {
-  redirect("/compliance");
-}
+export { default } from "../compliance/page";
