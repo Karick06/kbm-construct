@@ -112,6 +112,17 @@ type FleetVehicleForm = {
 
 type NonVehicleCategory = "Plant" | "Tool";
 
+type EditableNonVehicleAsset = {
+  category: NonVehicleCategory;
+  id: string;
+  name: string;
+  type: string;
+  status: FleetVehicle["status"];
+  allocated: string;
+  nextService: string;
+  value: string;
+};
+
 type NonVehicleAssetForm = {
   category: NonVehicleCategory;
   name: string;
@@ -159,6 +170,8 @@ export default function FleetPage() {
   const [showAddAssetModal, setShowAddAssetModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<FleetVehicle | null>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<FleetVehicle | null>(null);
+  const [editingAsset, setEditingAsset] = useState<EditableNonVehicleAsset | null>(null);
+  const [assetToDelete, setAssetToDelete] = useState<EditableNonVehicleAsset | null>(null);
   const [lookupMessage, setLookupMessage] = useState("");
   const [isLookingUpRegistration, setIsLookingUpRegistration] = useState(false);
   const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -472,6 +485,60 @@ export default function FleetPage() {
     setVehicleToDelete(null);
   };
 
+  const handleUpdateAsset = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingAsset) return;
+
+    const nextValue = Number(editingAsset.value || "0");
+    if (editingAsset.category === "Plant") {
+      setPlantAssets((current) =>
+        current.map((asset) =>
+          asset.id === editingAsset.id
+            ? {
+                ...asset,
+                name: editingAsset.name.trim(),
+                type: editingAsset.type,
+                status: editingAsset.status,
+                allocated: editingAsset.allocated.trim() || "Unallocated",
+                nextService: editingAsset.nextService || "TBC",
+                value: Number.isFinite(nextValue) ? nextValue : 0,
+              }
+            : asset,
+        ),
+      );
+    } else {
+      setToolAssets((current) =>
+        current.map((asset) =>
+          asset.id === editingAsset.id
+            ? {
+                ...asset,
+                name: editingAsset.name.trim(),
+                type: editingAsset.type,
+                status: editingAsset.status,
+                allocated: editingAsset.allocated.trim() || "Unallocated",
+                nextService: editingAsset.nextService || "TBC",
+                value: Number.isFinite(nextValue) ? nextValue : 0,
+              }
+            : asset,
+        ),
+      );
+    }
+
+    setEditingAsset(null);
+  };
+
+  const handleDeleteAsset = () => {
+    if (!assetToDelete) return;
+
+    if (assetToDelete.category === "Plant") {
+      setPlantAssets((current) => current.filter((asset) => asset.id !== assetToDelete.id));
+    } else {
+      setToolAssets((current) => current.filter((asset) => asset.id !== assetToDelete.id));
+    }
+
+    setAssetToDelete(null);
+  };
+
   const closeAddVehicleModal = () => {
     setShowAddVehicleModal(false);
     setNewVehicle(defaultVehicleForm);
@@ -690,9 +757,45 @@ export default function FleetPage() {
             {plantAssets.length === 0 && <p className="text-sm text-gray-400">No plant assets yet.</p>}
             {plantAssets.slice(0, 6).map((asset) => (
               <div key={asset.id} className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-white">{asset.name}</p>
-                  <p className="text-xs text-gray-300">{asset.id}</p>
+                  <div className="inline-flex items-center gap-2">
+                    <p className="text-xs text-gray-300">{asset.id}</p>
+                    <button
+                      onClick={() =>
+                        setEditingAsset({
+                          category: "Plant",
+                          id: asset.id,
+                          name: asset.name,
+                          type: asset.type,
+                          status: asset.status,
+                          allocated: asset.allocated,
+                          nextService: /^\d{4}-\d{2}-\d{2}$/.test(asset.nextService) ? asset.nextService : "",
+                          value: String(asset.value),
+                        })
+                      }
+                      className="rounded border border-gray-600 px-2 py-1 text-xs font-semibold text-gray-200 hover:bg-gray-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() =>
+                        setAssetToDelete({
+                          category: "Plant",
+                          id: asset.id,
+                          name: asset.name,
+                          type: asset.type,
+                          status: asset.status,
+                          allocated: asset.allocated,
+                          nextService: asset.nextService,
+                          value: String(asset.value),
+                        })
+                      }
+                      className="rounded border border-red-700/60 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-900/30"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-1 text-xs text-gray-400">{asset.type} • {asset.allocated} • {formatServiceDate(asset.nextService)}</p>
               </div>
@@ -712,9 +815,45 @@ export default function FleetPage() {
             {toolAssets.length === 0 && <p className="text-sm text-gray-400">No tools tracked yet.</p>}
             {toolAssets.slice(0, 6).map((asset) => (
               <div key={asset.id} className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-white">{asset.name}</p>
-                  <p className="text-xs text-gray-300">{asset.id}</p>
+                  <div className="inline-flex items-center gap-2">
+                    <p className="text-xs text-gray-300">{asset.id}</p>
+                    <button
+                      onClick={() =>
+                        setEditingAsset({
+                          category: "Tool",
+                          id: asset.id,
+                          name: asset.name,
+                          type: asset.type,
+                          status: asset.status,
+                          allocated: asset.allocated,
+                          nextService: /^\d{4}-\d{2}-\d{2}$/.test(asset.nextService) ? asset.nextService : "",
+                          value: String(asset.value),
+                        })
+                      }
+                      className="rounded border border-gray-600 px-2 py-1 text-xs font-semibold text-gray-200 hover:bg-gray-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() =>
+                        setAssetToDelete({
+                          category: "Tool",
+                          id: asset.id,
+                          name: asset.name,
+                          type: asset.type,
+                          status: asset.status,
+                          allocated: asset.allocated,
+                          nextService: asset.nextService,
+                          value: String(asset.value),
+                        })
+                      }
+                      className="rounded border border-red-700/60 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-900/30"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-1 text-xs text-gray-400">{asset.type} • {asset.allocated} • {formatServiceDate(asset.nextService)}</p>
               </div>
@@ -1056,6 +1195,107 @@ export default function FleetPage() {
                 className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
               >
                 Delete Vehicle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingAsset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-gray-700/60 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Edit {editingAsset.category}</h3>
+            <p className="mt-1 text-sm text-gray-400">Update details for this {editingAsset.category.toLowerCase()} asset.</p>
+
+            <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleUpdateAsset}>
+              <input
+                value={editingAsset.name}
+                onChange={(event) => setEditingAsset((current) => (current ? { ...current, name: event.target.value } : current))}
+                placeholder="Asset name"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <select
+                value={editingAsset.type}
+                onChange={(event) => setEditingAsset((current) => (current ? { ...current, type: event.target.value } : current))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                {(editingAsset.category === "Plant" ? PLANT_TYPE_OPTIONS : TOOL_TYPE_OPTIONS).map((typeOption) => (
+                  <option key={typeOption}>{typeOption}</option>
+                ))}
+              </select>
+              <select
+                value={editingAsset.status}
+                onChange={(event) => setEditingAsset((current) => (current ? { ...current, status: event.target.value as FleetVehicle["status"] } : current))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                {FLEET_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+              <input
+                value={editingAsset.allocated}
+                onChange={(event) => setEditingAsset((current) => (current ? { ...current, allocated: event.target.value } : current))}
+                placeholder="Allocated site"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={editingAsset.value}
+                onChange={(event) => setEditingAsset((current) => (current ? { ...current, value: event.target.value } : current))}
+                placeholder="Asset value (£)"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                type="date"
+                value={editingAsset.nextService}
+                onChange={(event) => setEditingAsset((current) => (current ? { ...current, nextService: event.target.value } : current))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+
+              <div className="mt-2 flex gap-2 md:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingAsset(null)}
+                  className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {assetToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-xl border border-gray-700/60 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Delete {assetToDelete.category}</h3>
+            <p className="mt-2 text-sm text-gray-300">
+              Remove <span className="font-semibold text-white">{assetToDelete.name}</span> ({assetToDelete.id}) from asset records?
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setAssetToDelete(null)}
+                className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAsset}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Delete Asset
               </button>
             </div>
           </div>
