@@ -26,6 +26,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type FleetVehicleForm = {
   category: "Vehicle" | "Plant" | "Tool";
+  assetNumber: string;
   reg: string;
   brand: string;
   model: string;
@@ -39,6 +40,7 @@ type FleetVehicleForm = {
 type EditableOverviewAsset = {
   category: "Vehicle" | "Plant" | "Tool";
   id: string;
+  assetNumber?: string;
   reg?: string;
   brand?: string;
   model?: string;
@@ -53,6 +55,7 @@ type EditableOverviewAsset = {
 
 const defaultVehicleForm: FleetVehicleForm = {
   category: "Vehicle",
+  assetNumber: "",
   reg: "",
   brand: "",
   model: "",
@@ -113,6 +116,10 @@ function formatRegistration(value: string): string {
   const normalized = normalizeRegistration(value);
   if (normalized.length <= 4) return normalized;
   return `${normalized.slice(0, normalized.length - 3)} ${normalized.slice(-3)}`;
+}
+
+function normalizeAssetNumber(value: string): string {
+  return value.trim().toUpperCase();
 }
 
 function toCurrency(value: number): string {
@@ -389,6 +396,8 @@ export default function FleetOverviewPage() {
   const handleAddAsset = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const selectedType = newVehicle.type;
+
     if (newVehicle.category === "Vehicle") {
       if (!newVehicle.reg.trim() || !newVehicle.brand.trim() || !newVehicle.model.trim()) return;
 
@@ -397,7 +406,7 @@ export default function FleetOverviewPage() {
         reg: formatRegistration(newVehicle.reg),
         brand: newVehicle.brand.trim(),
         model: newVehicle.model.trim(),
-        type: newVehicle.type,
+        type: selectedType,
         status: newVehicle.status,
         allocated: newVehicle.allocated.trim() || "Unallocated",
         mileage: newVehicle.mileage.trim() || "0",
@@ -408,10 +417,13 @@ export default function FleetOverviewPage() {
     } else if (newVehicle.category === "Plant") {
       if (!newVehicle.model.trim()) return;
 
+      const internalId = createNextPlantId(plantAssets);
+
       const created: PlantAsset = {
-        id: createNextPlantId(plantAssets),
+        id: internalId,
+        assetNumber: normalizeAssetNumber(newVehicle.assetNumber) || internalId,
         name: newVehicle.model.trim(),
-        type: newVehicle.type,
+        type: selectedType,
         status: newVehicle.status,
         allocated: newVehicle.allocated.trim() || "Unallocated",
         nextService: newVehicle.nextService || "TBC",
@@ -422,10 +434,13 @@ export default function FleetOverviewPage() {
     } else {
       if (!newVehicle.model.trim()) return;
 
+      const internalId = createNextToolId(toolAssets);
+
       const created: ToolAsset = {
-        id: createNextToolId(toolAssets),
+        id: internalId,
+        assetNumber: normalizeAssetNumber(newVehicle.assetNumber) || internalId,
         name: newVehicle.model.trim(),
-        type: newVehicle.type,
+        type: selectedType,
         status: newVehicle.status,
         allocated: newVehicle.allocated.trim() || "Unallocated",
         nextService: newVehicle.nextService || "TBC",
@@ -547,6 +562,7 @@ export default function FleetOverviewPage() {
           asset.id === editingAsset.id
             ? {
                 ...asset,
+              assetNumber: normalizeAssetNumber(editingAsset.assetNumber || "") || asset.assetNumber,
                 name: (editingAsset.name || asset.name).trim(),
                 type: editingAsset.type,
                 status: editingAsset.status,
@@ -564,6 +580,7 @@ export default function FleetOverviewPage() {
           asset.id === editingAsset.id
             ? {
                 ...asset,
+              assetNumber: normalizeAssetNumber(editingAsset.assetNumber || "") || asset.assetNumber,
                 name: (editingAsset.name || asset.name).trim(),
                 type: editingAsset.type,
                 status: editingAsset.status,
@@ -801,7 +818,7 @@ export default function FleetOverviewPage() {
               {plantAssets.map((asset) => (
                 <tr key={asset.id} className="hover:bg-gray-700/30">
                   <td className="py-3 text-sm text-blue-300">Plant</td>
-                  <td className="py-3 text-sm text-white">{asset.id} • {asset.name}</td>
+                  <td className="py-3 text-sm text-white">{asset.assetNumber} • {asset.name}</td>
                   <td className="py-3 text-sm text-gray-300">{asset.type}</td>
                   <td className="py-3 text-sm text-gray-300">{asset.status}</td>
                   <td className="py-3 text-sm text-gray-300">{asset.allocated}</td>
@@ -812,6 +829,7 @@ export default function FleetOverviewPage() {
                           setEditingAsset({
                             category: "Plant",
                             id: asset.id,
+                            assetNumber: asset.assetNumber,
                             name: asset.name,
                             type: asset.type,
                             status: asset.status,
@@ -829,6 +847,7 @@ export default function FleetOverviewPage() {
                           setAssetToDelete({
                             category: "Plant",
                             id: asset.id,
+                            assetNumber: asset.assetNumber,
                             name: asset.name,
                             type: asset.type,
                             status: asset.status,
@@ -849,7 +868,7 @@ export default function FleetOverviewPage() {
               {toolAssets.map((asset) => (
                 <tr key={asset.id} className="hover:bg-gray-700/30">
                   <td className="py-3 text-sm text-teal-300">Tool</td>
-                  <td className="py-3 text-sm text-white">{asset.id} • {asset.name}</td>
+                  <td className="py-3 text-sm text-white">{asset.assetNumber} • {asset.name}</td>
                   <td className="py-3 text-sm text-gray-300">{asset.type}</td>
                   <td className="py-3 text-sm text-gray-300">{asset.status}</td>
                   <td className="py-3 text-sm text-gray-300">{asset.allocated}</td>
@@ -860,6 +879,7 @@ export default function FleetOverviewPage() {
                           setEditingAsset({
                             category: "Tool",
                             id: asset.id,
+                            assetNumber: asset.assetNumber,
                             name: asset.name,
                             type: asset.type,
                             status: asset.status,
@@ -877,6 +897,7 @@ export default function FleetOverviewPage() {
                           setAssetToDelete({
                             category: "Tool",
                             id: asset.id,
+                            assetNumber: asset.assetNumber,
                             name: asset.name,
                             type: asset.type,
                             status: asset.status,
@@ -984,21 +1005,35 @@ export default function FleetOverviewPage() {
                 <option value="Tool">Tool</option>
               </select>
 
-              <select
+              <input
+                list={
+                  newVehicle.category === "Vehicle"
+                    ? "vehicle-type-options-overview"
+                    : newVehicle.category === "Plant"
+                      ? "plant-type-options-overview"
+                      : "tool-type-options-overview"
+                }
                 value={newVehicle.type}
                 onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
+                placeholder="Asset type"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                 aria-label="Asset type"
-              >
-                {(newVehicle.category === "Vehicle"
-                  ? VEHICLE_TYPE_OPTIONS
-                  : newVehicle.category === "Plant"
-                    ? PLANT_TYPE_OPTIONS
-                    : TOOL_TYPE_OPTIONS
-                ).map((typeOption) => (
-                  <option key={typeOption}>{typeOption}</option>
+              />
+              <datalist id="vehicle-type-options-overview">
+                {VEHICLE_TYPE_OPTIONS.map((typeOption) => (
+                  <option key={typeOption} value={typeOption} />
                 ))}
-              </select>
+              </datalist>
+              <datalist id="plant-type-options-overview">
+                {PLANT_TYPE_OPTIONS.map((typeOption) => (
+                  <option key={typeOption} value={typeOption} />
+                ))}
+              </datalist>
+              <datalist id="tool-type-options-overview">
+                {TOOL_TYPE_OPTIONS.map((typeOption) => (
+                  <option key={typeOption} value={typeOption} />
+                ))}
+              </datalist>
 
               {newVehicle.category === "Vehicle" ? (
                 <input
@@ -1024,6 +1059,15 @@ export default function FleetOverviewPage() {
                 <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
                   {newVehicle.category} assets do not use registration lookup.
                 </div>
+              )}
+
+              {newVehicle.category !== "Vehicle" && (
+                <input
+                  value={newVehicle.assetNumber}
+                  onChange={(event) => setNewVehicle((current) => ({ ...current, assetNumber: event.target.value }))}
+                  placeholder="Asset number (e.g. PL-014 / TL-022)"
+                  className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                />
               )}
 
               {newVehicle.category === "Vehicle" ? (
@@ -1166,21 +1210,35 @@ export default function FleetOverviewPage() {
               ) : (
                 <>
                   <input
+                    value={editingAsset.assetNumber || ""}
+                    onChange={(event) => setEditingAsset((current) => (current ? { ...current, assetNumber: event.target.value } : current))}
+                    placeholder="Asset number"
+                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                  />
+                  <input
                     value={editingAsset.name || ""}
                     onChange={(event) => setEditingAsset((current) => (current ? { ...current, name: event.target.value } : current))}
                     placeholder="Asset name"
                     className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                     required
                   />
-                  <select
+                  <input
+                    list={editingAsset.category === "Plant" ? "plant-type-options-edit-overview" : "tool-type-options-edit-overview"}
                     value={editingAsset.type}
                     onChange={(event) => setEditingAsset((current) => (current ? { ...current, type: event.target.value } : current))}
+                    placeholder="Asset type"
                     className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  >
-                    {(editingAsset.category === "Plant" ? PLANT_TYPE_OPTIONS : TOOL_TYPE_OPTIONS).map((typeOption) => (
-                      <option key={typeOption}>{typeOption}</option>
+                  />
+                  <datalist id="plant-type-options-edit-overview">
+                    {PLANT_TYPE_OPTIONS.map((typeOption) => (
+                      <option key={typeOption} value={typeOption} />
                     ))}
-                  </select>
+                  </datalist>
+                  <datalist id="tool-type-options-edit-overview">
+                    {TOOL_TYPE_OPTIONS.map((typeOption) => (
+                      <option key={typeOption} value={typeOption} />
+                    ))}
+                  </datalist>
                   <input
                     type="number"
                     min="0"

@@ -40,6 +40,10 @@ function formatRegistration(value: string): string {
   return `${normalized.slice(0, normalized.length - 3)} ${normalized.slice(-3)}`;
 }
 
+function normalizeAssetNumber(value: string): string {
+  return value.trim().toUpperCase();
+}
+
 function parseServiceDate(value: string): Date | null {
   if (!value || value === "TBC") return null;
 
@@ -115,6 +119,7 @@ type NonVehicleCategory = "Plant" | "Tool";
 type EditableNonVehicleAsset = {
   category: NonVehicleCategory;
   id: string;
+  assetNumber: string;
   name: string;
   type: string;
   status: FleetVehicle["status"];
@@ -125,8 +130,10 @@ type EditableNonVehicleAsset = {
 
 type NonVehicleAssetForm = {
   category: NonVehicleCategory;
+  assetNumber: string;
   name: string;
   type: string;
+  customType: string;
   status: FleetVehicle["status"];
   allocated: string;
   value: string;
@@ -146,8 +153,10 @@ const defaultVehicleForm: FleetVehicleForm = {
 
 const defaultNonVehicleForm: NonVehicleAssetForm = {
   category: "Plant",
+  assetNumber: "",
   name: "",
   type: PLANT_TYPE_OPTIONS[0],
+  customType: "",
   status: "Available",
   allocated: "Unallocated",
   value: "",
@@ -440,12 +449,15 @@ export default function FleetPage() {
 
     if (!newAsset.name.trim()) return;
 
+    const selectedType = newAsset.customType.trim() || newAsset.type;
     const value = Number(newAsset.value || "0");
     if (newAsset.category === "Plant") {
+      const internalId = createNextPlantId(plantAssets);
       const created: PlantAsset = {
-        id: createNextPlantId(plantAssets),
+        id: internalId,
+        assetNumber: normalizeAssetNumber(newAsset.assetNumber) || internalId,
         name: newAsset.name.trim(),
-        type: newAsset.type,
+        type: selectedType,
         status: newAsset.status,
         allocated: newAsset.allocated.trim() || "Unallocated",
         nextService: newAsset.nextService || "TBC",
@@ -453,10 +465,12 @@ export default function FleetPage() {
       };
       setPlantAssets((current) => [created, ...current]);
     } else {
+      const internalId = createNextToolId(toolAssets);
       const created: ToolAsset = {
-        id: createNextToolId(toolAssets),
+        id: internalId,
+        assetNumber: normalizeAssetNumber(newAsset.assetNumber) || internalId,
         name: newAsset.name.trim(),
-        type: newAsset.type,
+        type: selectedType,
         status: newAsset.status,
         allocated: newAsset.allocated.trim() || "Unallocated",
         nextService: newAsset.nextService || "TBC",
@@ -496,6 +510,7 @@ export default function FleetPage() {
           asset.id === editingAsset.id
             ? {
                 ...asset,
+              assetNumber: normalizeAssetNumber(editingAsset.assetNumber) || asset.assetNumber,
                 name: editingAsset.name.trim(),
                 type: editingAsset.type,
                 status: editingAsset.status,
@@ -512,6 +527,7 @@ export default function FleetPage() {
           asset.id === editingAsset.id
             ? {
                 ...asset,
+              assetNumber: normalizeAssetNumber(editingAsset.assetNumber) || asset.assetNumber,
                 name: editingAsset.name.trim(),
                 type: editingAsset.type,
                 status: editingAsset.status,
@@ -760,12 +776,13 @@ export default function FleetPage() {
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-white">{asset.name}</p>
                   <div className="inline-flex items-center gap-2">
-                    <p className="text-xs text-gray-300">{asset.id}</p>
+                    <p className="text-xs text-gray-300">{asset.assetNumber}</p>
                     <button
                       onClick={() =>
                         setEditingAsset({
                           category: "Plant",
                           id: asset.id,
+                          assetNumber: asset.assetNumber,
                           name: asset.name,
                           type: asset.type,
                           status: asset.status,
@@ -783,6 +800,7 @@ export default function FleetPage() {
                         setAssetToDelete({
                           category: "Plant",
                           id: asset.id,
+                          assetNumber: asset.assetNumber,
                           name: asset.name,
                           type: asset.type,
                           status: asset.status,
@@ -818,12 +836,13 @@ export default function FleetPage() {
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-white">{asset.name}</p>
                   <div className="inline-flex items-center gap-2">
-                    <p className="text-xs text-gray-300">{asset.id}</p>
+                    <p className="text-xs text-gray-300">{asset.assetNumber}</p>
                     <button
                       onClick={() =>
                         setEditingAsset({
                           category: "Tool",
                           id: asset.id,
+                          assetNumber: asset.assetNumber,
                           name: asset.name,
                           type: asset.type,
                           status: asset.status,
@@ -841,6 +860,7 @@ export default function FleetPage() {
                         setAssetToDelete({
                           category: "Tool",
                           id: asset.id,
+                          assetNumber: asset.assetNumber,
                           name: asset.name,
                           type: asset.type,
                           status: asset.status,
@@ -1029,15 +1049,29 @@ export default function FleetPage() {
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                 required
               />
-              <select
+              <input
+                value={newAsset.assetNumber}
+                onChange={(event) => setNewAsset((current) => ({ ...current, assetNumber: event.target.value }))}
+                placeholder="Asset number (e.g. PL-014)"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                list={newAsset.category === "Plant" ? "plant-type-options" : "tool-type-options"}
                 value={newAsset.type}
                 onChange={(event) => setNewAsset((current) => ({ ...current, type: event.target.value }))}
+                placeholder="Asset type"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-              >
-                {(newAsset.category === "Plant" ? PLANT_TYPE_OPTIONS : TOOL_TYPE_OPTIONS).map((typeOption) => (
-                  <option key={typeOption}>{typeOption}</option>
+              />
+              <datalist id="plant-type-options">
+                {PLANT_TYPE_OPTIONS.map((typeOption) => (
+                  <option key={typeOption} value={typeOption} />
                 ))}
-              </select>
+              </datalist>
+              <datalist id="tool-type-options">
+                {TOOL_TYPE_OPTIONS.map((typeOption) => (
+                  <option key={typeOption} value={typeOption} />
+                ))}
+              </datalist>
               <select
                 value={newAsset.status}
                 onChange={(event) => setNewAsset((current) => ({ ...current, status: event.target.value as FleetVehicle["status"] }))}
@@ -1209,21 +1243,35 @@ export default function FleetPage() {
 
             <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleUpdateAsset}>
               <input
+                value={editingAsset.assetNumber}
+                onChange={(event) => setEditingAsset((current) => (current ? { ...current, assetNumber: event.target.value } : current))}
+                placeholder="Asset number"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
                 value={editingAsset.name}
                 onChange={(event) => setEditingAsset((current) => (current ? { ...current, name: event.target.value } : current))}
                 placeholder="Asset name"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                 required
               />
-              <select
+              <input
+                list={editingAsset.category === "Plant" ? "plant-type-edit-options" : "tool-type-edit-options"}
                 value={editingAsset.type}
                 onChange={(event) => setEditingAsset((current) => (current ? { ...current, type: event.target.value } : current))}
+                placeholder="Asset type"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-              >
-                {(editingAsset.category === "Plant" ? PLANT_TYPE_OPTIONS : TOOL_TYPE_OPTIONS).map((typeOption) => (
-                  <option key={typeOption}>{typeOption}</option>
+              />
+              <datalist id="plant-type-edit-options">
+                {PLANT_TYPE_OPTIONS.map((typeOption) => (
+                  <option key={typeOption} value={typeOption} />
                 ))}
-              </select>
+              </datalist>
+              <datalist id="tool-type-edit-options">
+                {TOOL_TYPE_OPTIONS.map((typeOption) => (
+                  <option key={typeOption} value={typeOption} />
+                ))}
+              </datalist>
               <select
                 value={editingAsset.status}
                 onChange={(event) => setEditingAsset((current) => (current ? { ...current, status: event.target.value as FleetVehicle["status"] } : current))}

@@ -16,6 +16,7 @@ export type FleetVehicle = {
 
 export type PlantAsset = {
 	id: string;
+	assetNumber: string;
 	name: string;
 	type: string;
 	status: FleetAssetStatus;
@@ -26,6 +27,7 @@ export type PlantAsset = {
 
 export type ToolAsset = {
 	id: string;
+	assetNumber: string;
 	name: string;
 	type: string;
 	status: FleetAssetStatus;
@@ -124,6 +126,7 @@ export const DEFAULT_FLEET_VEHICLES: FleetVehicle[] = [
 export const DEFAULT_PLANT_ASSETS: PlantAsset[] = [
 	{
 		id: "PL-001",
+		assetNumber: "PL-001",
 		name: "Kubota KX080",
 		type: "Mini Excavator",
 		status: "In Use",
@@ -133,6 +136,7 @@ export const DEFAULT_PLANT_ASSETS: PlantAsset[] = [
 	},
 	{
 		id: "PL-002",
+		assetNumber: "PL-002",
 		name: "Bomag BW120",
 		type: "Ride-on Roller",
 		status: "Available",
@@ -142,6 +146,7 @@ export const DEFAULT_PLANT_ASSETS: PlantAsset[] = [
 	},
 	{
 		id: "PL-003",
+		assetNumber: "PL-003",
 		name: "JCB 535-95",
 		type: "Telehandler",
 		status: "Maintenance",
@@ -154,6 +159,7 @@ export const DEFAULT_PLANT_ASSETS: PlantAsset[] = [
 export const DEFAULT_TOOL_ASSETS: ToolAsset[] = [
 	{
 		id: "TL-001",
+		assetNumber: "TL-001",
 		name: "Wacker Neuson DPU6555",
 		type: "Compactor",
 		status: "In Use",
@@ -163,6 +169,7 @@ export const DEFAULT_TOOL_ASSETS: ToolAsset[] = [
 	},
 	{
 		id: "TL-002",
+		assetNumber: "TL-002",
 		name: "Husqvarna K770",
 		type: "Cut-off Saw",
 		status: "Available",
@@ -172,6 +179,7 @@ export const DEFAULT_TOOL_ASSETS: ToolAsset[] = [
 	},
 	{
 		id: "TL-003",
+		assetNumber: "TL-003",
 		name: "Belle Plate Compactor",
 		type: "Wacker Plate",
 		status: "Reserved",
@@ -220,6 +228,7 @@ function safeParsePlantAssets(raw: string | null): PlantAsset[] {
 		return parsed
 			.map((entry) => ({
 				id: typeof entry?.id === "string" ? entry.id : "",
+				assetNumber: typeof entry?.assetNumber === "string" ? entry.assetNumber : (typeof entry?.id === "string" ? entry.id : ""),
 				name: typeof entry?.name === "string" ? entry.name : "",
 				type: typeof entry?.type === "string" ? entry.type : "",
 				status: (entry?.status as FleetAssetStatus) || "Available",
@@ -243,6 +252,7 @@ function safeParseToolAssets(raw: string | null): ToolAsset[] {
 		return parsed
 			.map((entry) => ({
 				id: typeof entry?.id === "string" ? entry.id : "",
+				assetNumber: typeof entry?.assetNumber === "string" ? entry.assetNumber : (typeof entry?.id === "string" ? entry.id : ""),
 				name: typeof entry?.name === "string" ? entry.name : "",
 				type: typeof entry?.type === "string" ? entry.type : "",
 				status: (entry?.status as FleetAssetStatus) || "Available",
