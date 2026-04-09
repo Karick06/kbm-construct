@@ -32,11 +32,13 @@ export default function PayrollPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<PayrollRun | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportWeekStart, setExportWeekStart] = useState("");
   const [form, setForm] = useState<Omit<PayrollRun, "id">>({ period: "", runDate: "", employees: 0, grossPay: 0, deductions: 0, netPay: 0, status: "Draft" });
 
   useEffect(() => {
     const stored = localStorage.getItem("kbm_payroll");
     setRuns(stored ? JSON.parse(stored) : defaultPayrollRuns);
+    setExportWeekStart(toDateKey(mondayOfCurrentWeek()));
   }, []);
 
   const save = (updated: PayrollRun[]) => { setRuns(updated); localStorage.setItem("kbm_payroll", JSON.stringify(updated)); };
@@ -75,7 +77,7 @@ export default function PayrollPage() {
   const handleExportTimesheetPayroll = async () => {
     try {
       setIsExporting(true);
-      const weekStart = toDateKey(mondayOfCurrentWeek());
+      const weekStart = exportWeekStart || toDateKey(mondayOfCurrentWeek());
       const response = await fetch(`/api/payroll/timesheet-export?weekStart=${encodeURIComponent(weekStart)}`, {
         cache: "no-store",
       });
@@ -109,17 +111,37 @@ export default function PayrollPage() {
           subtitle="HR & Finance"
           actions={
             <div className="flex items-center gap-2">
+              <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Payroll Run</button>
+            </div>
+          }
+        />
+
+        <div className="rounded-lg border border-orange-500/40 bg-orange-500/10 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">Timesheet Payroll Export</p>
+              <p className="text-xs text-gray-300">Download weekly payroll hours split by source: manual, manual clock, auto geofence, and offline queued.</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-300">Week Starting (Monday)</label>
+                <input
+                  type="date"
+                  value={exportWeekStart}
+                  onChange={(e) => setExportWeekStart(e.target.value)}
+                  className="rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+                />
+              </div>
               <button
                 onClick={handleExportTimesheetPayroll}
                 disabled={isExporting}
                 className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700 disabled:opacity-60"
               >
-                {isExporting ? "Exporting..." : "Export Timesheet Payroll"}
+                {isExporting ? "Exporting..." : "Export CSV"}
               </button>
-              <button onClick={openAdd} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">+ New Payroll Run</button>
             </div>
-          }
-        />
+          </div>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[
