@@ -105,6 +105,7 @@ export default function MyTimesheetsPage() {
       geofenceName: formState.geofenceName || 'Manual Entry',
       duration,
       status: 'manual',
+      source: 'manual',
       notes: formState.notes.trim() || undefined,
     };
   };
@@ -358,6 +359,17 @@ export default function MyTimesheetsPage() {
                         <p className="text-xs text-[var(--sidebar-muted)] mt-0.5">
                           {entry.checkInTime} - {entry.checkOutTime ?? 'In Progress'}
                         </p>
+                        {entry.source ? (
+                          <p className="text-[11px] text-amber-400 mt-0.5">
+                            {entry.source === 'auto-geofence'
+                              ? 'Auto geofence'
+                              : entry.source === 'manual-clock'
+                              ? 'Manual clock'
+                              : entry.source === 'offline-queued'
+                              ? 'Offline queued'
+                              : 'Manual entry'}
+                          </p>
+                        ) : null}
                       </div>
                       <p className="text-base font-bold text-[var(--accent)] ml-3">
                         {(entry.duration / 60).toFixed(1)}h

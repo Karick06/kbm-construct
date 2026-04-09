@@ -12,7 +12,8 @@ import type { DailyTimesheet, TimesheetEntry, TimesheetStats } from '@/lib/times
 import { locationTracker } from '@/lib/location-tracker';
 import { getCachedData, queueOfflineRequest, setCachedData, syncQueuedRequests } from '@/lib/offline-first';
 import { useNotifications } from '@/lib/notifications-context';
-import { getGeofencesAtLocation, type Geofence } from '@/lib/geofence';
+import { getDistanceFromLatLonInMeters, getGeofencesAtLocation, type Geofence } from '@/lib/geofence';
+import { DEFAULT_TIMESHEET_AUTOMATION_SETTINGS, type TimesheetAutomationSettings } from '@/lib/timesheet-settings';
 
 const DEFAULT_EMPLOYEE_ID = 'emp-001';
 const DEFAULT_EMPLOYEE_NAME = 'John Smith';
@@ -90,15 +91,20 @@ export default function TimesheetsOverviewPage() {
   const [clockActionLabel, setClockActionLabel] = useState('');
   const [autoClockEnabled, setAutoClockEnabled] = useState(false);
   const [autoClockStatusLabel, setAutoClockStatusLabel] = useState('Auto clocking disabled');
+  const [automationSettings, setAutomationSettings] = useState<TimesheetAutomationSettings>(
+    DEFAULT_TIMESHEET_AUTOMATION_SETTINGS,
+  );
 
   const statusRef = useRef<TimesheetStats['currentStatus']>('clocked-out');
   const autoClockInFlightRef = useRef(false);
   const previousInsideGeofenceRef = useRef<boolean | null>(null);
+  const currentClockedGeofenceIdRef = useRef<string | null>(null);
 
   const currentAction = useMemo(
     () => (stats.currentStatus === 'clocked-in' ? 'clock-out' : 'clock-in'),
     [stats.currentStatus]
   );
+  const effectiveAutoClockEnabled = autoClockEnabled || automationSettings.forceAutoClock;
 
   useEffect(() => {
     statusRef.current = stats.currentStatus;
@@ -117,6 +123,7 @@ export default function TimesheetsOverviewPage() {
 
     fetchTimesheets();
   void fetchGeofences();
+    void fetchAutomationSettings();
 
     const handleOnline = async () => {
       const result = await syncQueuedRequests();
@@ -140,9 +147,10 @@ export default function TimesheetsOverviewPage() {
       window.localStorage.setItem(AUTO_CLOCK_STORAGE_KEY, autoClockEnabled ? 'true' : 'false');
     }
 
-    if (!autoClockEnabled) {
+    if (!effectiveAutoClockEnabled) {
       locationTracker.stopTracking();
       previousInsideGeofenceRef.current = null;
+      currentClockedGeofenceIdRef.current = null;
       setAutoClockStatusLabel('Auto clocking disabled');
       return;
     }
@@ -170,7 +178,7 @@ export default function TimesheetsOverviewPage() {
     return () => {
       locationTracker.stopTracking();
     };
-  }, [autoClockEnabled, geofences]);
+  }, [effectiveAutoClockEnabled, geofences, automationSettings.geofenceGraceMeters]);
 
   async function fetchGeofences() {
     try {
@@ -182,6 +190,23 @@ export default function TimesheetsOverviewPage() {
       setGeofences(payload.data as Geofence[]);
     } catch {
       setGeofences([]);
+    }
+  }
+
+  async function fetchAutomationSettings() {
+    try {
+      const response = await fetch('/api/timesheets/settings', { cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success || !payload?.data) {
+        throw new Error(payload?.error || 'Failed to load automation settings');
+      }
+
+      setAutomationSettings({
+        forceAutoClock: Boolean(payload.data.forceAutoClock),
+        geofenceGraceMeters: Number(payload.data.geofenceGraceMeters) || DEFAULT_TIMESHEET_AUTOMATION_SETTINGS.geofenceGraceMeters,
+      });
+    } catch {
+      setAutomationSettings(DEFAULT_TIMESHEET_AUTOMATION_SETTINGS);
     }
   }
 
@@ -220,6 +245,7 @@ export default function TimesheetsOverviewPage() {
       latitude: currentLocation.latitude,
       longitude: currentLocation.longitude,
       action,
+      source: source === 'auto' ? 'auto-geofence' : 'manual-clock',
     };
 
     try {
@@ -248,6 +274,8 @@ export default function TimesheetsOverviewPage() {
       }
 
       const payload = await response.json();
+      currentClockedGeofenceIdRef.current =
+        action === 'clock-in' ? payload?.data?.geofenceId || null : null;
 
       setStats((prev) => ({
         ...prev,
@@ -291,7 +319,7 @@ export default function TimesheetsOverviewPage() {
         url: '/api/timesheets/clock',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestPayload),
+        body: JSON.stringify({ ...requestPayload, source: 'offline-queued' }),
       });
 
       setStats((prev) => ({
@@ -318,8 +346,31 @@ export default function TimesheetsOverviewPage() {
     }
 
     const matchedGeofences = getGeofencesAtLocation(latitude, longitude, activeGeofences);
-    const insideGeofence = matchedGeofences.length > 0;
-    const siteName = matchedGeofences[0]?.name;
+    const nearestActiveGeofence = activeGeofences
+      .map((geofence) => ({
+        geofence,
+        distanceMeters: getDistanceFromLatLonInMeters(latitude, longitude, geofence.latitude, geofence.longitude),
+      }))
+      .sort((a, b) => a.distanceMeters - b.distanceMeters)[0];
+
+    const grace = Math.max(0, Number(automationSettings.geofenceGraceMeters) || 0);
+    const radius = nearestActiveGeofence?.geofence.radiusMeters || 0;
+    const nearestDistance = nearestActiveGeofence?.distanceMeters ?? Number.POSITIVE_INFINITY;
+    const enteringThreshold = Math.max(0, radius - grace);
+    const exitThreshold = radius + grace;
+
+    let insideGeofence = matchedGeofences.length > 0;
+    const previousInside = previousInsideGeofenceRef.current;
+
+    if (nearestActiveGeofence) {
+      if (previousInside === true) {
+        insideGeofence = nearestDistance <= exitThreshold;
+      } else {
+        insideGeofence = nearestDistance <= enteringThreshold;
+      }
+    }
+
+    const siteName = nearestActiveGeofence?.geofence.name || matchedGeofences[0]?.name;
 
     if (previousInsideGeofenceRef.current === null) {
       previousInsideGeofenceRef.current = insideGeofence;
@@ -328,7 +379,11 @@ export default function TimesheetsOverviewPage() {
     }
 
     if (previousInsideGeofenceRef.current === insideGeofence) {
-      setAutoClockStatusLabel(insideGeofence ? `On site: ${siteName || 'site'}` : 'Off site: waiting for site entry');
+      setAutoClockStatusLabel(
+        insideGeofence
+          ? `On site: ${siteName || 'site'} (buffer ${grace}m)`
+          : 'Off site: waiting for site entry'
+      );
       return;
     }
 
@@ -415,11 +470,15 @@ export default function TimesheetsOverviewPage() {
                 <span>Auto clock using geofence entry/exit</span>
                 <input
                   type="checkbox"
-                  checked={autoClockEnabled}
+                  checked={effectiveAutoClockEnabled}
                   onChange={(event) => setAutoClockEnabled(event.target.checked)}
+                  disabled={automationSettings.forceAutoClock}
                   className="h-4 w-4 rounded border-gray-500 bg-gray-800"
                 />
               </label>
+              {automationSettings.forceAutoClock ? (
+                <p className="mt-2 text-xs text-amber-300">Auto clocking is enforced by admin settings.</p>
+              ) : null}
               <p className="mt-2 text-xs text-gray-400">{autoClockStatusLabel}</p>
             </div>
             {location && (
@@ -464,6 +523,11 @@ export default function TimesheetsOverviewPage() {
                 <p className="text-xs text-gray-400 mt-1">
                   {entry.checkInTime} - {entry.checkOutTime ?? 'In Progress'} • {(entry.duration / 60).toFixed(1)}h
                 </p>
+                {entry.source ? (
+                  <p className="mt-1 text-xs text-amber-300">
+                    Source: {entry.source === 'auto-geofence' ? 'Auto Geofence' : entry.source === 'manual-clock' ? 'Manual Clock' : entry.source === 'offline-queued' ? 'Offline Queue' : 'Manual'}
+                  </p>
+                ) : null}
                 {(typeof entry.latitude === 'number' && typeof entry.longitude === 'number') && (
                   <p className="text-xs text-gray-500 mt-1">
                     {entry.latitude.toFixed(5)}, {entry.longitude.toFixed(5)}

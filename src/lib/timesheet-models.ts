@@ -13,6 +13,7 @@ export interface TimesheetEntry {
   geofenceName: string;
   duration: number; // in minutes
   status: 'active' | 'completed' | 'manual';
+  source?: 'manual' | 'manual-clock' | 'auto-geofence' | 'offline-queued';
   latitude?: number;
   longitude?: number;
   notes?: string;

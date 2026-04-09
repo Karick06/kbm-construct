@@ -83,7 +83,11 @@ async function writeTimesheets(items: DailyTimesheet[]): Promise<void> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { employeeId, latitude, longitude, action, employeeName } = body;
+    const { employeeId, latitude, longitude, action, employeeName, source } = body;
+    const entrySource =
+      source === 'auto-geofence' || source === 'manual-clock' || source === 'offline-queued'
+        ? source
+        : 'manual-clock';
 
     // Validate input
     if (!employeeId || latitude === undefined || longitude === undefined) {
@@ -184,6 +188,7 @@ export async function POST(request: NextRequest) {
         geofenceName: currentGeofence?.name || 'Outside configured geofences',
         duration: 0,
         status: 'active',
+        source: entrySource,
         latitude: numericLatitude,
         longitude: numericLongitude,
       };
@@ -255,6 +260,7 @@ export async function POST(request: NextRequest) {
       checkOutTime: nowTime,
       duration: getDurationMinutes(targetEntry.date, targetEntry.checkInTime, now),
       status: 'completed',
+      source: targetEntry.source || entrySource,
       latitude: numericLatitude,
       longitude: numericLongitude,
       geofenceId: currentGeofence?.id || targetEntry.geofenceId,

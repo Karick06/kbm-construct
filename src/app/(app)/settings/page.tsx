@@ -5,6 +5,10 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/lib/auth-context";
+import {
+  DEFAULT_TIMESHEET_AUTOMATION_SETTINGS,
+  type TimesheetAutomationSettings,
+} from "@/lib/timesheet-settings";
 
 export default function SettingsPage() {
   const { user, updateUser, changePassword, hasPermission } = useAuth();
@@ -37,6 +41,12 @@ export default function SettingsPage() {
   const [language, setLanguage] = useState("en");
   const [timezone, setTimezone] = useState("Europe/London");
   const [dateFormat, setDateFormat] = useState("DD/MM/YYYY");
+
+  // Admin timesheet automation settings
+  const [timesheetAutomationSettings, setTimesheetAutomationSettings] = useState<TimesheetAutomationSettings>(
+    DEFAULT_TIMESHEET_AUTOMATION_SETTINGS
+  );
+  const [savingTimesheetAutomation, setSavingTimesheetAutomation] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -78,6 +88,34 @@ export default function SettingsPage() {
       setActiveTab(tabParam);
     }
   }, [canManageEmailSetup, searchParams]);
+
+  useEffect(() => {
+    if (!canManageEmailSetup) return;
+
+    const loadTimesheetAutomationSettings = async () => {
+      try {
+        const response = await fetch("/api/timesheets/settings", { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success || !payload?.data) {
+          throw new Error(payload?.error || "Failed to load timesheet settings");
+        }
+
+        const next: TimesheetAutomationSettings = {
+          forceAutoClock: Boolean(payload.data.forceAutoClock),
+          geofenceGraceMeters:
+            Number(payload.data.geofenceGraceMeters) >= 0
+              ? Number(payload.data.geofenceGraceMeters)
+              : DEFAULT_TIMESHEET_AUTOMATION_SETTINGS.geofenceGraceMeters,
+        };
+
+        setTimesheetAutomationSettings(next);
+      } catch (error) {
+        console.error("Failed to load timesheet automation settings:", error);
+      }
+    };
+
+    void loadTimesheetAutomationSettings();
+  }, [canManageEmailSetup]);
 
   const handleSaveProfile = () => {
     setIsSaving(true);
@@ -151,6 +189,33 @@ export default function SettingsPage() {
       setIsSaving(false);
       setSaveMessage("Current password is incorrect!");
       setTimeout(() => setSaveMessage(""), 3000);
+    }
+  };
+
+  const handleSaveTimesheetAutomationSettings = async () => {
+    if (!canManageEmailSetup) return;
+
+    setSavingTimesheetAutomation(true);
+    try {
+      const response = await fetch("/api/timesheets/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(timesheetAutomationSettings),
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || "Failed to save timesheet automation settings");
+      }
+
+      setSaveMessage("Timesheet automation settings saved.");
+      setTimeout(() => setSaveMessage(""), 3000);
+    } catch (error) {
+      console.error("Failed to save timesheet automation settings:", error);
+      setSaveMessage("Failed to save timesheet automation settings.");
+      setTimeout(() => setSaveMessage(""), 3000);
+    } finally {
+      setSavingTimesheetAutomation(false);
     }
   };
 
@@ -581,6 +646,61 @@ export default function SettingsPage() {
                 <p className="text-sm font-semibold text-white">Mail Settings</p>
                 <p className="mt-1 text-xs text-gray-400">Configure shared mailboxes, rules, approvals, and audit controls.</p>
               </Link>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+            <h2 className="text-lg font-semibold text-white mb-2">Timesheet Automation</h2>
+            <p className="text-sm text-gray-400 mb-5">
+              Configure global behavior for geofence-based auto clock-in/out on mobile devices.
+            </p>
+
+            <div className="space-y-4">
+              <label className="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-3 text-sm text-gray-200">
+                <span>Force auto clocking for all users</span>
+                <input
+                  type="checkbox"
+                  checked={timesheetAutomationSettings.forceAutoClock}
+                  onChange={(event) =>
+                    setTimesheetAutomationSettings((current) => ({
+                      ...current,
+                      forceAutoClock: event.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-gray-500 bg-gray-800"
+                />
+              </label>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Geofence grace buffer (meters)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={timesheetAutomationSettings.geofenceGraceMeters}
+                  onChange={(event) =>
+                    setTimesheetAutomationSettings((current) => ({
+                      ...current,
+                      geofenceGraceMeters: Math.max(0, Number(event.target.value || "0")),
+                    }))
+                  }
+                  className="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Helps prevent rapid clock in/out near geofence boundaries.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveTimesheetAutomationSettings}
+                disabled={savingTimesheetAutomation}
+                className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+              >
+                {savingTimesheetAutomation ? "Saving..." : "Save Timesheet Automation"}
+              </button>
             </div>
           </div>
         </section>
