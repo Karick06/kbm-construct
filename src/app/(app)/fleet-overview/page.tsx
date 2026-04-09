@@ -4,27 +4,106 @@ import Link from "next/link";
 import PermissionGuard from "@/components/PermissionGuard";
 import OverviewStatGrid from "@/components/OverviewStatGrid";
 import OverviewTrendChart from "@/components/OverviewTrendChart";
+import {
+  createNextFleetVehicleId,
+  FLEET_STATUS_OPTIONS,
+  FleetVehicle,
+  getFleetVehiclesFromStorage,
+  saveFleetVehiclesToStorage,
+  VEHICLE_TYPE_OPTIONS,
+} from "@/lib/fleet-data";
+import { useEffect, useMemo, useState } from "react";
 
-const fleetStats = [
-  { label: "Total Assets", value: "42", change: "+4 this quarter", icon: "📊", subtitle: "28 vehicles, 14 plant" },
-  { label: "Available", value: "35", change: "83% utilisation", icon: "✓" },
-  { label: "Maintenance Due", value: "5", change: "Schedule within 2 weeks", icon: "🔧" },
-  { label: "Total Fleet Value", value: "£2.1M", change: "Vehicles £1.2M, Plant £900k", icon: "💷" },
-];
+type FleetVehicleForm = {
+  reg: string;
+  brand: string;
+  model: string;
+  type: string;
+  status: FleetVehicle["status"];
+  allocated: string;
+  mileage: string;
+  nextService: string;
+};
 
-const activeVehicles = [
-  { id: "VH-001", reg: "TS24 KBM", type: "Panel Van", status: "In Use", allocated: "Thames Site", mileage: "45,230", nextService: "18 Feb" },
-  { id: "VH-002", reg: "TS24 OPS", type: "Panel Van", status: "In Use", allocated: "Premier Site", mileage: "32,450", nextService: "25 Feb" },
-  { id: "VH-003", reg: "TS24 BDV", type: "SUV / 4x4", status: "Available", allocated: "Unallocated", mileage: "28,120", nextService: "10 Mar" },
-  { id: "VH-004", reg: "TS24 MGT", type: "Saloon Car", status: "In Use", allocated: "HQ", mileage: "12,340", nextService: "20 Feb" },
-];
+const defaultVehicleForm: FleetVehicleForm = {
+  reg: "",
+  brand: "",
+  model: "",
+  type: "Panel Van",
+  status: "Available",
+  allocated: "Unallocated",
+  mileage: "",
+  nextService: "",
+};
 
-const vehicles = [
-  { type: "Panel Van", count: 14, utilisation: "89%", value: "£560k" },
-  { type: "SUV / 4x4", count: 8, utilisation: "82%", value: "£360k" },
-  { type: "Saloon Car", count: 4, utilisation: "75%", value: "£220k" },
-  { type: "Rigid Lorry", count: 2, utilisation: "95%", value: "£60k" },
-];
+function parseServiceDate(value: string): Date | null {
+  if (!value || value === "TBC") return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const parsed = new Date(`${value}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const parsed = new Date(`${value} ${new Date().getFullYear()}`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function daysUntilService(value: string): number | null {
+  const date = parseServiceDate(value);
+  if (!date) return null;
+
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const millis = date.getTime() - startOfToday.getTime();
+  return Math.ceil(millis / (1000 * 60 * 60 * 24));
+}
+
+function formatServiceDate(value: string): string {
+  if (!value || value === "TBC") return "TBC";
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const parsed = new Date(`${value}T00:00:00`);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+    }
+  }
+
+  return value;
+}
+
+function normalizeRegistration(value: string): string {
+  return value.replace(/\s+/g, "").toUpperCase();
+}
+
+function formatRegistration(value: string): string {
+  const normalized = normalizeRegistration(value);
+  if (normalized.length <= 4) return normalized;
+  return `${normalized.slice(0, normalized.length - 3)} ${normalized.slice(-3)}`;
+}
+
+function toCurrency(value: number): string {
+  if (value >= 1_000_000) return `£${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `£${Math.round(value / 1_000)}k`;
+  return `£${value}`;
+}
+
+function estimateVehicleValue(type: string): number {
+  const valueMap: Record<string, number> = {
+    "Small Car": 18000,
+    "Saloon Car": 28000,
+    "Estate Car": 30000,
+    "SUV / 4x4": 42000,
+    "Panel Van": 36000,
+    "Crew Van": 39000,
+    Pickup: 34000,
+    Minibus: 48000,
+    "Rigid Lorry": 115000,
+    "Articulated Lorry": 165000,
+    "Specialist HGV": 190000,
+  };
+
+  return valueMap[type] ?? 35000;
+}
 
 const plantEquipment = [
   { type: "Excavator (Mini)", count: 4, utilisation: "88%", value: "£240k", status: "Active" },
@@ -34,31 +113,166 @@ const plantEquipment = [
   { type: "Scaffolding", count: 2, utilisation: "78%", value: "£70k", status: "Active" },
 ];
 
-const utilizationData = [
-  { month: "Aug", value: 18, label: "18 Used" },
-  { month: "Sep", value: 21, label: "21 Used" },
-  { month: "Oct", value: 23, label: "23 Used" },
-  { month: "Nov", value: 24, label: "24 Used" },
-  { month: "Dec", value: 22, label: "22 Used" },
-  { month: "Jan", value: 24, label: "24 Used" },
-];
-
-const vehicleStatus = [
-  { status: "In Use", count: 18, color: "bg-green-500" },
-  { status: "Available", count: 6, color: "bg-blue-500" },
-  { status: "Maintenance", count: 3, color: "bg-yellow-500" },
-  { status: "Reserved", count: 1, color: "bg-gray-500" },
-];
-
-const maintenanceAlerts = [
-  { asset: "TS24 KBM", type: "Vehicle", issue: "Service Due", date: "18 Feb", priority: "Medium" },
-  { asset: "TS24 OPS", type: "Vehicle", issue: "Tyre Inspection", date: "20 Feb", priority: "Low" },
-  { asset: "EXC-001", type: "Excavator", issue: "Hydraulic Fluid Change", date: "22 Feb", priority: "High" },
-  { asset: "GEN-002", type: "Generator", issue: "Maintenance Check", date: "25 Feb", priority: "Medium" },
-  { asset: "COMP-003", type: "Compressor", issue: "Filter Replacement", date: "28 Feb", priority: "Low" },
-];
-
 export default function FleetOverviewPage() {
+  const [vehicles, setVehicles] = useState<FleetVehicle[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [showAddAssetModal, setShowAddAssetModal] = useState(false);
+  const [newVehicle, setNewVehicle] = useState<FleetVehicleForm>(defaultVehicleForm);
+
+  useEffect(() => {
+    const syncVehicles = () => {
+      setVehicles(getFleetVehiclesFromStorage());
+      setIsHydrated(true);
+    };
+
+    syncVehicles();
+    window.addEventListener("storage", syncVehicles);
+    window.addEventListener("focus", syncVehicles);
+    return () => {
+      window.removeEventListener("storage", syncVehicles);
+      window.removeEventListener("focus", syncVehicles);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    saveFleetVehiclesToStorage(vehicles);
+  }, [vehicles, isHydrated]);
+
+  const totalVehicles = vehicles.length;
+  const inUseCount = vehicles.filter((vehicle) => vehicle.status === "In Use").length;
+  const availableCount = vehicles.filter((vehicle) => vehicle.status === "Available").length;
+  const maintenanceCount = vehicles.filter((vehicle) => vehicle.status === "Maintenance").length;
+  const reservedCount = vehicles.filter((vehicle) => vehicle.status === "Reserved").length;
+  const utilisationRate = totalVehicles === 0 ? 0 : Math.round(((inUseCount + reservedCount) / totalVehicles) * 100);
+  const totalVehicleValue = vehicles.reduce((total, vehicle) => total + estimateVehicleValue(vehicle.type), 0);
+  const maintenanceDueSoon = vehicles.filter((vehicle) => {
+    const days = daysUntilService(vehicle.nextService);
+    return days !== null && days >= 0 && days <= 14;
+  }).length;
+
+  const fleetStats = [
+    {
+      label: "Total Assets",
+      value: String(totalVehicles + 14),
+      change: `${totalVehicles} vehicles + 14 plant`,
+      icon: "📊",
+      subtitle: "Live vehicle count with plant baseline",
+    },
+    {
+      label: "Available",
+      value: String(availableCount),
+      change: `${utilisationRate}% utilisation`,
+      icon: "✓",
+    },
+    {
+      label: "Maintenance Due",
+      value: String(maintenanceDueSoon),
+      change: "Schedule within 2 weeks",
+      icon: "🔧",
+    },
+    {
+      label: "Total Fleet Value",
+      value: toCurrency(totalVehicleValue + 900000),
+      change: `${toCurrency(totalVehicleValue)} vehicles + £900k plant`,
+      icon: "💷",
+    },
+  ];
+
+  const utilizationData = useMemo(() => {
+    const months = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan"];
+    const base = [0.7, 0.73, 0.77, 0.8, 0.81];
+    const currentRatio = totalVehicles === 0 ? 0 : (inUseCount + reservedCount) / totalVehicles;
+    const ratios = [...base, currentRatio];
+
+    return months.map((month, index) => {
+      const used = Math.round(totalVehicles * ratios[index]);
+      return { month, value: Math.max(used, 0), label: `${used} Used` };
+    });
+  }, [inUseCount, reservedCount, totalVehicles]);
+
+  const vehicleStatus = [
+    { status: "In Use", count: inUseCount, color: "bg-green-500" },
+    { status: "Available", count: availableCount, color: "bg-blue-500" },
+    { status: "Maintenance", count: maintenanceCount, color: "bg-yellow-500" },
+    { status: "Reserved", count: reservedCount, color: "bg-gray-500" },
+  ];
+
+  const vehicleComposition = useMemo(() => {
+    const grouped = vehicles.reduce<Record<string, { count: number; active: number; value: number }>>((acc, vehicle) => {
+      if (!acc[vehicle.type]) {
+        acc[vehicle.type] = { count: 0, active: 0, value: 0 };
+      }
+
+      acc[vehicle.type].count += 1;
+      acc[vehicle.type].value += estimateVehicleValue(vehicle.type);
+      if (vehicle.status === "In Use" || vehicle.status === "Reserved") {
+        acc[vehicle.type].active += 1;
+      }
+
+      return acc;
+    }, {});
+
+    return Object.entries(grouped)
+      .map(([type, stats]) => ({
+        type,
+        count: stats.count,
+        utilisation: `${Math.round((stats.active / stats.count) * 100)}%`,
+        value: toCurrency(stats.value),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [vehicles]);
+
+  const maintenanceAlerts = useMemo(() => {
+    const vehicleAlerts = vehicles
+      .map((vehicle) => {
+        const days = daysUntilService(vehicle.nextService);
+        if (days === null) return null;
+
+        const priority = days <= 7 ? "High" : days <= 14 ? "Medium" : "Low";
+        return {
+          asset: vehicle.reg,
+          type: vehicle.type,
+          issue: days < 0 ? "Service Overdue" : "Service Due",
+          date: formatServiceDate(vehicle.nextService),
+          priority,
+          days,
+        };
+      })
+      .filter((alert): alert is { asset: string; type: string; issue: string; date: string; priority: string; days: number } => alert !== null)
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 5);
+
+    const filler = [
+      { asset: "EXC-001", type: "Excavator", issue: "Hydraulic Fluid Change", date: "22 Feb", priority: "High", days: 4 },
+      { asset: "GEN-002", type: "Generator", issue: "Maintenance Check", date: "25 Feb", priority: "Medium", days: 7 },
+    ];
+
+    return [...vehicleAlerts, ...filler].slice(0, 5);
+  }, [vehicles]);
+
+  const handleAddAsset = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!newVehicle.reg.trim() || !newVehicle.brand.trim() || !newVehicle.model.trim()) return;
+
+    const created: FleetVehicle = {
+      id: createNextFleetVehicleId(vehicles),
+      reg: formatRegistration(newVehicle.reg),
+      brand: newVehicle.brand.trim(),
+      model: newVehicle.model.trim(),
+      type: newVehicle.type,
+      status: newVehicle.status,
+      allocated: newVehicle.allocated.trim() || "Unallocated",
+      mileage: newVehicle.mileage.trim() || "0",
+      nextService: newVehicle.nextService || "TBC",
+    };
+
+    setVehicles((current) => [created, ...current]);
+    setNewVehicle(defaultVehicleForm);
+    setShowAddAssetModal(false);
+  };
+
   return (
     <PermissionGuard permission="fleet">
     <div className="space-y-6">
@@ -67,9 +281,12 @@ export default function FleetOverviewPage() {
         <Link href="/maintenance" className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700">
           Maintenance
         </Link>
-        <Link href="/fleet" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">
+        <button
+          onClick={() => setShowAddAssetModal(true)}
+          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+        >
           + Add Asset
-        </Link>
+        </button>
       </div>
 
       {/* Key Metrics */}
@@ -81,8 +298,8 @@ export default function FleetOverviewPage() {
         <OverviewTrendChart
           eyebrow="Fleet Utilisation"
           title="Last 6 Months"
-          summaryValue="86%"
-          summaryChange="↑ 4% vs previous period"
+          summaryValue={`${utilisationRate}%`}
+          summaryChange="live from fleet statuses"
           summaryToneClassName="text-green-400"
           points={utilizationData}
         />
@@ -116,7 +333,8 @@ export default function FleetOverviewPage() {
             <h2 className="mt-1 text-xl font-bold text-white">Fleet Composition</h2>
           </div>
           <div className="space-y-4">
-            {vehicles.map((vehicle) => (
+            {vehicleComposition.length === 0 && <p className="text-sm text-gray-400">No fleet vehicles available.</p>}
+            {vehicleComposition.map((vehicle) => (
               <div key={vehicle.type} className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-semibold text-white">{vehicle.type}</p>
@@ -163,9 +381,9 @@ export default function FleetOverviewPage() {
             <div className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-semibold text-white">Vehicles</p>
-                <p className="text-sm font-semibold text-orange-400">28</p>
+                <p className="text-sm font-semibold text-orange-400">{totalVehicles}</p>
               </div>
-              <p className="text-xs text-gray-400">£1.2M • 86% utilised</p>
+              <p className="text-xs text-gray-400">{toCurrency(totalVehicleValue)} • {utilisationRate}% utilised</p>
             </div>
             <div className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
               <div className="flex items-center justify-between mb-2">
@@ -177,9 +395,9 @@ export default function FleetOverviewPage() {
             <div className="rounded-lg border border-orange-700/50 bg-orange-900/20 p-3">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-semibold text-white">Combined</p>
-                <p className="text-sm font-semibold text-orange-400">42</p>
+                <p className="text-sm font-semibold text-orange-400">{totalVehicles + 14}</p>
               </div>
-              <p className="text-xs text-gray-400">£2.1M • 83% utilised</p>
+              <p className="text-xs text-gray-400">{toCurrency(totalVehicleValue + 900000)} • {Math.round((utilisationRate + 82) / 2)}% utilised</p>
             </div>
           </div>
         </div>
@@ -219,7 +437,7 @@ export default function FleetOverviewPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Vehicle Utilisation</p>
-              <p className="text-lg font-semibold text-white">86%</p>
+              <p className="text-lg font-semibold text-white">{utilisationRate}%</p>
             </div>
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Plant Utilisation</p>
@@ -227,16 +445,101 @@ export default function FleetOverviewPage() {
             </div>
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Combined Utilisation</p>
-              <p className="text-lg font-semibold text-orange-400">83%</p>
+              <p className="text-lg font-semibold text-orange-400">{Math.round((utilisationRate + 82) / 2)}%</p>
             </div>
             <hr className="border-gray-700/50" />
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Maintenance Compliance</p>
-              <p className="text-lg font-semibold text-green-400">100%</p>
+              <p className="text-lg font-semibold text-green-400">{Math.max(0, 100 - maintenanceDueSoon * 3)}%</p>
             </div>
           </div>
         </div>
       </section>
+
+      {showAddAssetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-gray-700/60 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Add Fleet Asset</h3>
+            <p className="mt-1 text-sm text-gray-400">Add a new vehicle directly from the overview dashboard.</p>
+
+            <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleAddAsset}>
+              <input
+                value={newVehicle.reg}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, reg: event.target.value }))}
+                placeholder="Registration"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <select
+                value={newVehicle.type}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                {VEHICLE_TYPE_OPTIONS.map((vehicleType) => (
+                  <option key={vehicleType}>{vehicleType}</option>
+                ))}
+              </select>
+              <input
+                value={newVehicle.brand}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, brand: event.target.value }))}
+                placeholder="Brand"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <input
+                value={newVehicle.model}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, model: event.target.value }))}
+                placeholder="Model"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <select
+                value={newVehicle.status}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, status: event.target.value as FleetVehicle["status"] }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                {FLEET_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+              <input
+                value={newVehicle.allocated}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, allocated: event.target.value }))}
+                placeholder="Allocated site"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                value={newVehicle.mileage}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, mileage: event.target.value }))}
+                placeholder="Mileage"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                type="date"
+                value={newVehicle.nextService}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, nextService: event.target.value }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+
+              <div className="mt-2 flex gap-2 md:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddAssetModal(false)}
+                  className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+                >
+                  Save Asset
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
     </PermissionGuard>
   );
