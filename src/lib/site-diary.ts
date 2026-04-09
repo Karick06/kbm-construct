@@ -72,8 +72,8 @@ export const COMMON_TRADES = [
 ] as const;
 
 export const COMMON_PLANT = [
-	"Excavator (360°)",
-	"Excavator (180°)",
+	"Excavator (360deg)",
+	"Excavator (180deg)",
 	"Dumper",
 	"Roller",
 	"Telehandler",
