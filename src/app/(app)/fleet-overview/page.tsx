@@ -959,7 +959,7 @@ export default function FleetOverviewPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-xl rounded-xl border border-gray-700/60 bg-gray-900 p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white">Add Fleet Asset</h3>
-            <p className="mt-1 text-sm text-gray-400">Add a new vehicle directly from the overview dashboard.</p>
+            <p className="mt-1 text-sm text-gray-400">Add a vehicle, plant asset, or tool from the overview dashboard.</p>
 
             <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleAddAsset}>
               <select
@@ -977,10 +977,27 @@ export default function FleetOverviewPage() {
                   }))
                 }
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                aria-label="Asset category"
               >
                 <option value="Vehicle">Vehicle</option>
                 <option value="Plant">Plant</option>
                 <option value="Tool">Tool</option>
+              </select>
+
+              <select
+                value={newVehicle.type}
+                onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                aria-label="Asset type"
+              >
+                {(newVehicle.category === "Vehicle"
+                  ? VEHICLE_TYPE_OPTIONS
+                  : newVehicle.category === "Plant"
+                    ? PLANT_TYPE_OPTIONS
+                    : TOOL_TYPE_OPTIONS
+                ).map((typeOption) => (
+                  <option key={typeOption}>{typeOption}</option>
+                ))}
               </select>
 
               {newVehicle.category === "Vehicle" ? (
@@ -1004,28 +1021,13 @@ export default function FleetOverviewPage() {
                     : lookupMessage || "Brand/model will auto-fill for known registrations"}
                 </div>
               ) : (
-                <select
-                  value={newVehicle.type}
-                  onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
-                  className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                >
-                  {(newVehicle.category === "Plant" ? PLANT_TYPE_OPTIONS : TOOL_TYPE_OPTIONS).map((typeOption) => (
-                    <option key={typeOption}>{typeOption}</option>
-                  ))}
-                </select>
+                <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
+                  {newVehicle.category} assets do not use registration lookup.
+                </div>
               )}
 
               {newVehicle.category === "Vehicle" ? (
                 <>
-                  <select
-                    value={newVehicle.type}
-                    onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
-                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  >
-                    {VEHICLE_TYPE_OPTIONS.map((vehicleType) => (
-                      <option key={vehicleType}>{vehicleType}</option>
-                    ))}
-                  </select>
                   <input
                     value={newVehicle.brand}
                     onChange={(event) => setNewVehicle((current) => ({ ...current, brand: event.target.value }))}
