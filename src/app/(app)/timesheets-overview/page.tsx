@@ -7,13 +7,16 @@ import PermissionGuard from "@/components/PermissionGuard";
  */
 
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DailyTimesheet, TimesheetEntry, TimesheetStats } from '@/lib/timesheet-models';
 import { locationTracker } from '@/lib/location-tracker';
 import { getCachedData, queueOfflineRequest, setCachedData, syncQueuedRequests } from '@/lib/offline-first';
 import { useNotifications } from '@/lib/notifications-context';
+import { getGeofencesAtLocation, type Geofence } from '@/lib/geofence';
 
 const DEFAULT_EMPLOYEE_ID = 'emp-001';
+const DEFAULT_EMPLOYEE_NAME = 'John Smith';
+const AUTO_CLOCK_STORAGE_KEY = 'kbm_auto_geofence_clock_enabled';
 
 function getMonthKey(dateValue: string): string {
   return dateValue.slice(0, 7);
@@ -81,14 +84,30 @@ export default function TimesheetsOverviewPage() {
     currentStatus: 'clocked-out',
   });
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
+  const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isClocking, setIsClocking] = useState(false);
   const [clockActionLabel, setClockActionLabel] = useState('');
+  const [autoClockEnabled, setAutoClockEnabled] = useState(false);
+  const [autoClockStatusLabel, setAutoClockStatusLabel] = useState('Auto clocking disabled');
+
+  const statusRef = useRef<TimesheetStats['currentStatus']>('clocked-out');
+  const autoClockInFlightRef = useRef(false);
+  const previousInsideGeofenceRef = useRef<boolean | null>(null);
 
   const currentAction = useMemo(
     () => (stats.currentStatus === 'clocked-in' ? 'clock-out' : 'clock-in'),
     [stats.currentStatus]
   );
+
+  useEffect(() => {
+    statusRef.current = stats.currentStatus;
+  }, [stats.currentStatus]);
+
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem(AUTO_CLOCK_STORAGE_KEY) : null;
+    setAutoClockEnabled(stored === 'true');
+  }, []);
 
   useEffect(() => {
     const cachedEntries = getCachedData<TimesheetEntry[]>('timesheets_recent_entries', []);
@@ -97,6 +116,7 @@ export default function TimesheetsOverviewPage() {
     }
 
     fetchTimesheets();
+  void fetchGeofences();
 
     const handleOnline = async () => {
       const result = await syncQueuedRequests();
@@ -114,6 +134,56 @@ export default function TimesheetsOverviewPage() {
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(AUTO_CLOCK_STORAGE_KEY, autoClockEnabled ? 'true' : 'false');
+    }
+
+    if (!autoClockEnabled) {
+      locationTracker.stopTracking();
+      previousInsideGeofenceRef.current = null;
+      setAutoClockStatusLabel('Auto clocking disabled');
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setAutoClockStatusLabel('Geolocation not available on this device');
+      return;
+    }
+
+    if (!('Notification' in window)) {
+      setAutoClockStatusLabel('Notifications unavailable in this browser');
+    } else if (Notification.permission === 'default') {
+      void Notification.requestPermission();
+    }
+
+    setAutoClockStatusLabel('Monitoring location for site entry/exit...');
+
+    locationTracker.startTracking(
+      (latitude, longitude) => {
+        void handleAutoLocationUpdate(latitude, longitude);
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+    );
+
+    return () => {
+      locationTracker.stopTracking();
+    };
+  }, [autoClockEnabled, geofences]);
+
+  async function fetchGeofences() {
+    try {
+      const response = await fetch('/api/geofences', { cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success || !Array.isArray(payload?.data)) {
+        throw new Error(payload?.error || 'Failed to fetch geofences');
+      }
+      setGeofences(payload.data as Geofence[]);
+    } catch {
+      setGeofences([]);
+    }
+  }
 
   async function fetchTimesheets() {
     try {
@@ -143,6 +213,145 @@ export default function TimesheetsOverviewPage() {
     }
   }
 
+  async function submitClockAction(action: 'clock-in' | 'clock-out', currentLocation: { latitude: number; longitude: number }, source: 'manual' | 'auto') {
+    const requestPayload = {
+      employeeId: DEFAULT_EMPLOYEE_ID,
+      employeeName: DEFAULT_EMPLOYEE_NAME,
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude,
+      action,
+    };
+
+    try {
+      const response = await fetch('/api/timesheets/clock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestPayload),
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+
+        if (response.status === 403 && errorPayload?.code === 'OUTSIDE_GEOFENCE') {
+          if (source === 'manual') {
+            addNotification({
+              title: 'Outside geofence',
+              message: errorPayload?.error || 'Move closer to a configured site geofence to clock in.',
+              type: 'warning',
+              actionUrl: '/geofences',
+            });
+          }
+          return;
+        }
+
+        throw new Error(errorPayload?.error || 'Clock request failed');
+      }
+
+      const payload = await response.json();
+
+      setStats((prev) => ({
+        ...prev,
+        currentStatus: action === 'clock-in' ? 'clocked-in' : 'clocked-out',
+        MostVisitedSite: payload?.data?.geofenceName || prev.MostVisitedSite,
+      }));
+
+      addNotification({
+        title:
+          source === 'auto'
+            ? action === 'clock-in'
+              ? 'Auto clocked in'
+              : 'Auto clocked out'
+            : action === 'clock-in'
+            ? 'Clocked in'
+            : 'Clocked out',
+        message: payload?.data?.message || 'Timesheet action recorded successfully.',
+        type: 'success',
+        actionUrl: '/my-timesheets',
+      });
+
+      if (source === 'auto') {
+        setAutoClockStatusLabel(
+          action === 'clock-in'
+            ? `On site: ${payload?.data?.geofenceName || 'site'} (auto clock-in confirmed)`
+            : 'Off site: auto clock-out confirmed'
+        );
+      }
+    } catch (error) {
+      if (navigator.onLine) {
+        addNotification({
+          title: source === 'auto' ? 'Auto clock failed' : 'Clock action failed',
+          message: error instanceof Error ? error.message : 'Unable to process clock action right now.',
+          type: 'error',
+          actionUrl: '/timesheets-overview',
+        });
+        return;
+      }
+
+      queueOfflineRequest({
+        url: '/api/timesheets/clock',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestPayload),
+      });
+
+      setStats((prev) => ({
+        ...prev,
+        currentStatus: action === 'clock-in' ? 'clocked-in' : 'clocked-out',
+      }));
+
+      addNotification({
+        title: 'Offline mode',
+        message: `${action === 'clock-in' ? 'Clock in' : 'Clock out'} queued and will sync when connection returns.`,
+        type: 'warning',
+        actionUrl: '/timesheets-overview',
+      });
+    }
+  }
+
+  async function handleAutoLocationUpdate(latitude: number, longitude: number) {
+    setLocation({ latitude, longitude });
+
+    const activeGeofences = geofences.filter((geofence) => geofence.active);
+    if (activeGeofences.length === 0) {
+      setAutoClockStatusLabel('No active geofences available for auto clocking');
+      return;
+    }
+
+    const matchedGeofences = getGeofencesAtLocation(latitude, longitude, activeGeofences);
+    const insideGeofence = matchedGeofences.length > 0;
+    const siteName = matchedGeofences[0]?.name;
+
+    if (previousInsideGeofenceRef.current === null) {
+      previousInsideGeofenceRef.current = insideGeofence;
+      setAutoClockStatusLabel(insideGeofence ? `On site: ${siteName || 'site'}` : 'Off site: waiting for site entry');
+      return;
+    }
+
+    if (previousInsideGeofenceRef.current === insideGeofence) {
+      setAutoClockStatusLabel(insideGeofence ? `On site: ${siteName || 'site'}` : 'Off site: waiting for site entry');
+      return;
+    }
+
+    if (autoClockInFlightRef.current) return;
+
+    const shouldClockIn = insideGeofence && statusRef.current === 'clocked-out';
+    const shouldClockOut = !insideGeofence && statusRef.current === 'clocked-in';
+
+    previousInsideGeofenceRef.current = insideGeofence;
+
+    if (!shouldClockIn && !shouldClockOut) {
+      return;
+    }
+
+    autoClockInFlightRef.current = true;
+    try {
+      await submitClockAction(shouldClockIn ? 'clock-in' : 'clock-out', { latitude, longitude }, 'auto');
+      await fetchTimesheets();
+    } finally {
+      autoClockInFlightRef.current = false;
+    }
+  }
+
   async function handleClockAction() {
     setIsClocking(true);
     setClockActionLabel('Getting location...');
@@ -151,82 +360,8 @@ export default function TimesheetsOverviewPage() {
       const currentLocation = await locationTracker.getCurrentLocation();
       setLocation(currentLocation);
 
-      const requestPayload = {
-        employeeId: 'emp-001',
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        action: currentAction,
-      };
-
       setClockActionLabel('Submitting timesheet action...');
-
-      try {
-        const response = await fetch('/api/timesheets/clock', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestPayload),
-        });
-
-        if (!response.ok) {
-          const errorPayload = await response.json().catch(() => ({}));
-
-          if (response.status === 403 && errorPayload?.code === 'OUTSIDE_GEOFENCE') {
-            addNotification({
-              title: 'Outside geofence',
-              message: errorPayload?.error || 'Move closer to a configured site geofence to clock in.',
-              type: 'warning',
-              actionUrl: '/geofences',
-            });
-            return;
-          }
-
-          throw new Error(errorPayload?.error || 'Clock request failed');
-        }
-
-        const payload = await response.json();
-
-        setStats((prev) => ({
-          ...prev,
-          currentStatus: currentAction === 'clock-in' ? 'clocked-in' : 'clocked-out',
-          MostVisitedSite: payload?.data?.geofenceName || prev.MostVisitedSite,
-        }));
-
-        addNotification({
-          title: currentAction === 'clock-in' ? 'Clocked in' : 'Clocked out',
-          message: payload?.data?.message || 'Timesheet action recorded successfully.',
-          type: 'success',
-          actionUrl: '/my-timesheets',
-        });
-      } catch (error) {
-        if (navigator.onLine) {
-          addNotification({
-            title: 'Clock action failed',
-            message: error instanceof Error ? error.message : 'Unable to process clock action right now.',
-            type: 'error',
-            actionUrl: '/timesheets-overview',
-          });
-          return;
-        }
-
-        queueOfflineRequest({
-          url: '/api/timesheets/clock',
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestPayload),
-        });
-
-        setStats((prev) => ({
-          ...prev,
-          currentStatus: currentAction === 'clock-in' ? 'clocked-in' : 'clocked-out',
-        }));
-
-        addNotification({
-          title: 'Offline mode',
-          message: `${currentAction === 'clock-in' ? 'Clock in' : 'Clock out'} queued and will sync when connection returns.`,
-          type: 'warning',
-          actionUrl: '/timesheets-overview',
-        });
-      }
+      await submitClockAction(currentAction, currentLocation, 'manual');
     } catch (error) {
       addNotification({
         title: 'Location unavailable',
@@ -275,6 +410,18 @@ export default function TimesheetsOverviewPage() {
                 {stats.currentStatus === 'clocked-in' ? 'Clocked In' : 'Clocked Out'}
               </span>
             </p>
+            <div className="mb-3 rounded-lg border border-gray-700/70 bg-gray-900/50 p-3 text-left">
+              <label className="flex items-center justify-between gap-3 text-sm text-gray-200">
+                <span>Auto clock using geofence entry/exit</span>
+                <input
+                  type="checkbox"
+                  checked={autoClockEnabled}
+                  onChange={(event) => setAutoClockEnabled(event.target.checked)}
+                  className="h-4 w-4 rounded border-gray-500 bg-gray-800"
+                />
+              </label>
+              <p className="mt-2 text-xs text-gray-400">{autoClockStatusLabel}</p>
+            </div>
             {location && (
               <p className="mb-3 text-xs text-gray-400">
                 GPS: {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
