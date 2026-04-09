@@ -8,10 +8,68 @@ import PermissionGuard from "@/components/PermissionGuard";
 
 
 import { useEffect, useMemo, useState } from 'react';
-import type { TimesheetEntry, TimesheetStats } from '@/lib/timesheet-models';
+import type { DailyTimesheet, TimesheetEntry, TimesheetStats } from '@/lib/timesheet-models';
 import { locationTracker } from '@/lib/location-tracker';
 import { getCachedData, queueOfflineRequest, setCachedData, syncQueuedRequests } from '@/lib/offline-first';
 import { useNotifications } from '@/lib/notifications-context';
+
+const DEFAULT_EMPLOYEE_ID = 'emp-001';
+
+function getMonthKey(dateValue: string): string {
+  return dateValue.slice(0, 7);
+}
+
+function getStartOfWeek(value = new Date()): Date {
+  const start = new Date(value);
+  const day = start.getDay();
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  start.setDate(start.getDate() - diffToMonday);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function deriveStatsFromTimesheets(timesheets: DailyTimesheet[]): Pick<TimesheetStats, 'totalHoursThisWeek' | 'totalHoursThisMonth' | 'averageDailyHours' | 'MostVisitedSite' | 'currentStatus'> {
+  const now = new Date();
+  const thisMonthKey = getMonthKey(now.toISOString().slice(0, 10));
+  const startOfWeek = getStartOfWeek(now);
+
+  const thisMonthTimesheets = timesheets.filter((timesheet) => getMonthKey(timesheet.date) === thisMonthKey);
+  const thisWeekTimesheets = timesheets.filter((timesheet) => {
+    const date = new Date(`${timesheet.date}T00:00:00`);
+    return !Number.isNaN(date.getTime()) && date >= startOfWeek;
+  });
+
+  const totalHoursThisMonth = Number(
+    thisMonthTimesheets.reduce((sum, timesheet) => sum + (timesheet.totalHours || 0), 0).toFixed(2)
+  );
+  const totalHoursThisWeek = Number(
+    thisWeekTimesheets.reduce((sum, timesheet) => sum + (timesheet.totalHours || 0), 0).toFixed(2)
+  );
+
+  const averageDailyHours = thisMonthTimesheets.length > 0
+    ? Number((totalHoursThisMonth / thisMonthTimesheets.length).toFixed(2))
+    : 0;
+
+  const allEntries = timesheets.flatMap((timesheet) => timesheet.entries || []);
+  const siteCount = allEntries.reduce<Record<string, number>>((acc, entry) => {
+    const key = entry.geofenceName || 'Unknown Site';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const mostVisitedEntry = Object.entries(siteCount).sort((a, b) => b[1] - a[1])[0];
+  const MostVisitedSite = mostVisitedEntry?.[0] || 'No recorded site yet';
+
+  const hasActiveEntry = allEntries.some((entry) => entry.status === 'active' && !entry.checkOutTime);
+
+  return {
+    totalHoursThisWeek,
+    totalHoursThisMonth,
+    averageDailyHours,
+    MostVisitedSite,
+    currentStatus: hasActiveEntry ? 'clocked-in' : 'clocked-out',
+  };
+}
 
 export default function TimesheetsOverviewPage() {
   const { addNotification } = useNotifications();
@@ -59,12 +117,25 @@ export default function TimesheetsOverviewPage() {
 
   async function fetchTimesheets() {
     try {
-      const response = await fetch('/api/timesheets');
+      const response = await fetch(`/api/timesheets?employeeId=${encodeURIComponent(DEFAULT_EMPLOYEE_ID)}`);
       const payload = await response.json();
-      const recentEntries = (payload?.data?.[0]?.entries || []) as TimesheetEntry[];
-      if (Array.isArray(recentEntries)) {
+      const timesheets = (payload?.data || []) as DailyTimesheet[];
+
+      if (Array.isArray(timesheets)) {
+        const recentEntries = timesheets
+          .flatMap((timesheet) => timesheet.entries || [])
+          .sort((a, b) => {
+            const aDate = `${a.date}T${a.checkInTime || '00:00'}:00`;
+            const bDate = `${b.date}T${b.checkInTime || '00:00'}:00`;
+            return bDate.localeCompare(aDate);
+          });
+
         setEntries(recentEntries);
         setCachedData('timesheets_recent_entries', recentEntries);
+        setStats((current) => ({
+          ...current,
+          ...deriveStatsFromTimesheets(timesheets),
+        }));
       }
     } catch {
       const cachedEntries = getCachedData<TimesheetEntry[]>('timesheets_recent_entries', []);
