@@ -5,16 +5,27 @@ import PermissionGuard from "@/components/PermissionGuard";
 import OverviewStatGrid from "@/components/OverviewStatGrid";
 import OverviewTrendChart from "@/components/OverviewTrendChart";
 import {
+  createNextPlantId,
+  createNextToolId,
   createNextFleetVehicleId,
   FLEET_STATUS_OPTIONS,
   FleetVehicle,
+  PlantAsset,
+  ToolAsset,
+  PLANT_TYPE_OPTIONS,
+  TOOL_TYPE_OPTIONS,
   getFleetVehiclesFromStorage,
+  getPlantAssetsFromStorage,
+  getToolAssetsFromStorage,
   saveFleetVehiclesToStorage,
+  savePlantAssetsToStorage,
+  saveToolAssetsToStorage,
   VEHICLE_TYPE_OPTIONS,
 } from "@/lib/fleet-data";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type FleetVehicleForm = {
+  category: "Vehicle" | "Plant" | "Tool";
   reg: string;
   brand: string;
   model: string;
@@ -26,6 +37,7 @@ type FleetVehicleForm = {
 };
 
 const defaultVehicleForm: FleetVehicleForm = {
+  category: "Vehicle",
   reg: "",
   brand: "",
   model: "",
@@ -112,16 +124,10 @@ function estimateVehicleValue(type: string): number {
   return valueMap[type] ?? 35000;
 }
 
-const plantEquipment = [
-  { type: "Excavator (Mini)", count: 4, utilisation: "88%", value: "£240k", status: "Active" },
-  { type: "Compressor", count: 3, utilisation: "85%", value: "£180k", status: "Active" },
-  { type: "Generator", count: 3, utilisation: "72%", value: "£120k", status: "Active" },
-  { type: "Pump", count: 2, utilisation: "91%", value: "£90k", status: "Active" },
-  { type: "Scaffolding", count: 2, utilisation: "78%", value: "£70k", status: "Active" },
-];
-
 export default function FleetOverviewPage() {
   const [vehicles, setVehicles] = useState<FleetVehicle[]>([]);
+  const [plantAssets, setPlantAssets] = useState<PlantAsset[]>([]);
+  const [toolAssets, setToolAssets] = useState<ToolAsset[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const [showAddAssetModal, setShowAddAssetModal] = useState(false);
   const [newVehicle, setNewVehicle] = useState<FleetVehicleForm>(defaultVehicleForm);
@@ -132,6 +138,8 @@ export default function FleetOverviewPage() {
   useEffect(() => {
     const syncVehicles = () => {
       setVehicles(getFleetVehiclesFromStorage());
+      setPlantAssets(getPlantAssetsFromStorage());
+      setToolAssets(getToolAssetsFromStorage());
       setIsHydrated(true);
     };
 
@@ -150,6 +158,16 @@ export default function FleetOverviewPage() {
   }, [vehicles, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
+    savePlantAssetsToStorage(plantAssets);
+  }, [plantAssets, isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    saveToolAssetsToStorage(toolAssets);
+  }, [toolAssets, isHydrated]);
+
+  useEffect(() => {
     return () => {
       if (lookupTimerRef.current) {
         clearTimeout(lookupTimerRef.current);
@@ -158,28 +176,46 @@ export default function FleetOverviewPage() {
   }, []);
 
   const totalVehicles = vehicles.length;
+  const totalPlant = plantAssets.length;
+  const totalTools = toolAssets.length;
+  const totalAssets = totalVehicles + totalPlant + totalTools;
   const inUseCount = vehicles.filter((vehicle) => vehicle.status === "In Use").length;
   const availableCount = vehicles.filter((vehicle) => vehicle.status === "Available").length;
   const maintenanceCount = vehicles.filter((vehicle) => vehicle.status === "Maintenance").length;
   const reservedCount = vehicles.filter((vehicle) => vehicle.status === "Reserved").length;
-  const utilisationRate = totalVehicles === 0 ? 0 : Math.round(((inUseCount + reservedCount) / totalVehicles) * 100);
+  const inUsePlant = plantAssets.filter((asset) => asset.status === "In Use").length;
+  const inUseTools = toolAssets.filter((asset) => asset.status === "In Use").length;
+  const availablePlant = plantAssets.filter((asset) => asset.status === "Available").length;
+  const availableTools = toolAssets.filter((asset) => asset.status === "Available").length;
+  const totalInUse = inUseCount + inUsePlant + inUseTools;
+  const totalAvailable = availableCount + availablePlant + availableTools;
+  const plantUtilisation = totalPlant === 0 ? 0 : Math.round((inUsePlant / totalPlant) * 100);
+  const toolUtilisation = totalTools === 0 ? 0 : Math.round((inUseTools / totalTools) * 100);
+
+  const utilisationRate = totalAssets === 0 ? 0 : Math.round(((totalInUse + reservedCount) / totalAssets) * 100);
   const totalVehicleValue = vehicles.reduce((total, vehicle) => total + estimateVehicleValue(vehicle.type), 0);
-  const maintenanceDueSoon = vehicles.filter((vehicle) => {
-    const days = daysUntilService(vehicle.nextService);
+  const totalPlantValue = plantAssets.reduce((total, asset) => total + asset.value, 0);
+  const totalToolValue = toolAssets.reduce((total, asset) => total + asset.value, 0);
+  const maintenanceDueSoon = [
+    ...vehicles.map((asset) => asset.nextService),
+    ...plantAssets.map((asset) => asset.nextService),
+    ...toolAssets.map((asset) => asset.nextService),
+  ].filter((serviceDate) => {
+    const days = daysUntilService(serviceDate);
     return days !== null && days >= 0 && days <= 14;
   }).length;
 
   const fleetStats = [
     {
       label: "Total Assets",
-      value: String(totalVehicles + 14),
-      change: `${totalVehicles} vehicles + 14 plant`,
+      value: String(totalAssets),
+      change: `${totalVehicles} vehicles • ${totalPlant} plant • ${totalTools} tools`,
       icon: "📊",
-      subtitle: "Live vehicle count with plant baseline",
+      subtitle: "Live mixed asset count",
     },
     {
       label: "Available",
-      value: String(availableCount),
+      value: String(totalAvailable),
       change: `${utilisationRate}% utilisation`,
       icon: "✓",
     },
@@ -191,8 +227,8 @@ export default function FleetOverviewPage() {
     },
     {
       label: "Total Fleet Value",
-      value: toCurrency(totalVehicleValue + 900000),
-      change: `${toCurrency(totalVehicleValue)} vehicles + £900k plant`,
+      value: toCurrency(totalVehicleValue + totalPlantValue + totalToolValue),
+      change: `${toCurrency(totalVehicleValue)} vehicles + ${toCurrency(totalPlantValue)} plant + ${toCurrency(totalToolValue)} tools`,
       icon: "💷",
     },
   ];
@@ -200,14 +236,14 @@ export default function FleetOverviewPage() {
   const utilizationData = useMemo(() => {
     const months = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan"];
     const base = [0.7, 0.73, 0.77, 0.8, 0.81];
-    const currentRatio = totalVehicles === 0 ? 0 : (inUseCount + reservedCount) / totalVehicles;
+    const currentRatio = totalAssets === 0 ? 0 : (totalInUse + reservedCount) / totalAssets;
     const ratios = [...base, currentRatio];
 
     return months.map((month, index) => {
-      const used = Math.round(totalVehicles * ratios[index]);
+      const used = Math.round(totalAssets * ratios[index]);
       return { month, value: Math.max(used, 0), label: `${used} Used` };
     });
-  }, [inUseCount, reservedCount, totalVehicles]);
+  }, [reservedCount, totalAssets, totalInUse]);
 
   const vehicleStatus = [
     { status: "In Use", count: inUseCount, color: "bg-green-500" },
@@ -241,6 +277,56 @@ export default function FleetOverviewPage() {
       .sort((a, b) => b.count - a.count);
   }, [vehicles]);
 
+  const plantComposition = useMemo(() => {
+    const grouped = plantAssets.reduce<Record<string, { count: number; active: number; value: number }>>((acc, asset) => {
+      if (!acc[asset.type]) {
+        acc[asset.type] = { count: 0, active: 0, value: 0 };
+      }
+
+      acc[asset.type].count += 1;
+      acc[asset.type].value += asset.value;
+      if (asset.status === "In Use" || asset.status === "Reserved") {
+        acc[asset.type].active += 1;
+      }
+
+      return acc;
+    }, {});
+
+    return Object.entries(grouped)
+      .map(([type, stats]) => ({
+        type,
+        count: stats.count,
+        utilisation: `${Math.round((stats.active / stats.count) * 100)}%`,
+        value: toCurrency(stats.value),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [plantAssets]);
+
+  const toolComposition = useMemo(() => {
+    const grouped = toolAssets.reduce<Record<string, { count: number; active: number; value: number }>>((acc, asset) => {
+      if (!acc[asset.type]) {
+        acc[asset.type] = { count: 0, active: 0, value: 0 };
+      }
+
+      acc[asset.type].count += 1;
+      acc[asset.type].value += asset.value;
+      if (asset.status === "In Use" || asset.status === "Reserved") {
+        acc[asset.type].active += 1;
+      }
+
+      return acc;
+    }, {});
+
+    return Object.entries(grouped)
+      .map(([type, stats]) => ({
+        type,
+        count: stats.count,
+        utilisation: `${Math.round((stats.active / stats.count) * 100)}%`,
+        value: toCurrency(stats.value),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [toolAssets]);
+
   const maintenanceAlerts = useMemo(() => {
     const vehicleAlerts = vehicles
       .map((vehicle) => {
@@ -261,32 +347,77 @@ export default function FleetOverviewPage() {
       .sort((a, b) => a.days - b.days)
       .slice(0, 5);
 
-    const filler = [
-      { asset: "EXC-001", type: "Excavator", issue: "Hydraulic Fluid Change", date: "22 Feb", priority: "High", days: 4 },
-      { asset: "GEN-002", type: "Generator", issue: "Maintenance Check", date: "25 Feb", priority: "Medium", days: 7 },
-    ];
+    const plantAndToolAlerts = [...plantAssets, ...toolAssets]
+      .map((asset) => {
+        const days = daysUntilService(asset.nextService);
+        if (days === null) return null;
 
-    return [...vehicleAlerts, ...filler].slice(0, 5);
-  }, [vehicles]);
+        const priority = days <= 7 ? "High" : days <= 14 ? "Medium" : "Low";
+        return {
+          asset: asset.name,
+          type: asset.type,
+          issue: days < 0 ? "Service Overdue" : "Service Due",
+          date: formatServiceDate(asset.nextService),
+          priority,
+          days,
+        };
+      })
+      .filter((alert): alert is { asset: string; type: string; issue: string; date: string; priority: string; days: number } => alert !== null)
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 5);
+
+    return [...vehicleAlerts, ...plantAndToolAlerts].sort((a, b) => a.days - b.days).slice(0, 6);
+  }, [vehicles, plantAssets, toolAssets]);
 
   const handleAddAsset = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!newVehicle.reg.trim() || !newVehicle.brand.trim() || !newVehicle.model.trim()) return;
+    if (newVehicle.category === "Vehicle") {
+      if (!newVehicle.reg.trim() || !newVehicle.brand.trim() || !newVehicle.model.trim()) return;
 
-    const created: FleetVehicle = {
-      id: createNextFleetVehicleId(vehicles),
-      reg: formatRegistration(newVehicle.reg),
-      brand: newVehicle.brand.trim(),
-      model: newVehicle.model.trim(),
-      type: newVehicle.type,
-      status: newVehicle.status,
-      allocated: newVehicle.allocated.trim() || "Unallocated",
-      mileage: newVehicle.mileage.trim() || "0",
-      nextService: newVehicle.nextService || "TBC",
-    };
+      const created: FleetVehicle = {
+        id: createNextFleetVehicleId(vehicles),
+        reg: formatRegistration(newVehicle.reg),
+        brand: newVehicle.brand.trim(),
+        model: newVehicle.model.trim(),
+        type: newVehicle.type,
+        status: newVehicle.status,
+        allocated: newVehicle.allocated.trim() || "Unallocated",
+        mileage: newVehicle.mileage.trim() || "0",
+        nextService: newVehicle.nextService || "TBC",
+      };
 
-    setVehicles((current) => [created, ...current]);
+      setVehicles((current) => [created, ...current]);
+    } else if (newVehicle.category === "Plant") {
+      if (!newVehicle.model.trim()) return;
+
+      const created: PlantAsset = {
+        id: createNextPlantId(plantAssets),
+        name: newVehicle.model.trim(),
+        type: newVehicle.type,
+        status: newVehicle.status,
+        allocated: newVehicle.allocated.trim() || "Unallocated",
+        nextService: newVehicle.nextService || "TBC",
+        value: Number(newVehicle.mileage || "0") || 0,
+      };
+
+      setPlantAssets((current) => [created, ...current]);
+    } else {
+      if (!newVehicle.model.trim()) return;
+
+      const created: ToolAsset = {
+        id: createNextToolId(toolAssets),
+        name: newVehicle.model.trim(),
+        type: newVehicle.type,
+        status: newVehicle.status,
+        allocated: newVehicle.allocated.trim() || "Unallocated",
+        nextService: newVehicle.nextService || "TBC",
+        value: Number(newVehicle.mileage || "0") || 0,
+      };
+
+      setToolAssets((current) => [created, ...current]);
+    }
+
     setNewVehicle(defaultVehicleForm);
     setLookupMessage("");
     setShowAddAssetModal(false);
@@ -453,7 +584,8 @@ export default function FleetOverviewPage() {
             <h2 className="mt-1 text-xl font-bold text-white">Plant Composition</h2>
           </div>
           <div className="space-y-4">
-            {plantEquipment.map((equipment) => (
+            {plantComposition.length === 0 && <p className="text-sm text-gray-400">No plant assets available.</p>}
+            {plantComposition.map((equipment) => (
               <div key={equipment.type} className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-semibold text-white">{equipment.type}</p>
@@ -468,34 +600,26 @@ export default function FleetOverviewPage() {
           </div>
         </div>
 
-        {/* Asset Summary */}
+        {/* Tool Composition */}
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
           <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Summary</p>
-            <h2 className="mt-1 text-xl font-bold text-white">Total Asset Value</h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Tools</p>
+            <h2 className="mt-1 text-xl font-bold text-white">Tool Composition</h2>
           </div>
           <div className="space-y-4">
-            <div className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-semibold text-white">Vehicles</p>
-                <p className="text-sm font-semibold text-orange-400">{totalVehicles}</p>
+            {toolComposition.length === 0 && <p className="text-sm text-gray-400">No tools tracked yet.</p>}
+            {toolComposition.map((tool) => (
+              <div key={tool.type} className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-white">{tool.type}</p>
+                  <p className="text-sm font-semibold text-teal-400">{tool.count}</p>
+                </div>
+                <div className="h-1.5 bg-gray-700/50 rounded-full overflow-hidden mb-2">
+                  <div className="h-full bg-teal-500 rounded-full" style={{ width: tool.utilisation }} />
+                </div>
+                <p className="text-xs text-gray-400">{tool.utilisation} utilised • {tool.value}</p>
               </div>
-              <p className="text-xs text-gray-400">{toCurrency(totalVehicleValue)} • {utilisationRate}% utilised</p>
-            </div>
-            <div className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-semibold text-white">Plant/Equipment</p>
-                <p className="text-sm font-semibold text-blue-400">14</p>
-              </div>
-              <p className="text-xs text-gray-400">£900k • 82% utilised</p>
-            </div>
-            <div className="rounded-lg border border-orange-700/50 bg-orange-900/20 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-semibold text-white">Combined</p>
-                <p className="text-sm font-semibold text-orange-400">{totalVehicles + 14}</p>
-              </div>
-              <p className="text-xs text-gray-400">{toCurrency(totalVehicleValue + 900000)} • {Math.round((utilisationRate + 82) / 2)}% utilised</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -538,11 +662,15 @@ export default function FleetOverviewPage() {
             </div>
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Plant Utilisation</p>
-              <p className="text-lg font-semibold text-blue-400">82%</p>
+              <p className="text-lg font-semibold text-blue-400">{plantUtilisation}%</p>
             </div>
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Combined Utilisation</p>
-              <p className="text-lg font-semibold text-orange-400">{Math.round((utilisationRate + 82) / 2)}%</p>
+              <p className="text-lg font-semibold text-orange-400">{utilisationRate}%</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400">Tool Utilisation</p>
+              <p className="text-lg font-semibold text-teal-400">{toolUtilisation}%</p>
             </div>
             <hr className="border-gray-700/50" />
             <div className="flex items-center justify-between">
@@ -560,41 +688,117 @@ export default function FleetOverviewPage() {
             <p className="mt-1 text-sm text-gray-400">Add a new vehicle directly from the overview dashboard.</p>
 
             <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleAddAsset}>
-              <input
-                value={newVehicle.reg}
-                onChange={(event) => handleRegistrationChange(event.target.value)}
-                placeholder="Registration"
-                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                required
-              />
-              <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
-                {isLookingUpRegistration
-                  ? "Looking up registration..."
-                  : lookupMessage || "Brand/model will auto-fill for known registrations"}
-              </div>
               <select
-                value={newVehicle.type}
-                onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
+                value={newVehicle.category}
+                onChange={(event) =>
+                  setNewVehicle((current) => ({
+                    ...current,
+                    category: event.target.value as FleetVehicleForm["category"],
+                    type:
+                      event.target.value === "Plant"
+                        ? PLANT_TYPE_OPTIONS[0]
+                        : event.target.value === "Tool"
+                          ? TOOL_TYPE_OPTIONS[0]
+                          : VEHICLE_TYPE_OPTIONS[0],
+                  }))
+                }
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
               >
-                {VEHICLE_TYPE_OPTIONS.map((vehicleType) => (
-                  <option key={vehicleType}>{vehicleType}</option>
-                ))}
+                <option value="Vehicle">Vehicle</option>
+                <option value="Plant">Plant</option>
+                <option value="Tool">Tool</option>
               </select>
-              <input
-                value={newVehicle.brand}
-                onChange={(event) => setNewVehicle((current) => ({ ...current, brand: event.target.value }))}
-                placeholder="Brand"
-                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                required
-              />
-              <input
-                value={newVehicle.model}
-                onChange={(event) => setNewVehicle((current) => ({ ...current, model: event.target.value }))}
-                placeholder="Model"
-                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                required
-              />
+
+              {newVehicle.category === "Vehicle" ? (
+                <input
+                  value={newVehicle.reg}
+                  onChange={(event) => handleRegistrationChange(event.target.value)}
+                  placeholder="Registration"
+                  className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                  required
+                />
+              ) : (
+                <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
+                  Registration lookup only applies to vehicles.
+                </div>
+              )}
+
+              {newVehicle.category === "Vehicle" ? (
+                <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
+                  {isLookingUpRegistration
+                    ? "Looking up registration..."
+                    : lookupMessage || "Brand/model will auto-fill for known registrations"}
+                </div>
+              ) : (
+                <select
+                  value={newVehicle.type}
+                  onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
+                  className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                >
+                  {(newVehicle.category === "Plant" ? PLANT_TYPE_OPTIONS : TOOL_TYPE_OPTIONS).map((typeOption) => (
+                    <option key={typeOption}>{typeOption}</option>
+                  ))}
+                </select>
+              )}
+
+              {newVehicle.category === "Vehicle" ? (
+                <>
+                  <select
+                    value={newVehicle.type}
+                    onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
+                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                  >
+                    {VEHICLE_TYPE_OPTIONS.map((vehicleType) => (
+                      <option key={vehicleType}>{vehicleType}</option>
+                    ))}
+                  </select>
+                  <input
+                    value={newVehicle.brand}
+                    onChange={(event) => setNewVehicle((current) => ({ ...current, brand: event.target.value }))}
+                    placeholder="Brand"
+                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                    required
+                  />
+                  <input
+                    value={newVehicle.model}
+                    onChange={(event) => setNewVehicle((current) => ({ ...current, model: event.target.value }))}
+                    placeholder="Model"
+                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                    required
+                  />
+                </>
+              ) : (
+                <>
+                  <input
+                    value={newVehicle.model}
+                    onChange={(event) => setNewVehicle((current) => ({ ...current, model: event.target.value }))}
+                    placeholder={newVehicle.category === "Plant" ? "Plant name" : "Tool name"}
+                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                    required
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={newVehicle.mileage}
+                    onChange={(event) => setNewVehicle((current) => ({ ...current, mileage: event.target.value }))}
+                    placeholder="Asset value (£)"
+                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </>
+              )}
+
+              {newVehicle.category === "Vehicle" && (
+                <>
+                  <input
+                    value={newVehicle.mileage}
+                    onChange={(event) => setNewVehicle((current) => ({ ...current, mileage: event.target.value }))}
+                    placeholder="Mileage"
+                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </>
+              )}
+
               <select
                 value={newVehicle.status}
                 onChange={(event) => setNewVehicle((current) => ({ ...current, status: event.target.value as FleetVehicle["status"] }))}
@@ -608,12 +812,6 @@ export default function FleetOverviewPage() {
                 value={newVehicle.allocated}
                 onChange={(event) => setNewVehicle((current) => ({ ...current, allocated: event.target.value }))}
                 placeholder="Allocated site"
-                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-              />
-              <input
-                value={newVehicle.mileage}
-                onChange={(event) => setNewVehicle((current) => ({ ...current, mileage: event.target.value }))}
-                placeholder="Mileage"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
               />
               <input

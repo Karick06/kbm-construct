@@ -3,11 +3,21 @@
 import PermissionGuard from "@/components/PermissionGuard";
 import Link from "next/link";
 import {
+  createNextPlantId,
+  createNextToolId,
   createNextFleetVehicleId,
   FLEET_STATUS_OPTIONS,
   FleetVehicle,
+  PlantAsset,
+  ToolAsset,
+  PLANT_TYPE_OPTIONS,
+  TOOL_TYPE_OPTIONS,
   getFleetVehiclesFromStorage,
+  getPlantAssetsFromStorage,
+  getToolAssetsFromStorage,
   saveFleetVehiclesToStorage,
+  savePlantAssetsToStorage,
+  saveToolAssetsToStorage,
   VEHICLE_TYPE_OPTIONS,
 } from "@/lib/fleet-data";
 
@@ -100,6 +110,18 @@ type FleetVehicleForm = {
   nextService: string;
 };
 
+type NonVehicleCategory = "Plant" | "Tool";
+
+type NonVehicleAssetForm = {
+  category: NonVehicleCategory;
+  name: string;
+  type: string;
+  status: FleetVehicle["status"];
+  allocated: string;
+  value: string;
+  nextService: string;
+};
+
 const defaultVehicleForm: FleetVehicleForm = {
   reg: "",
   brand: "",
@@ -108,6 +130,16 @@ const defaultVehicleForm: FleetVehicleForm = {
   status: "Available",
   allocated: "Unallocated",
   mileage: "",
+  nextService: "",
+};
+
+const defaultNonVehicleForm: NonVehicleAssetForm = {
+  category: "Plant",
+  name: "",
+  type: PLANT_TYPE_OPTIONS[0],
+  status: "Available",
+  allocated: "Unallocated",
+  value: "",
   nextService: "",
 };
 
@@ -120,18 +152,24 @@ const STATUS_COLORS: Record<FleetVehicle["status"], string> = {
 
 export default function FleetPage() {
   const [activeVehicles, setActiveVehicles] = useState<FleetVehicle[]>([]);
+  const [plantAssets, setPlantAssets] = useState<PlantAsset[]>([]);
+  const [toolAssets, setToolAssets] = useState<ToolAsset[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [showAddAssetModal, setShowAddAssetModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<FleetVehicle | null>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<FleetVehicle | null>(null);
   const [lookupMessage, setLookupMessage] = useState("");
   const [isLookingUpRegistration, setIsLookingUpRegistration] = useState(false);
   const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [newVehicle, setNewVehicle] = useState<FleetVehicleForm>(defaultVehicleForm);
+  const [newAsset, setNewAsset] = useState<NonVehicleAssetForm>(defaultNonVehicleForm);
 
   useEffect(() => {
     const syncVehicles = () => {
       setActiveVehicles(getFleetVehiclesFromStorage());
+      setPlantAssets(getPlantAssetsFromStorage());
+      setToolAssets(getToolAssetsFromStorage());
       setIsHydrated(true);
     };
 
@@ -150,6 +188,16 @@ export default function FleetPage() {
   }, [activeVehicles, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
+    savePlantAssetsToStorage(plantAssets);
+  }, [plantAssets, isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    saveToolAssetsToStorage(toolAssets);
+  }, [toolAssets, isHydrated]);
+
+  useEffect(() => {
     return () => {
       if (lookupTimerRef.current) {
         clearTimeout(lookupTimerRef.current);
@@ -158,27 +206,44 @@ export default function FleetPage() {
   }, []);
 
   const totalVehicles = activeVehicles.length;
+  const totalPlant = plantAssets.length;
+  const totalTools = toolAssets.length;
+  const totalAssets = totalVehicles + totalPlant + totalTools;
   const inUseCount = activeVehicles.filter((vehicle) => vehicle.status === "In Use").length;
   const availableCount = activeVehicles.filter((vehicle) => vehicle.status === "Available").length;
   const reservedCount = activeVehicles.filter((vehicle) => vehicle.status === "Reserved").length;
+  const inUsePlantCount = plantAssets.filter((asset) => asset.status === "In Use").length;
+  const inUseToolCount = toolAssets.filter((asset) => asset.status === "In Use").length;
+  const availablePlantCount = plantAssets.filter((asset) => asset.status === "Available").length;
+  const availableToolCount = toolAssets.filter((asset) => asset.status === "Available").length;
 
-  const utilisationRate = totalVehicles === 0 ? 0 : Math.round(((inUseCount + reservedCount) / totalVehicles) * 100);
-  const totalFleetValue = activeVehicles.reduce((total, vehicle) => total + estimateVehicleValue(vehicle.type), 0);
-  const maintenanceDueSoonCount = activeVehicles.filter((vehicle) => {
-    const days = daysUntilService(vehicle.nextService);
+  const totalInUse = inUseCount + inUsePlantCount + inUseToolCount;
+  const totalAvailable = availableCount + availablePlantCount + availableToolCount;
+
+  const utilisationRate = totalAssets === 0 ? 0 : Math.round(((totalInUse + reservedCount) / totalAssets) * 100);
+  const totalVehicleValue = activeVehicles.reduce((total, vehicle) => total + estimateVehicleValue(vehicle.type), 0);
+  const totalPlantValue = plantAssets.reduce((total, asset) => total + asset.value, 0);
+  const totalToolValue = toolAssets.reduce((total, asset) => total + asset.value, 0);
+  const totalFleetValue = totalVehicleValue + totalPlantValue + totalToolValue;
+  const maintenanceDueSoonCount = [
+    ...activeVehicles.map((asset) => asset.nextService),
+    ...plantAssets.map((asset) => asset.nextService),
+    ...toolAssets.map((asset) => asset.nextService),
+  ].filter((serviceDate) => {
+    const days = daysUntilService(serviceDate);
     return days !== null && days >= 0 && days <= 14;
   }).length;
 
   const fleetStats = [
     {
-      label: "Total Vehicles",
-      value: String(totalVehicles),
-      change: `${inUseCount} currently in use`,
+      label: "Total Assets",
+      value: String(totalAssets),
+      change: `${totalVehicles} vehicles • ${totalPlant} plant • ${totalTools} tools`,
       icon: "🚗",
     },
     {
       label: "Available",
-      value: String(availableCount),
+      value: String(totalAvailable),
       change: `${utilisationRate}% utilisation`,
       icon: "✓",
     },
@@ -191,7 +256,7 @@ export default function FleetPage() {
     {
       label: "Total Fleet Value",
       value: toCurrency(totalFleetValue),
-      change: `${totalVehicles > 0 ? Math.round(totalFleetValue / totalVehicles) : 0} avg value / vehicle`,
+      change: `${toCurrency(totalFleetValue)} combined asset value`,
       icon: "💷",
     },
   ];
@@ -199,14 +264,14 @@ export default function FleetPage() {
   const utilizationData = useMemo(() => {
     const months = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan"];
     const base = [0.72, 0.76, 0.79, 0.81, 0.83];
-    const currentRatio = totalVehicles === 0 ? 0 : (inUseCount + reservedCount) / totalVehicles;
+    const currentRatio = totalAssets === 0 ? 0 : (totalInUse + reservedCount) / totalAssets;
     const ratios = [...base, currentRatio];
 
     return months.map((month, index) => {
-      const used = Math.round(totalVehicles * ratios[index]);
+      const used = Math.round(totalAssets * ratios[index]);
       return { month, value: Math.max(used, 0), label: `${used} Used` };
     });
-  }, [inUseCount, reservedCount, totalVehicles]);
+  }, [reservedCount, totalAssets, totalInUse]);
 
   const maxUtilization = Math.max(...utilizationData.map((item) => item.value), 1);
 
@@ -357,6 +422,40 @@ export default function FleetPage() {
     setShowAddVehicleModal(false);
   };
 
+  const handleAddAsset = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!newAsset.name.trim()) return;
+
+    const value = Number(newAsset.value || "0");
+    if (newAsset.category === "Plant") {
+      const created: PlantAsset = {
+        id: createNextPlantId(plantAssets),
+        name: newAsset.name.trim(),
+        type: newAsset.type,
+        status: newAsset.status,
+        allocated: newAsset.allocated.trim() || "Unallocated",
+        nextService: newAsset.nextService || "TBC",
+        value: Number.isFinite(value) ? value : 0,
+      };
+      setPlantAssets((current) => [created, ...current]);
+    } else {
+      const created: ToolAsset = {
+        id: createNextToolId(toolAssets),
+        name: newAsset.name.trim(),
+        type: newAsset.type,
+        status: newAsset.status,
+        allocated: newAsset.allocated.trim() || "Unallocated",
+        nextService: newAsset.nextService || "TBC",
+        value: Number.isFinite(value) ? value : 0,
+      };
+      setToolAssets((current) => [created, ...current]);
+    }
+
+    setNewAsset(defaultNonVehicleForm);
+    setShowAddAssetModal(false);
+  };
+
   const handleUpdateVehicle = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingVehicle) return;
@@ -384,11 +483,22 @@ export default function FleetPage() {
     }
   };
 
+  const closeAddAssetModal = () => {
+    setShowAddAssetModal(false);
+    setNewAsset(defaultNonVehicleForm);
+  };
+
   return (
     <PermissionGuard permission="fleet">
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <button
+          onClick={() => setShowAddAssetModal(true)}
+          className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700"
+        >
+          + Add Plant/Tool
+        </button>
         <button
           onClick={() => setShowAddVehicleModal(true)}
           className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 inline-flex items-center"
@@ -436,11 +546,11 @@ export default function FleetPage() {
                 <div className="relative w-full">
                   <div 
                     className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t-lg transition-all hover:from-orange-400 hover:to-orange-300"
-                    style={{ height: `${(item.value / maxUtilization) * 180}px` }}
+                    style={{ height: `${Math.max((item.value / maxUtilization) * 180, 14)}px` }}
                   />
                 </div>
                 <div className="text-center">
-                    change: `${toCurrency(totalVehicles > 0 ? Math.round(totalFleetValue / totalVehicles) : 0)} avg value / vehicle`,
+                  <p className="text-xs font-semibold text-white">{item.label}</p>
                   <p className="text-xs text-gray-500">{item.month}</p>
                 </div>
               </div>
@@ -567,6 +677,52 @@ export default function FleetPage() {
         </div>
       </section>
 
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Plant</p>
+              <h2 className="mt-1 text-xl font-bold text-white">Plant Assets</h2>
+            </div>
+            <p className="text-sm font-semibold text-blue-400">{totalPlant}</p>
+          </div>
+          <div className="space-y-3">
+            {plantAssets.length === 0 && <p className="text-sm text-gray-400">No plant assets yet.</p>}
+            {plantAssets.slice(0, 6).map((asset) => (
+              <div key={asset.id} className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-white">{asset.name}</p>
+                  <p className="text-xs text-gray-300">{asset.id}</p>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">{asset.type} • {asset.allocated} • {formatServiceDate(asset.nextService)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Tools</p>
+              <h2 className="mt-1 text-xl font-bold text-white">Tools & Small Plant</h2>
+            </div>
+            <p className="text-sm font-semibold text-teal-400">{totalTools}</p>
+          </div>
+          <div className="space-y-3">
+            {toolAssets.length === 0 && <p className="text-sm text-gray-400">No tools tracked yet.</p>}
+            {toolAssets.slice(0, 6).map((asset) => (
+              <div key={asset.id} className="rounded-lg border border-gray-700/50 bg-gray-700/30 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-white">{asset.name}</p>
+                  <p className="text-xs text-gray-300">{asset.id}</p>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">{asset.type} • {asset.allocated} • {formatServiceDate(asset.nextService)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Maintenance & Performance */}
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-gray-700/50 bg-gray-800/80 p-6">
@@ -606,7 +762,7 @@ export default function FleetPage() {
             </div>
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Assets In Use</p>
-              <p className="text-lg font-semibold text-orange-400">{inUseCount}</p>
+              <p className="text-lg font-semibold text-orange-400">{totalInUse}</p>
             </div>
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Maintenance Compliance</p>
@@ -699,6 +855,94 @@ export default function FleetPage() {
                   className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
                 >
                   Save Vehicle
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showAddAssetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-gray-700/60 bg-gray-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Add Plant or Tool</h3>
+            <p className="mt-1 text-sm text-gray-400">Track civils equipment and tools alongside vehicles.</p>
+
+            <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={handleAddAsset}>
+              <select
+                value={newAsset.category}
+                onChange={(event) =>
+                  setNewAsset((current) => ({
+                    ...current,
+                    category: event.target.value as NonVehicleCategory,
+                    type: event.target.value === "Plant" ? PLANT_TYPE_OPTIONS[0] : TOOL_TYPE_OPTIONS[0],
+                  }))
+                }
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                <option value="Plant">Plant</option>
+                <option value="Tool">Tool</option>
+              </select>
+              <input
+                value={newAsset.name}
+                onChange={(event) => setNewAsset((current) => ({ ...current, name: event.target.value }))}
+                placeholder="Asset name"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <select
+                value={newAsset.type}
+                onChange={(event) => setNewAsset((current) => ({ ...current, type: event.target.value }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                {(newAsset.category === "Plant" ? PLANT_TYPE_OPTIONS : TOOL_TYPE_OPTIONS).map((typeOption) => (
+                  <option key={typeOption}>{typeOption}</option>
+                ))}
+              </select>
+              <select
+                value={newAsset.status}
+                onChange={(event) => setNewAsset((current) => ({ ...current, status: event.target.value as FleetVehicle["status"] }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              >
+                {FLEET_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+              <input
+                value={newAsset.allocated}
+                onChange={(event) => setNewAsset((current) => ({ ...current, allocated: event.target.value }))}
+                placeholder="Allocated site"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={newAsset.value}
+                onChange={(event) => setNewAsset((current) => ({ ...current, value: event.target.value }))}
+                placeholder="Asset value (£)"
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+              <input
+                type="date"
+                value={newAsset.nextService}
+                onChange={(event) => setNewAsset((current) => ({ ...current, nextService: event.target.value }))}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+              />
+
+              <div className="mt-2 flex gap-2 md:col-span-2">
+                <button
+                  type="button"
+                  onClick={closeAddAssetModal}
+                  className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+                >
+                  Save Asset
                 </button>
               </div>
             </form>
