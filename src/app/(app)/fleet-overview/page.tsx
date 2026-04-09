@@ -273,6 +273,11 @@ export default function FleetOverviewPage() {
     setShowAddAssetModal(false);
   };
 
+  const closeAddAssetModal = () => {
+    setShowAddAssetModal(false);
+    setNewVehicle(defaultVehicleForm);
+  };
+
   return (
     <PermissionGuard permission="fleet">
     <div className="space-y-6">
@@ -524,7 +529,7 @@ export default function FleetOverviewPage() {
               <div className="mt-2 flex gap-2 md:col-span-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddAssetModal(false)}
+                  onClick={closeAddAssetModal}
                   className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
                 >
                   Cancel

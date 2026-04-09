@@ -373,6 +373,17 @@ export default function FleetPage() {
     setVehicleToDelete(null);
   };
 
+  const closeAddVehicleModal = () => {
+    setShowAddVehicleModal(false);
+    setNewVehicle(defaultVehicleForm);
+    setLookupMessage("");
+    setIsLookingUpRegistration(false);
+    if (lookupTimerRef.current) {
+      clearTimeout(lookupTimerRef.current);
+      lookupTimerRef.current = null;
+    }
+  };
+
   return (
     <PermissionGuard permission="fleet">
     <div className="space-y-6">
@@ -429,7 +440,7 @@ export default function FleetPage() {
                   />
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-semibold text-white">{item.label}</p>
+                    change: `${toCurrency(totalVehicles > 0 ? Math.round(totalFleetValue / totalVehicles) : 0)} avg value / vehicle`,
                   <p className="text-xs text-gray-500">{item.month}</p>
                 </div>
               </div>
@@ -485,6 +496,13 @@ export default function FleetPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
+                {activeVehicles.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-sm text-gray-400">
+                      No vehicles found. Add your first fleet vehicle.
+                    </td>
+                  </tr>
+                )}
                 {activeVehicles.map((vehicle) => (
                   <tr key={vehicle.id} className="hover:bg-gray-700/30">
                     <td className="py-3 text-sm font-medium text-white">{vehicle.id}</td>
@@ -671,7 +689,7 @@ export default function FleetPage() {
               <div className="mt-2 flex gap-2 md:col-span-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddVehicleModal(false)}
+                  onClick={closeAddVehicleModal}
                   className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
                 >
                   Cancel
@@ -702,13 +720,15 @@ export default function FleetPage() {
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                 required
               />
-              <input
+              <select
                 value={editingVehicle.type}
                 onChange={(event) => setEditingVehicle((current) => (current ? { ...current, type: event.target.value } : current))}
-                placeholder="Type"
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                required
-              />
+              >
+                {VEHICLE_TYPE_OPTIONS.map((vehicleType) => (
+                  <option key={vehicleType}>{vehicleType}</option>
+                ))}
+              </select>
               <input
                 value={editingVehicle.brand}
                 onChange={(event) => setEditingVehicle((current) => (current ? { ...current, brand: event.target.value } : current))}
