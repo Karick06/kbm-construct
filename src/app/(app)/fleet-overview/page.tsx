@@ -73,6 +73,13 @@ const REGISTRATION_LOOKUP: Record<string, { brand: string; model: string; type: 
   TS24MGT: { brand: "BMW", model: "3 Series", type: "Saloon Car" },
 };
 
+const QUICK_VEHICLE_PROFILES = [
+  { id: "ford-transit", label: "Ford Transit (Panel Van)", brand: "Ford", model: "Transit", type: "Panel Van" },
+  { id: "toyota-hilux", label: "Toyota Hilux (Pickup)", brand: "Toyota", model: "Hilux", type: "Pickup" },
+  { id: "bmw-x3", label: "BMW X3 (SUV / 4x4)", brand: "BMW", model: "X3", type: "SUV / 4x4" },
+  { id: "mercedes-sprinter", label: "Mercedes Sprinter (Panel Van)", brand: "Mercedes-Benz", model: "Sprinter", type: "Panel Van" },
+];
+
 function parseServiceDate(value: string): Date | null {
   if (!value || value === "TBC") return null;
 
@@ -158,6 +165,7 @@ export default function FleetOverviewPage() {
   const [assetFormError, setAssetFormError] = useState("");
   const [assetEditError, setAssetEditError] = useState("");
   const [lookupMessage, setLookupMessage] = useState("");
+  const [quickVehicleProfileId, setQuickVehicleProfileId] = useState("");
   const [isLookingUpRegistration, setIsLookingUpRegistration] = useState(false);
   const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -471,6 +479,7 @@ export default function FleetOverviewPage() {
     }
 
     setNewVehicle(defaultVehicleForm);
+    setQuickVehicleProfileId("");
     setAssetFormError("");
     setLookupMessage("");
     setShowAddAssetModal(false);
@@ -516,6 +525,7 @@ export default function FleetOverviewPage() {
             brand?: string;
             model?: string;
             type?: string;
+            message?: string;
           };
 
           if (data.found && (data.brand || data.model || data.type)) {
@@ -528,14 +538,21 @@ export default function FleetOverviewPage() {
             setLookupMessage(`Auto-filled from registration lookup${data.model ? `: ${data.brand} ${data.model}` : ""}`);
             return;
           }
+
+          if (data.message?.toLowerCase().includes("key not configured")) {
+            if (!applyLocalLookup(normalized)) {
+              setLookupMessage("DVLA is not configured. Use Quick Fill profile or enter details manually.");
+            }
+            return;
+          }
         }
 
         if (!applyLocalLookup(normalized)) {
-          setLookupMessage("No registration match found. Please enter brand/model manually.");
+          setLookupMessage("No registration match found. Please enter make/model manually.");
         }
       } catch {
         if (!applyLocalLookup(normalized)) {
-          setLookupMessage("Lookup unavailable right now. Please enter brand/model manually.");
+          setLookupMessage("Lookup unavailable right now. Please enter make/model manually.");
         }
       } finally {
         setIsLookingUpRegistration(false);
@@ -546,6 +563,7 @@ export default function FleetOverviewPage() {
   const closeAddAssetModal = () => {
     setShowAddAssetModal(false);
     setNewVehicle(defaultVehicleForm);
+    setQuickVehicleProfileId("");
     setAssetFormError("");
     setLookupMessage("");
     setIsLookingUpRegistration(false);
@@ -631,6 +649,22 @@ export default function FleetOverviewPage() {
 
     setAssetEditError("");
     setEditingAsset(null);
+  };
+
+  const applyQuickVehicleProfile = (profileId: string) => {
+    setQuickVehicleProfileId(profileId);
+    if (!profileId) return;
+
+    const profile = QUICK_VEHICLE_PROFILES.find((item) => item.id === profileId);
+    if (!profile) return;
+
+    setNewVehicle((current) => ({
+      ...current,
+      brand: profile.brand,
+      model: profile.model,
+      type: profile.type,
+    }));
+    setLookupMessage(`Applied Quick Fill profile: ${profile.brand} ${profile.model}`);
   };
 
   const handleDeleteAsset = () => {
@@ -1090,12 +1124,25 @@ export default function FleetOverviewPage() {
                 <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
                   {isLookingUpRegistration
                     ? "Looking up registration..."
-                    : lookupMessage || "Brand/model will auto-fill for known registrations"}
+                    : lookupMessage || "Make/model will auto-fill for known registrations"}
                 </div>
               ) : (
                 <div className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300">
                   {newVehicle.category} assets do not use registration lookup.
                 </div>
+              )}
+
+              {newVehicle.category === "Vehicle" && (
+                <select
+                  value={quickVehicleProfileId}
+                  onChange={(event) => applyQuickVehicleProfile(event.target.value)}
+                  className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                >
+                  <option value="">Quick Fill vehicle profile (optional)</option>
+                  {QUICK_VEHICLE_PROFILES.map((profile) => (
+                    <option key={profile.id} value={profile.id}>{profile.label}</option>
+                  ))}
+                </select>
               )}
 
               {newVehicle.category !== "Vehicle" && (
@@ -1116,7 +1163,7 @@ export default function FleetOverviewPage() {
                   <input
                     value={newVehicle.brand}
                     onChange={(event) => setNewVehicle((current) => ({ ...current, brand: event.target.value }))}
-                    placeholder="Brand"
+                    placeholder="Make"
                     className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                     required
                   />
@@ -1230,7 +1277,7 @@ export default function FleetOverviewPage() {
                   <input
                     value={editingAsset.brand || ""}
                     onChange={(event) => setEditingAsset((current) => (current ? { ...current, brand: event.target.value } : current))}
-                    placeholder="Brand"
+                    placeholder="Make"
                     className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                     required
                   />
