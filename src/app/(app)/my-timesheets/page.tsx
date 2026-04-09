@@ -12,6 +12,7 @@ import FloatingActionButton from '@/components/FloatingActionButton';
 import PullToRefresh from '@/components/PullToRefresh';
 import PageHeader from '@/components/PageHeader';
 import MobileDrawer from '@/components/MobileDrawer';
+import { queueOfflineRequest, syncQueuedRequests } from '@/lib/offline-first';
 
 const LOCAL_TIMESHEETS_KEY = 'kbm_user_timesheets';
 const DEFAULT_EMPLOYEE_ID = 'emp-001';
@@ -41,6 +42,17 @@ export default function MyTimesheetsPage() {
 
   useEffect(() => {
     fetchTimesheets();
+
+    const handleOnline = async () => {
+      const result = await syncQueuedRequests();
+      if (result.synced > 0) {
+        setSaveError(null);
+        await fetchTimesheets();
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, []);
 
   const getLocalTimesheets = (): DailyTimesheet[] => {
@@ -222,11 +234,30 @@ export default function MyTimesheetsPage() {
     setShowFormDrawer(false);
     resetForm();
 
-    if (changedTimesheet && navigator.onLine) {
+    if (changedTimesheet) {
+      const requestBody = JSON.stringify(changedTimesheet);
+
+      if (!navigator.onLine) {
+        queueOfflineRequest({
+          url: '/api/timesheets',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        });
+        setSaveError('Saved locally while offline. Will auto-sync when connection returns.');
+        return;
+      }
+
       setSaveError(null);
       void saveTimesheetToApi(changedTimesheet).catch((error) => {
         console.error('Failed to persist timesheet to API:', error);
-        setSaveError('Saved locally, but failed to sync to server. Will retry on refresh.');
+        queueOfflineRequest({
+          url: '/api/timesheets',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        });
+        setSaveError('Saved locally, queued for auto-sync when connection is stable.');
       });
     }
   };
