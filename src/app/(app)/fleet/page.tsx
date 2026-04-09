@@ -15,6 +15,20 @@ type FleetVehicle = {
   nextService: string;
 };
 
+const VEHICLE_TYPE_OPTIONS = [
+  "Small Car",
+  "Saloon Car",
+  "Estate Car",
+  "SUV / 4x4",
+  "Panel Van",
+  "Crew Van",
+  "Pickup",
+  "Minibus",
+  "Rigid Lorry",
+  "Articulated Lorry",
+  "Specialist HGV",
+] as const;
+
 const fleetStats = [
   { label: "Total Vehicles", value: "28", change: "+2 this quarter", icon: "🚗" },
   { label: "Available", value: "24", change: "86% utilisation", icon: "✓" },
@@ -23,17 +37,17 @@ const fleetStats = [
 ];
 
 const initialActiveVehicles: FleetVehicle[] = [
-  { id: "VH-001", reg: "TS24 KBM", type: "Transit Van", status: "In Use", allocated: "Thames Site", mileage: "45,230", nextService: "18 Feb" },
-  { id: "VH-002", reg: "TS24 OPS", type: "Transit Van", status: "In Use", allocated: "Premier Site", mileage: "32,450", nextService: "25 Feb" },
-  { id: "VH-003", reg: "TS24 BDV", type: "Captur", status: "Available", allocated: "Unallocated", mileage: "28,120", nextService: "10 Mar" },
-  { id: "VH-004", reg: "TS24 MGT", type: "Insignia", status: "In Use", allocated: "HQ", mileage: "12,340", nextService: "20 Feb" },
+  { id: "VH-001", reg: "TS24 KBM", type: "Panel Van", status: "In Use", allocated: "Thames Site", mileage: "45,230", nextService: "18 Feb" },
+  { id: "VH-002", reg: "TS24 OPS", type: "Panel Van", status: "In Use", allocated: "Premier Site", mileage: "32,450", nextService: "25 Feb" },
+  { id: "VH-003", reg: "TS24 BDV", type: "SUV / 4x4", status: "Available", allocated: "Unallocated", mileage: "28,120", nextService: "10 Mar" },
+  { id: "VH-004", reg: "TS24 MGT", type: "Saloon Car", status: "In Use", allocated: "HQ", mileage: "12,340", nextService: "20 Feb" },
 ];
 
 const vehicles = [
-  { type: "Transit Van", count: 14, utilisation: "89%", value: "£560k" },
-  { type: "Captur/SUV", count: 8, utilisation: "82%", value: "£360k" },
-  { type: "Insignia/Sedan", count: 4, utilisation: "75%", value: "£220k" },
-  { type: "Specialist", count: 2, utilisation: "95%", value: "£60k" },
+  { type: "Panel Van", count: 14, utilisation: "89%", value: "£560k" },
+  { type: "SUV / 4x4", count: 8, utilisation: "82%", value: "£360k" },
+  { type: "Saloon Car", count: 4, utilisation: "75%", value: "£220k" },
+  { type: "Rigid Lorry", count: 2, utilisation: "95%", value: "£60k" },
 ];
 
 const utilizationData = [
@@ -63,7 +77,7 @@ export default function FleetPage() {
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
   const [newVehicle, setNewVehicle] = useState({
     reg: "",
-    type: "Transit Van",
+    type: "Panel Van",
     status: "Available" as FleetVehicle["status"],
     allocated: "Unallocated",
     mileage: "",
@@ -91,7 +105,7 @@ export default function FleetPage() {
     setActiveVehicles((current) => [vehicle, ...current]);
     setNewVehicle({
       reg: "",
-      type: "Transit Van",
+      type: "Panel Van",
       status: "Available",
       allocated: "Unallocated",
       mileage: "",
@@ -322,11 +336,9 @@ export default function FleetPage() {
                 onChange={(event) => setNewVehicle((current) => ({ ...current, type: event.target.value }))}
                 className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
               >
-                <option>Transit Van</option>
-                <option>Captur</option>
-                <option>Insignia</option>
-                <option>Pickup</option>
-                <option>Specialist</option>
+                {VEHICLE_TYPE_OPTIONS.map((vehicleType) => (
+                  <option key={vehicleType}>{vehicleType}</option>
+                ))}
               </select>
               <select
                 value={newVehicle.status}
